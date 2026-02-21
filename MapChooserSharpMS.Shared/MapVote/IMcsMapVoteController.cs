@@ -39,4 +39,10 @@ public interface IMcsMapVoteController
     /// Remove event listener
     /// </summary>
     void RemoveEventListener(IMapVoteEventListener listener);
+
+    /// <summary>
+    /// Describes whether voting or not
+    /// </summary>
+    /// <returns></returns>
+    bool IsVotingPeriod();
 }

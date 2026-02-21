@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.Nomination;
+using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Modules.Nomination.Models;
 using MapChooserSharpMS.Shared.Events.Nomination;
@@ -30,6 +31,7 @@ internal sealed class NominationValidateService
     private readonly IInternalEventManager _eventManager;
     private readonly IMcsInternalNominationController _nominationController;
     private readonly IMapTransitionManager _mapTransitionManager;
+    private readonly IServiceProvider _serviceProvider;
 
     public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager):base(serviceProvider)
     {
@@ -43,7 +45,7 @@ internal sealed class NominationValidateService
         _eventManager = internalEventManager;
         _nominationController = nominationController;
         _mapTransitionManager = mapTransitionManager;
-        
+        _serviceProvider = serviceProvider;
     }
     
     public NominationCheckResult PlayerCanNominateMap(IGameClient client, IMapConfig mapConfig)
@@ -163,8 +165,7 @@ internal sealed class NominationValidateService
 
     public bool IsDuringVotingPeriod()
     {
-        // TODO() Will implement once after Vote controller implemented.
-        throw new NotImplementedException();
+        return _serviceProvider.GetRequiredService<IMcsInternalVoteController>().IsVotingPeriod();
     }
 
     public bool IsMapDisabled(IMapConfig mapConfig)
@@ -196,14 +197,14 @@ internal sealed class NominationValidateService
     public bool IsGreaterThanMinPlayers(IMapConfig mapConfig, bool includeBots = false)
     {
         return mapConfig.NominationConfig.MinPlayers <= 0 ||
-               mapConfig.NominationConfig.MinPlayers < SharedSystem.GetModSharp().GetIServer().GetGameClients()
+               mapConfig.NominationConfig.MinPlayers < SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
                    .Count(u => u.IsFakeClient == includeBots && !u.IsHltv);
     }
 
     public bool IsLowerThanMaxPlayers(IMapConfig mapConfig, bool includeBots = false)
     {
         return mapConfig.NominationConfig.MaxPlayers <= 0 ||
-               mapConfig.NominationConfig.MaxPlayers > SharedSystem.GetModSharp().GetIServer().GetGameClients()
+               mapConfig.NominationConfig.MaxPlayers > SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
                    .Count(u => u.IsFakeClient == includeBots && !u.IsHltv);
     }
 
@@ -227,7 +228,11 @@ internal sealed class NominationValidateService
 
     public bool IsPlayerHasRequiredPermission(IMapConfig mapConfig, SteamID steamId)
     {
-        throw new NotImplementedException();
+        var perm = mapConfig.NominationConfig.RequiredPermissions;
+        if (!perm.Any())
+            return true;
+        
+        TnmsPlugin.AdminManager.ClientHasPermission(steamId, perm);
     }
 
     public bool IsDisallowedBySteamId(IMapConfig mapConfig, SteamID steamId)

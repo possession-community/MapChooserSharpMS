@@ -25,6 +25,7 @@ public sealed class MapChooserSharpMs(
 
     protected override void TnmsOnPluginLoad(bool hotReload)
     {
+        // TODO() Should Initialize One By One
         RegisterModulesUnderNamespace("MapChooserSharpMS", true);
         AddTnmsCommandsUnderNamespace("MapChooserSharpMS", true);
     }
