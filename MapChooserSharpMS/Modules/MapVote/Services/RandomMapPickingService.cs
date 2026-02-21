@@ -24,6 +24,8 @@ internal class RandomMapPickingService(IServiceProvider provider, INominationVal
         foreach (var mapConfig in sorted.AsEnumerable())
         {
             if (nominationValidateService.PlayerCanNominateMap())
+            {
+            }
         }
         
         throw new NotImplementedException("This feature is not fully implemented yet");

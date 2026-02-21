@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(tail)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(grep error CS:*)",
+      "Bash(grep warning CS:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(head:*)",
+      "Bash(curl:*)",
+      "Bash(grep Failed\\\\|FAIL:*)"
+    ]
+  }
+}

@@ -1,28 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using MapChooserSharpMS.Modules.MapConfig.Interfaces;
-using MapChooserSharpMS.Shared.MapConfig;
 
-namespace MapChooserSharpMS.Modules.MapConfig.Services;
-
-internal sealed class MapConfigGenerationService: IMapConfigGenerationService
-{
-    public bool GenerateConfigFile()
-    {
-        return false;
-    }
-    
-    private void WriteDefaultConfig(string configPath)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
-
-        string defaultConfig = @"
 [MapChooserSharpSettings.Default]
 # These are default value for map settings.
 # You can modify these section, but do not remove.
-MapNameAlias = """"
-MapDescription = """"
+MapNameAlias = ""
+MapDescription = ""
 IsDisabled = false
 WorkshopId = 0
 OnlyNomination = false
@@ -56,10 +37,10 @@ AllowedTimeRanges = []
 # ===== Basic Map Settings =====
 
 # If set, it will display this string instead of map name
-MapNameAlias = ""ze example a b c""
+MapNameAlias = "ze example a b c"
 
 # If set, it will display this string when vote finished, and before map transition
-MapDescription = ""Let's play ze_example_abc!""
+MapDescription = "Let's play ze_example_abc!"
 
 # If set, the map cannot be nominated even if admin
 # Default value is disabled
@@ -73,6 +54,11 @@ OnlyNomination = false
 
 # Cooldown for this map, specify with hours
 Cooldown = 60
+
+# Cooldown time for this map, specify with the datetime suffix
+# This will be applied with when normal cooldown applies, but differences is this just requires specified times elapsed.
+# You can use, "d" (day), "m" (month), If you don't want to apply it, then leave it blank 
+CooldownDateTime = "2d"
 
 # Max extends
 MaxExtends = 3
@@ -90,7 +76,7 @@ ExtendTimePerExtends = 15
 # ===== Nomination Settings =====
 
 # If this value is set, nominator should have specified permission
-RequiredPermissions = [""css/generic""]
+RequiredPermissions = ["css/generic"]
 
 # Restrict nomination to user who in the AllowedSteamIds
 RestrictToAllowedUsersOnly = false
@@ -113,11 +99,11 @@ ProhibitAdminNomination = false
 
 # If this value(s) are set, the nomination will be restricted to these days.
 # Also, if DaysAllowed is set, the check will be combined.
-DaysAllowed = [""wednesday"", ""monday""]
+DaysAllowed = ["wednesday", "monday"]
 
 # If this value(s) are set, the nomination will be restricted to these time ranges.
 # Also, if DaysAllowed is set, the check will be combined.
-AllowedTimeRanges = [""10:00-12:00"", ""20:00-22:00"", ""22:00-03:00""]
+AllowedTimeRanges = ["10:00-12:00", "20:00-22:00", "22:00-03:00"]
 
 
 # Extra configuration for external plugin
@@ -146,9 +132,13 @@ cost = 100
 # Cooldown is are special value.
 Cooldown = 30
 
+# CooldownOverride is group-only setting.
+# If set, this value will override the map's Cooldown with higher priority than map config.
+# CooldownOverride = 60
+
 OnlyNomination = true
-DaysAllowed = [""saturday"", ""sunday""]
-AllowedTimeRanges = [""18:00-00:00""]
+DaysAllowed = ["saturday", "sunday"]
+AllowedTimeRanges = ["18:00-00:00"]
 
 # Yes! you can still define extra configuration for external plugin even if in group settings!
 [MapChooserSharpSettings.Groups.HardZeMap.extra.shop]
@@ -158,13 +148,14 @@ cost = 100
 [ze_example_123]
 # If this is set, we will use group settings.
 # If there is no matched group, it will silently ignored.
-GroupSettings = [""HardZeMap""]
+GroupSettings = ["HardZeMap"]
 
 # But if we set value in map settings and already defined in group, it will override group settings.
 OnlyNomination = false
 
-# But cooldown is are individual
-# If
+# But cooldown is individual for map and group. They are tracked separately.
+# If ze_example_123 is played, group cooldown (30) applies to all maps in HardZeMap group,
+# and map cooldown (60) applies only to ze_example_123 itself.
 Cooldown = 60
 
 
@@ -174,33 +165,90 @@ Cooldown = 60
 # ==============================================================
 
 [MapChooserSharpSettings.Groups.Group1]
-RequiredPermissions = [""css/root""]
-AllowedTimeRanges = [""18:00-00:00""]
+RequiredPermissions = ["css/root"]
+AllowedTimeRanges = ["18:00-00:00"]
 MaxPlayers = 1000
 AllowedSteamIds = [987654321]
 DisallowedSteamIds = [987654321]
+NominationCountLimit = 2
 
 
 [MapChooserSharpSettings.Groups.Group2]
-RequiredPermissions = [""css/generic""]
-DaysAllowed = [""saturday"", ""sunday""]
+RequiredPermissions = ["css/generic"]
+DaysAllowed = ["saturday", "sunday"]
 MinPlayers = 300
 AllowedSteamIds = [123456789]
 DisallowedSteamIds = [123456789]
+NominationCountLimit = 0
 
 
 
 [ze_example_789]
 # If there are multiple groups and the values of the groups are the same, the value of the first group specified takes precedence.
-# In the following example, Group1 has the highest priority and RequiredPermissions is ""css/root"".
+# In the following example, Group1 has the highest priority and RequiredPermissions is "css/root".
 #
 # But AllowedSteamIds and DisallowedSteamIds are exceptional.
 # All AllowedSteamIds and DisallowedSteamIds will combined to 1 array. this is intended for grouping the special user
 #
-GroupSettings = [""Group1"", ""Group2""]
-";
-    
-    
-        File.WriteAllText(configPath, defaultConfig);
-    }
-}
+GroupSettings = ["Group1", "Group2"]
+
+
+
+# ==============================================================
+# DaySettings (Override) configuration example
+# ==============================================================
+
+# DaySettings allows you to override map or group settings based on specific days and time ranges.
+# You can define any number of overrides using [<key>.DaySettings.<AnyName>]
+# The <AnyName> part is just a label and has no special meaning.
+#
+# Override priority: Higher OverridePriority value takes precedence.
+# TargetDays must always be explicitly specified.
+
+
+# ----- Map-level DaySettings -----
+
+[ze_example_abc.DaySettings.WeekendNight]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["18:00-03:00"]
+
+# These values override the base ze_example_abc settings on saturday/sunday 18:00-03:00
+MaxExtends = 5
+MinPlayers = 20
+OnlyNomination = false
+
+# Extra configuration is also available in DaySettings
+[ze_example_abc.DaySettings.WeekendNight.extra.shop]
+cost = 50
+
+
+# Another override for the same map with different schedule
+[ze_example_abc.DaySettings.Weekday]
+Enabled = true
+ForceOverride = false
+OverridePriority = 0
+TargetDays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+
+MaxPlayers = 32
+MinPlayers = 5
+
+
+# ----- Group-level DaySettings -----
+
+# Groups can also have DaySettings overrides.
+# This override applies to all maps that belong to the HardZeMap group.
+[MapChooserSharpSettings.Groups.HardZeMap.DaySettings.WeekendAfternoon]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["14:00-18:00"]
+
+OnlyNomination = false
+MinPlayers = 10
+
+[MapChooserSharpSettings.Groups.HardZeMap.DaySettings.WeekendAfternoon.extra.shop]
+cost = 50
