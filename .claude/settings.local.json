@@ -12,7 +12,9 @@
       "Bash(head:*)",
       "Bash(curl:*)",
       "Bash(grep Failed\\\\|FAIL:*)",
-      "Bash(cd \"D:\\\\myworks\\\\github\\\\cs2\\\\ModSharp\\\\MapChooserSharpMS\" && dotnet test MapChooserSharpMS.Tests --verbosity normal 2>&1)"
+      "Bash(cd \"D:\\\\myworks\\\\github\\\\cs2\\\\ModSharp\\\\MapChooserSharpMS\" && dotnet test MapChooserSharpMS.Tests --verbosity normal 2>&1)",
+      "Bash(find)",
+      "Bash(cd D:\\\\myworks\\\\github\\\\cs2\\\\ModSharp\\\\MapChooserSharpMS:*)"
     ]
   }
 }

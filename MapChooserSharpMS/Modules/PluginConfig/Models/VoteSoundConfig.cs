@@ -1,10 +1,10 @@
-﻿using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 
-namespace MapChooserSharp.Modules.PluginConfig.Models;
+namespace MapChooserSharpMS.Modules.PluginConfig.Models;
 
-internal class VoteSoundConfig: IVoteSoundConfig
+internal class VoteSoundConfig : IMcsVoteSoundConfig
 {
-    public VoteSoundConfig(string vSndEvtsSoundFilePath, IVoteSound voteCountdownSounds, IVoteSound runoffVoteCountdownSounds)
+    public VoteSoundConfig(string vSndEvtsSoundFilePath, IMcsVoteSound voteCountdownSounds, IMcsVoteSound runoffVoteCountdownSounds)
     {
         if (!vSndEvtsSoundFilePath.EndsWith(".vsndevts"))
         {
@@ -14,12 +14,12 @@ internal class VoteSoundConfig: IVoteSoundConfig
         {
             VSndEvtsSoundFilePath = vSndEvtsSoundFilePath;
         }
-        
+
         InitialVoteSounds = voteCountdownSounds;
         RunoffVoteSounds = runoffVoteCountdownSounds;
     }
 
     public string VSndEvtsSoundFilePath { get; }
-    public IVoteSound InitialVoteSounds { get; }
-    public IVoteSound RunoffVoteSounds { get; }
+    public IMcsVoteSound InitialVoteSounds { get; }
+    public IMcsVoteSound RunoffVoteSounds { get; }
 }

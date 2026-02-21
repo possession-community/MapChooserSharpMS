@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 
 namespace MapChooserSharpMS.Modules.PluginConfig.Models;
@@ -8,7 +8,7 @@ internal class VoteSound(
     string voteStartSound,
     string voteFinishSound,
     List<string> voteCountdownSounds)
-    : IVoteSound
+    : IMcsVoteSound
 {
     public string VoteCountdownStartSound { get; } = voteCountdownStartSound;
     public string VoteStartSound { get; } = voteStartSound;

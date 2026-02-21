@@ -1,16 +1,18 @@
-﻿namespace MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using MapChooserSharpMS.Modules.PluginConfig.Enums;
 
-internal interface IGeneralConfig
+namespace MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+
+internal interface IMcsGeneralConfig
 {
     internal bool ShouldUseAliasMapNameIfAvailable { get; }
-    
+
     internal bool VerboseCooldownPrint { get; }
-    
+
     internal string[] WorkshopCollectionIds { get; }
-    
+
     internal bool ShouldAutoFixMapName { get; }
-    
-    internal ISqlConfig SqlConfig { get; }
-    
+
+    internal IMcsSqlConfig SqlConfig { get; }
+
     internal RtvMapChangeBehaviourType RtvMapChangeBehaviour { get; }
 }

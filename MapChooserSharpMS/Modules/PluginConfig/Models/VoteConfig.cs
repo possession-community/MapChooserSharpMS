@@ -1,6 +1,18 @@
-﻿namespace MapChooserSharpMS.Modules.PluginConfig.Models;
+using System.Collections.Generic;
+using MapChooserSharp.Modules.MapVote.Countdown;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using MapChooserSharpMS.Modules.Ui.Menu;
 
-internal class VoteConfig(List<McsSupportedMenuType> availableVoteMenuTypes, McsSupportedMenuType currentMcsVoteMenuType, int maxMenuElements, bool shouldPrintVoteToChat, bool shouldPrintVoteRemainingTime, IMcsVoteSoundConfig voteSoundConfig, McsCountdownUiType currentCountdownUiType)
+namespace MapChooserSharpMS.Modules.PluginConfig.Models;
+
+internal class VoteConfig(
+    List<McsSupportedMenuType> availableVoteMenuTypes,
+    McsSupportedMenuType currentMcsVoteMenuType,
+    int maxMenuElements,
+    bool shouldPrintVoteToChat,
+    bool shouldPrintVoteRemainingTime,
+    IMcsVoteSoundConfig voteSoundConfig,
+    McsCountdownUiType currentCountdownUiType)
     : IMcsVoteConfig
 {
     public List<McsSupportedMenuType> AvailableMenuTypes { get; } = availableVoteMenuTypes;

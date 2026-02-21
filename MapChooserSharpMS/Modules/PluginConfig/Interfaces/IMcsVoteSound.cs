@@ -1,22 +1,24 @@
-﻿namespace MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using System.Collections.Generic;
 
-internal interface IVoteSound
+namespace MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+
+internal interface IMcsVoteSound
 {
     /// <summary>
-    /// Sound name will be played when vote coundown starting
+    /// Sound name will be played when vote countdown starting
     /// </summary>
     internal string VoteCountdownStartSound { get; }
-    
+
     /// <summary>
     /// Sound name will be played when vote starting
     /// </summary>
     internal string VoteStartSound { get; }
-    
+
     /// <summary>
     /// Sound name will be played when vote finishing
     /// </summary>
     internal string VoteFinishSound { get; }
-    
+
     /// <summary>
     /// Mapped to seconds <br/>
     /// Element 0 means 1 seconds <br/>

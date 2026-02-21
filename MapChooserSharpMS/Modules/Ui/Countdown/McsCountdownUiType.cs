@@ -1,4 +1,6 @@
-﻿namespace MapChooserSharp.Modules.MapVote.Countdown;
+﻿using System;
+
+namespace MapChooserSharp.Modules.MapVote.Countdown;
 
 [Flags]
 public enum McsCountdownUiType

@@ -1,19 +1,19 @@
-﻿using System.Security;
+using System.Security;
+using System.Threading;
+using MapChooserSharpMS.Modules.PluginConfig.Enums;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 
 namespace MapChooserSharpMS.Modules.PluginConfig.Models;
 
-public sealed class SqlConfig: IMcsSqlConfig
+internal sealed class SqlConfig : IMcsSqlConfig
 {
-    public SqlConfig(string host, string port, string databaseName, string user, ref string password, string groupSettingsSqlTableName, string mapSettingsSqlTableName, McsSupportedSqlType dataBaseType)
+    public SqlConfig(string host, string port, string databaseName, string user, ref string password, McsSupportedSqlType dataBaseType)
     {
         Host = host;
         UserName = user;
-        GroupSettingsSqlTableName = groupSettingsSqlTableName;
-        MapSettingsSqlTableName = mapSettingsSqlTableName;
         DataBaseType = dataBaseType;
         Port = port;
         DatabaseName = databaseName;
-
 
         Password = ConvertToSecureString(password);
 
@@ -27,10 +27,7 @@ public sealed class SqlConfig: IMcsSqlConfig
     public string DatabaseName { get; }
     public string UserName { get; }
     public SecureString Password { get; }
-    public string GroupSettingsSqlTableName { get; }
-    public string MapSettingsSqlTableName { get; }
-    
-    
+
     private SecureString ConvertToSecureString(string password)
     {
         var securePassword = new SecureString();
@@ -40,29 +37,27 @@ public sealed class SqlConfig: IMcsSqlConfig
             securePassword.MakeReadOnly();
             return securePassword;
         }
-        
-        
+
         foreach (char c in password)
         {
             securePassword.AppendChar(c);
         }
-        
+
         securePassword.MakeReadOnly();
         return securePassword;
     }
 
-    
     private void ClearString(ref string text)
     {
         if (string.IsNullOrEmpty(text))
             return;
 
         int length = text.Length;
-        
+
         char[] charArray = text.ToCharArray();
-        
+
         text = null!;
-        
+
         unsafe
         {
             fixed (char* ptr = charArray)

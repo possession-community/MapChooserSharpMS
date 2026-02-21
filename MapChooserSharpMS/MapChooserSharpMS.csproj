@@ -32,8 +32,10 @@
   <!-- Temporarily exclude WIP modules with pre-existing build errors -->
   <ItemGroup>
     <Compile Remove="Modules\Nomination\**\*.cs" />
-    <Compile Remove="Modules\PluginConfig\**\*.cs" />
     <Compile Remove="Modules\Ui\**\*.cs" />
+    <!-- Re-include enum files needed by PluginConfig -->
+    <Compile Include="Modules\Ui\Menu\McsSupportedMenuType.cs" />
+    <Compile Include="Modules\Ui\Countdown\McsCountdownUiType.cs" />
     <Compile Remove="Modules\MapVote\**\*.cs" />
     <Compile Remove="Modules\RockTheVote\**\*.cs" />
     <Compile Remove="Modules\EventManager\**\*.cs" />

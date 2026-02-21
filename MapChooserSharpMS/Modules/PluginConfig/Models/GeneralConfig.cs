@@ -1,6 +1,16 @@
-﻿namespace MapChooserSharpMS.Modules.PluginConfig.Models;
+using MapChooserSharpMS.Modules.PluginConfig.Enums;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 
-public class GeneralConfig(bool shouldUseAliasMapNameIfAvailable, bool verboseCooldownPrint, string[] workshopCollectionIds, bool shouldAutoFixMapName, IMcsSqlConfig sqlConfig, RtvMapChangeBehaviourType rtvMapChangeBehaviour) : IMcsGeneralConfig
+namespace MapChooserSharpMS.Modules.PluginConfig.Models;
+
+internal class GeneralConfig(
+    bool shouldUseAliasMapNameIfAvailable,
+    bool verboseCooldownPrint,
+    string[] workshopCollectionIds,
+    bool shouldAutoFixMapName,
+    IMcsSqlConfig sqlConfig,
+    RtvMapChangeBehaviourType rtvMapChangeBehaviour)
+    : IMcsGeneralConfig
 {
     public bool ShouldUseAliasMapNameIfAvailable { get; } = shouldUseAliasMapNameIfAvailable;
     public bool VerboseCooldownPrint { get; } = verboseCooldownPrint;

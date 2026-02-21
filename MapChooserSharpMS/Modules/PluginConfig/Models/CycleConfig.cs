@@ -1,6 +1,18 @@
-﻿namespace MapChooserSharpMS.Modules.PluginConfig.Models;
+using MapChooserSharpMS.Modules.PluginConfig.Enums;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 
-public class McsMapCycleConfig(int defaultMaxExtends, int fallbackMaxExtCommandUses, int fallbackExtendTimePerExtends, int fallbackExtendRoundsPerExtends, bool shouldStopSourceTvRecording, McsMapConfigExecutionType mapConfigExecutionType, string mapConfigDirectoryPath, string groupConfigDirectoryPath) : IMcsMapCycleConfig
+namespace MapChooserSharpMS.Modules.PluginConfig.Models;
+
+internal class McsMapCycleConfig(
+    int defaultMaxExtends,
+    int fallbackMaxExtCommandUses,
+    int fallbackExtendTimePerExtends,
+    int fallbackExtendRoundsPerExtends,
+    bool shouldStopSourceTvRecording,
+    McsMapConfigExecutionType mapConfigExecutionType,
+    string mapConfigDirectoryPath,
+    string groupConfigDirectoryPath)
+    : IMcsMapCycleConfig
 {
     public int FallbackDefaultMaxExtends { get; } = defaultMaxExtends;
     public int FallbackMaxExtCommandUses { get; } = fallbackMaxExtCommandUses;

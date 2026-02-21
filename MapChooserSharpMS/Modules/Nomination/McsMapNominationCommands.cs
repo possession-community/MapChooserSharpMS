@@ -136,24 +136,6 @@ internal sealed class McsMapNominationCommands(IServiceProvider serviceProvider)
         mcsUserInformation.SessionTime++;
         _mcsDatabaseProvider.UserInfoRepository.IncrementUserSessionTimeAsync(mcsUserInformation.SteamId);
         Logger.LogInformation("Incrementing session time for SteamID32: {SteamID32}, Current Session Time: {SessionTime} minutes.", mcsUserInformation.SteamId, mcsUserInformation.SessionTime);
-                        
-                        
-        var loginExpiringTime = _pluginConfigProvider.PluginConfig.NominationConfig.LoginSessionExpiringTime;
-                        
-
-        DateTime now = DateTime.Now;
-        TimeSpan resetTimeOfDay = loginExpiringTime.TimeOfDay;
-        DateTime todayReset = DateTime.Today.Add(resetTimeOfDay);
-        DateTime lastReset = now >= todayReset ? todayReset : todayReset.AddDays(-1);
-
-        // If the user's session started before the last reset boundary, reset session time.
-        if (mcsUserInformation.UserSessionStartedAt < lastReset)
-        {
-            mcsUserInformation.SessionTime = 0;
-            mcsUserInformation.UserSessionStartedAt = now;
-            _mcsDatabaseProvider.UserInfoRepository.UpsertUserInformationAsync(mcsUserInformation.SteamId, mcsUserInformation).Wait();
-            _userInformationCache[slot] = mcsUserInformation;
-        }
     }
 
     // TODO() This method will be removed after migrated to ModSharp implementation.
@@ -202,12 +184,9 @@ internal sealed class McsMapNominationCommands(IServiceProvider serviceProvider)
             return;
         }
         
-        // Check Session time and login status, reset if needed, and auto-login if below threshold
+        // Check Session time and login status
         if (player.AuthorizedSteamID != null)
         {
-            var config = _pluginConfigProvider.PluginConfig.NominationConfig;
-            var requiredTimeToLogin = config.RequiredTimeToLogin;
-
             int steamId = player.AuthorizedSteamID.SteamId32;
             if (!_userInformationCache.TryGetValue(player.Slot, out var userInfo))
             {
@@ -226,14 +205,6 @@ internal sealed class McsMapNominationCommands(IServiceProvider serviceProvider)
                 }
 
                 _userInformationCache[player.Slot] = userInfo;
-            }
-
-            // If user's session time is below required threshold, consider them "not logged in" yet.
-            if (userInfo.SessionTime < requiredTimeToLogin)
-            {
-                Logger.LogInformation("Player {PlayerName} (SteamID: {SteamID}) attempted to nominate a map but is not logged in. SessionTime: {SessionTime} minutes.", player.PlayerName, player.AuthorizedSteamID.SteamId64, userInfo.SessionTime);
-                player.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotLoggedIn", requiredTimeToLogin - userInfo.SessionTime, requiredTimeToLogin));
-                return;
             }
         }
         

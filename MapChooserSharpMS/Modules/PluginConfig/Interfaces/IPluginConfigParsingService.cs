@@ -1,6 +1,6 @@
-﻿namespace MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+namespace MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 
-public interface IPluginConfigParsingService
+internal interface IPluginConfigParsingService
 {
-    
+    IMcsPluginConfig ParseConfig(string configFilePath);
 }

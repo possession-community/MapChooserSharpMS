@@ -2,5 +2,5 @@
 
 public enum McsSupportedMenuType
 {
-    BuiltInHtml,
+    Default,
 }
