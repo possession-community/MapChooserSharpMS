@@ -233,7 +233,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
         {
             var baseOverride = new MapGroupConfigOverrides(
                 GroupConfig: baseConfig,
-                OverrideConfigName: "",
+                OverrideConfigName: IBaseOverrideConfig.BaseConfigName,
                 Enabled: true,
                 ForceOverride: false,
                 OverridePriority: 0,
@@ -317,7 +317,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
         // Base config (no override)
         var baseOverride = new MapConfigOverrides(
             MapConfig: baseConfig,
-            OverrideConfigName: "",
+            OverrideConfigName: IBaseOverrideConfig.BaseConfigName,
             Enabled: true,
             ForceOverride: false,
             OverridePriority: 0,

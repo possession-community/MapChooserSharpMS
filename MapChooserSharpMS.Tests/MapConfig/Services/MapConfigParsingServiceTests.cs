@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using MapChooserSharpMS.Modules.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Tests.Helpers;
 using Xunit;
 
@@ -282,7 +283,7 @@ public class MapConfigParsingServiceTests
         var overrides = result!.MapConfigsNameMapping["ze_test"];
 
         // Base config has cost=100
-        var baseOverride = overrides.First(o => o.OverrideConfigName == "");
+        var baseOverride = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName);
         Assert.Equal(100, baseOverride.MapConfig.ExtraConfiguration.GetValue<int>("shop", "cost", 0));
 
         // WeekendNight override has cost=50

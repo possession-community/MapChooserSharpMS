@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using MapChooserSharpMS.Modules.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Tests.Helpers;
 using Xunit;
 
@@ -142,7 +143,7 @@ public class FullParsingIntegrationTests
         var abcOverrides = result.MapConfigsNameMapping["ze_example_abc"];
         Assert.Equal(3, abcOverrides.Count); // base + WeekendNight + Weekday
 
-        var abcBase = abcOverrides.First(o => o.OverrideConfigName == "").MapConfig;
+        var abcBase = abcOverrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).MapConfig;
         Assert.Equal("ze example a b c", abcBase.MapNameAlias);
         Assert.Equal("Let's play ze_example_abc!", abcBase.MapDescription);
         Assert.Equal(1234567891234L, abcBase.WorkshopId);
@@ -213,7 +214,7 @@ public class FullParsingIntegrationTests
         var hardZeOverrides = result.MapGroupSettings["HardZeMap"];
         Assert.Equal(2, hardZeOverrides.Count); // base + WeekendAfternoon
 
-        var hardZeBase = hardZeOverrides.First(o => o.OverrideConfigName == "").GroupConfig;
+        var hardZeBase = hardZeOverrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
         Assert.Equal(30, hardZeBase.CooldownConfig.ConfigCooldown);
         Assert.False(hardZeBase.RandomPickConfig.IsPickable); // OnlyNomination=true
 

@@ -1,0 +1,194 @@
+# ============================================================
+# Complex Realistic Scenario: 24h ZE Server Configuration
+# ============================================================
+# 3 groups with DaySettings each
+# 1 map belonging to all 3 groups with its own DaySettings
+# Extra configs at every layer
+# ============================================================
+
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+MaxExtCommandUses = 1
+MapTime = 20
+ExtendTimePerExtends = 15
+MapRounds = 10
+ExtendRoundsPerExtends = 5
+Cooldown = 0
+MinPlayers = 0
+MaxPlayers = 0
+
+# ============================================================
+# Group 1: HardZE — Hard zombie escape maps
+# ============================================================
+
+[MapChooserSharpSettings.Groups.HardZE]
+MaxExtends = 2
+MapTime = 45
+Cooldown = 72
+CooldownOverride = 48
+OnlyNomination = true
+MinPlayers = 20
+DaysAllowed = ["friday", "saturday", "sunday"]
+AllowedSteamIds = [1001, 1002]
+
+[MapChooserSharpSettings.Groups.HardZE.extra.difficulty]
+level = 5
+mode = "hard"
+
+[MapChooserSharpSettings.Groups.HardZE.extra.rewards]
+xp_multiplier = 2
+
+# HardZE override: WeekendPrime — relaxed on weekend evenings
+[MapChooserSharpSettings.Groups.HardZE.DaySettings.WeekendPrime]
+Enabled = true
+ForceOverride = false
+OverridePriority = 2
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["18:00-03:00"]
+OnlyNomination = false
+MinPlayers = 15
+
+[MapChooserSharpSettings.Groups.HardZE.DaySettings.WeekendPrime.extra.difficulty]
+level = 4
+
+# HardZE override: WeekdayNight — slight relax on weekday nights
+[MapChooserSharpSettings.Groups.HardZE.DaySettings.WeekdayNight]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+TargetTimeRanges = ["20:00-02:00"]
+MinPlayers = 12
+
+[MapChooserSharpSettings.Groups.HardZE.DaySettings.WeekdayNight.extra.rewards]
+xp_multiplier = 3
+
+# ============================================================
+# Group 2: Premium — Maps requiring VIP permission
+# ============================================================
+
+[MapChooserSharpSettings.Groups.Premium]
+RequiredPermissions = ["css/vip"]
+RestrictToAllowedUsersOnly = true
+MaxPlayers = 48
+ProhibitAdminNomination = true
+AllowedSteamIds = [2001]
+DisallowedSteamIds = [9001]
+
+[MapChooserSharpSettings.Groups.Premium.extra.shop]
+cost = 500
+currency = "credits"
+
+# Premium override: FreeWeekend — remove permission on weekends (ForceOverride!)
+[MapChooserSharpSettings.Groups.Premium.DaySettings.FreeWeekend]
+Enabled = true
+ForceOverride = true
+OverridePriority = 5
+TargetDays = ["saturday", "sunday"]
+RequiredPermissions = []
+RestrictToAllowedUsersOnly = false
+ProhibitAdminNomination = false
+
+[MapChooserSharpSettings.Groups.Premium.DaySettings.FreeWeekend.extra.shop]
+cost = 200
+
+# ============================================================
+# Group 3: LongMaps — Maps that take long to play
+# ============================================================
+
+[MapChooserSharpSettings.Groups.LongMaps]
+MapTime = 60
+ExtendTimePerExtends = 20
+MaxExtends = 4
+MaxExtCommandUses = 2
+Cooldown = 48
+CooldownDateTime = "3d"
+AllowedSteamIds = [3001]
+AllowedTimeRanges = ["14:00-04:00"]
+
+[MapChooserSharpSettings.Groups.LongMaps.extra.gameplay]
+speed = 1.0
+gravity = 800
+
+# LongMaps override: PeakHours — stricter during peak
+[MapChooserSharpSettings.Groups.LongMaps.DaySettings.PeakHours]
+Enabled = true
+ForceOverride = false
+OverridePriority = 3
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["14:00-22:00"]
+MinPlayers = 30
+MaxPlayers = 64
+
+[MapChooserSharpSettings.Groups.LongMaps.DaySettings.PeakHours.extra.gameplay]
+speed = 1.2
+
+# LongMaps override: LateNight — relaxed late night
+[MapChooserSharpSettings.Groups.LongMaps.DaySettings.LateNight]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["friday", "saturday", "sunday"]
+TargetTimeRanges = ["23:00-06:00"]
+MinPlayers = 8
+MapTime = 90
+MaxExtends = 6
+
+[MapChooserSharpSettings.Groups.LongMaps.DaySettings.LateNight.extra.gameplay]
+gravity = 600
+
+# ============================================================
+# Map: ze_epic_finale_v3 — belongs to all 3 groups
+# ============================================================
+
+[ze_epic_finale_v3]
+GroupSettings = ["HardZE", "Premium", "LongMaps"]
+MapNameAlias = "Epic Finale V3"
+MapDescription = "The ultimate zombie escape experience!"
+WorkshopId = 987654321
+MaxExtends = 3
+Cooldown = 96
+CooldownDateTime = "7d"
+AllowedSteamIds = [5001]
+DisallowedSteamIds = [9999]
+
+[ze_epic_finale_v3.extra.shop]
+cost = 1000
+
+[ze_epic_finale_v3.extra.difficulty]
+boss_hp = 50000
+
+[ze_epic_finale_v3.extra.special]
+event_name = "finale_challenge"
+
+# Map override: EventMode — special event (ForceOverride, highest priority)
+[ze_epic_finale_v3.DaySettings.EventMode]
+Enabled = true
+ForceOverride = true
+OverridePriority = 10
+TargetDays = ["saturday"]
+TargetTimeRanges = ["20:00-02:00"]
+MaxExtends = 10
+MinPlayers = 40
+OnlyNomination = false
+
+[ze_epic_finale_v3.DaySettings.EventMode.extra.special]
+event_name = "grand_finale"
+bonus_rewards = true
+
+[ze_epic_finale_v3.DaySettings.EventMode.extra.difficulty]
+boss_hp = 100000
+
+# Map override: WeekendRelax — casual weekend daytime
+[ze_epic_finale_v3.DaySettings.WeekendRelax]
+Enabled = true
+ForceOverride = false
+OverridePriority = 2
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["10:00-17:00"]
+MinPlayers = 10
+MaxPlayers = 32
+MapTime = 30
+
+[ze_epic_finale_v3.DaySettings.WeekendRelax.extra.shop]
+cost = 300

@@ -263,7 +263,7 @@ public class ResourceConfigTests
         Assert.Equal(4, overrides.Count); // base + 3 overrides
 
         // Base
-        var baseOverride = overrides.First(o => o.OverrideConfigName == "");
+        var baseOverride = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName);
         Assert.Equal(4, baseOverride.MapConfig.MaxExtends);
         Assert.Equal(20, baseOverride.MapConfig.MapTime);
 
@@ -305,7 +305,7 @@ public class ResourceConfigTests
         Assert.Equal(3, overrides.Count); // base + 2 overrides
 
         // Base
-        var baseOverride = overrides.First(o => o.OverrideConfigName == "");
+        var baseOverride = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName);
         Assert.Equal(5, baseOverride.GroupConfig.MaxExtends);
         Assert.False(baseOverride.GroupConfig.RandomPickConfig.IsPickable); // OnlyNomination=true
         Assert.Equal(30, baseOverride.GroupConfig.CooldownConfig.ConfigCooldown);
@@ -342,7 +342,7 @@ public class ResourceConfigTests
         Assert.Equal(2, overrides.Count); // base + Sale
 
         // Base extra
-        var baseConfig = overrides.First(o => o.OverrideConfigName == "").MapConfig;
+        var baseConfig = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).MapConfig;
         Assert.Equal(100L, baseConfig.ExtraConfiguration.GetValue<long>("shop", "cost", 0));
         Assert.Equal(10L, baseConfig.ExtraConfiguration.GetValue<long>("shop", "discount", 0));
 
@@ -491,7 +491,7 @@ public class ResourceConfigTests
         var baseOverrides = result.MapConfigsNameMapping["ze_complex"];
         Assert.Equal(2, baseOverrides.Count); // base + ComplexWeekend
 
-        var baseConfig = baseOverrides.First(o => o.OverrideConfigName == "").MapConfig;
+        var baseConfig = baseOverrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).MapConfig;
 
         // Properties: Map overrides Group overrides Default
         Assert.Equal(7, baseConfig.MaxExtends);       // Map (overrides CG1's 5)
@@ -540,7 +540,7 @@ public class ResourceConfigTests
         var cg1Overrides = result.MapGroupSettings["CG1"];
         Assert.Equal(2, cg1Overrides.Count); // base + CG1Weekend
 
-        var cg1Base = cg1Overrides.First(o => o.OverrideConfigName == "");
+        var cg1Base = cg1Overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName);
         Assert.False(cg1Base.GroupConfig.RandomPickConfig.IsPickable); // OnlyNomination=true
 
         var cg1Weekend = cg1Overrides.First(o => o.OverrideConfigName == "CG1Weekend");
@@ -654,5 +654,370 @@ public class ResourceConfigTests
 
         // extra_maps.toml should NOT be loaded
         Assert.False(result.MapConfigsNameMapping.ContainsKey("ze_should_not_load"));
+    }
+
+    // ================================================================
+    // 18: Complex Realistic — 24h ZE Server scenario
+    //     3 groups (HardZE, Premium, LongMaps) each with DaySettings
+    //     1 map (ze_epic_finale_v3) with 3 groups + map DaySettings
+    //     Extra configs at every layer
+    // ================================================================
+
+    [Fact]
+    public void ComplexRealistic_StructureCounts()
+    {
+        var result = LoadAndParse("18_complex_realistic.toml");
+
+        // 1 map
+        Assert.Single(result.MapConfigsNameMapping);
+        Assert.True(result.MapConfigsNameMapping.ContainsKey("ze_epic_finale_v3"));
+
+        // 3 groups
+        Assert.Equal(3, result.MapGroupSettings.Count);
+        Assert.True(result.MapGroupSettings.ContainsKey("HardZE"));
+        Assert.True(result.MapGroupSettings.ContainsKey("Premium"));
+        Assert.True(result.MapGroupSettings.ContainsKey("LongMaps"));
+
+        // Map overrides: base + EventMode + WeekendRelax = 3
+        Assert.Equal(3, result.MapConfigsNameMapping["ze_epic_finale_v3"].Count);
+
+        // Group override counts: HardZE(base+2), Premium(base+1), LongMaps(base+2)
+        Assert.Equal(3, result.MapGroupSettings["HardZE"].Count);
+        Assert.Equal(2, result.MapGroupSettings["Premium"].Count);
+        Assert.Equal(3, result.MapGroupSettings["LongMaps"].Count);
+
+        // WorkshopId mapping
+        Assert.True(result.MapConfigsWorkshopIdMapping.ContainsKey(987654321));
+    }
+
+    [Fact]
+    public void ComplexRealistic_BaseMapProperties()
+    {
+        var result = LoadAndParse("18_complex_realistic.toml");
+        var map = result.MapConfigsNameMapping["ze_epic_finale_v3"]
+            .First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).MapConfig;
+
+        // --- Identifiers ---
+        Assert.Equal("ze_epic_finale_v3", map.MapName);
+        Assert.Equal("Epic Finale V3", map.MapNameAlias);
+        Assert.Equal("The ultimate zombie escape experience!", map.MapDescription);
+        Assert.Equal(987654321L, map.WorkshopId);
+
+        // --- Property priority: Map > HardZE(1st) > Premium(2nd) > LongMaps(3rd) > Default ---
+
+        // Map sets MaxExtends=3 (overrides HardZE's 2 and LongMaps' 4)
+        Assert.Equal(3, map.MaxExtends);
+        // HardZE(1st group) sets MapTime=45 (overrides LongMaps' 60)
+        Assert.Equal(45, map.MapTime);
+        // LongMaps sets ExtendTimePerExtends=20 (no other group/map sets it)
+        Assert.Equal(20, map.ExtendTimePerExtends);
+        // LongMaps sets MaxExtCommandUses=2
+        Assert.Equal(2, map.MaxExtCommandUses);
+        // Default values retained for unset properties
+        Assert.Equal(10, map.MapRounds);
+        Assert.Equal(5, map.ExtendRoundsPerExtends);
+
+        // --- CooldownOverride ---
+        // HardZE CooldownOverride=48 overrides map's Cooldown=96
+        Assert.Equal(48, map.CooldownConfig.ConfigCooldown);
+        // Map CooldownDateTime="7d" overrides LongMaps' "3d"
+        Assert.Equal(TimeSpan.FromDays(7), map.CooldownConfig.TimedCooldown);
+
+        // --- Nomination: merge from Premium(2nd) and HardZE(1st) ---
+        // HardZE OnlyNomination=true (map doesn't override) → IsPickable=false
+        Assert.False(map.RandomPickConfig.IsPickable);
+        Assert.False(map.IsDisabled);
+        // Premium RequiredPermissions (HardZE doesn't set it, Premium is next priority)
+        Assert.Equal(["css/vip"], map.NominationConfig.RequiredPermissions);
+        // Premium RestrictToAllowedUsersOnly=true
+        Assert.True(map.NominationConfig.RestrictToAllowedUsersOnly);
+        // Premium MaxPlayers=48
+        Assert.Equal(48, map.NominationConfig.MaxPlayers);
+        // HardZE MinPlayers=20
+        Assert.Equal(20, map.NominationConfig.MinPlayers);
+        // Premium ProhibitAdminNomination=true
+        Assert.True(map.NominationConfig.ProhibitAdminNomination);
+        // HardZE DaysAllowed
+        Assert.Contains(DayOfWeek.Friday, map.NominationConfig.DaysAllowed);
+        Assert.Contains(DayOfWeek.Saturday, map.NominationConfig.DaysAllowed);
+        Assert.Contains(DayOfWeek.Sunday, map.NominationConfig.DaysAllowed);
+        Assert.Equal(3, map.NominationConfig.DaysAllowed.Count);
+        // LongMaps AllowedTimeRanges (HardZE/Premium don't set it)
+        Assert.Single(map.NominationConfig.AllowedTimeRanges);
+
+        // --- SteamId accumulation across all layers ---
+        // LongMaps[3001] + Premium[2001] + HardZE[1001,1002] + Map[5001]
+        var allowed = map.NominationConfig.AllowedSteamIds;
+        Assert.Equal(5, allowed.Count);
+        Assert.Contains(1001u, allowed);
+        Assert.Contains(1002u, allowed);
+        Assert.Contains(2001u, allowed);
+        Assert.Contains(3001u, allowed);
+        Assert.Contains(5001u, allowed);
+
+        // Premium[9001] + Map[9999]
+        var disallowed = map.NominationConfig.DisallowedSteamIds;
+        Assert.Equal(2, disallowed.Count);
+        Assert.Contains(9001u, disallowed);
+        Assert.Contains(9999u, disallowed);
+
+        // --- 3 groups resolved ---
+        Assert.Equal(3, map.GroupSettings.Count);
+    }
+
+    [Fact]
+    public void ComplexRealistic_BaseMapExtra()
+    {
+        var result = LoadAndParse("18_complex_realistic.toml");
+        var extra = result.MapConfigsNameMapping["ze_epic_finale_v3"]
+            .First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).MapConfig.ExtraConfiguration;
+
+        // Extra merge order: Default(empty) → HardZE → Premium → LongMaps → Map
+
+        // shop: Premium cost=500 → Map cost=1000 (Map overwrites), currency from Premium preserved
+        Assert.Equal(1000L, extra.GetValue<long>("shop", "cost", 0));
+        Assert.Equal("credits", extra.GetValue<string>("shop", "currency", ""));
+
+        // difficulty: HardZE level=5, mode="hard" + Map boss_hp=50000
+        Assert.Equal(5L, extra.GetValue<long>("difficulty", "level", 0));
+        Assert.Equal("hard", extra.GetValue<string>("difficulty", "mode", ""));
+        Assert.Equal(50000L, extra.GetValue<long>("difficulty", "boss_hp", 0));
+
+        // rewards: HardZE xp_multiplier=2
+        Assert.Equal(2L, extra.GetValue<long>("rewards", "xp_multiplier", 0));
+
+        // gameplay: LongMaps speed=1.0, gravity=800
+        Assert.Equal(1.0, extra.GetValue<double>("gameplay", "speed", 0.0));
+        Assert.Equal(800L, extra.GetValue<long>("gameplay", "gravity", 0));
+
+        // special: Map event_name="finale_challenge"
+        Assert.Equal("finale_challenge", extra.GetValue<string>("special", "event_name", ""));
+
+        // Verify all 5 extra sections exist
+        var sections = extra.GetSections();
+        Assert.Equal(5, sections.Count);
+    }
+
+    [Fact]
+    public void ComplexRealistic_MapEventModeOverride()
+    {
+        var result = LoadAndParse("18_complex_realistic.toml");
+        var eventMode = result.MapConfigsNameMapping["ze_epic_finale_v3"]
+            .First(o => o.OverrideConfigName == "EventMode");
+
+        // --- Override metadata ---
+        Assert.True(eventMode.Enabled);
+        Assert.True(eventMode.ForceOverride);
+        Assert.Equal(10, eventMode.OverridePriority);
+        Assert.Contains(DayOfWeek.Saturday, eventMode.TargetDays);
+        Assert.Single(eventMode.TargetDays);
+        Assert.Single(eventMode.TargetTimeRanges);
+
+        // --- Properties: all layers merged + EventMode override ---
+        var map = eventMode.MapConfig;
+        Assert.Equal(10, map.MaxExtends);  // EventMode override (over base map's 3)
+        Assert.Equal(40, map.NominationConfig.MinPlayers);  // EventMode override
+        Assert.True(map.RandomPickConfig.IsPickable);  // EventMode OnlyNomination=false
+        Assert.Equal(45, map.MapTime);  // Inherited from HardZE via base chain
+        Assert.Equal(48, map.CooldownConfig.ConfigCooldown);  // CooldownOverride still applies
+
+        // --- EventMode Extra: base map extra + override ---
+        var extra = map.ExtraConfiguration;
+
+        // special: overridden by EventMode
+        Assert.Equal("grand_finale", extra.GetValue<string>("special", "event_name", ""));
+        Assert.True(extra.GetValue<bool>("special", "bonus_rewards", false));
+
+        // difficulty.boss_hp overridden by EventMode (50000 → 100000)
+        Assert.Equal(100000L, extra.GetValue<long>("difficulty", "boss_hp", 0));
+        // difficulty.level/mode preserved from base
+        Assert.Equal(5L, extra.GetValue<long>("difficulty", "level", 0));
+        Assert.Equal("hard", extra.GetValue<string>("difficulty", "mode", ""));
+
+        // shop, rewards, gameplay all preserved from base map extra
+        Assert.Equal(1000L, extra.GetValue<long>("shop", "cost", 0));
+        Assert.Equal("credits", extra.GetValue<string>("shop", "currency", ""));
+        Assert.Equal(2L, extra.GetValue<long>("rewards", "xp_multiplier", 0));
+        Assert.Equal(1.0, extra.GetValue<double>("gameplay", "speed", 0.0));
+        Assert.Equal(800L, extra.GetValue<long>("gameplay", "gravity", 0));
+    }
+
+    [Fact]
+    public void ComplexRealistic_MapWeekendRelaxOverride()
+    {
+        var result = LoadAndParse("18_complex_realistic.toml");
+        var relax = result.MapConfigsNameMapping["ze_epic_finale_v3"]
+            .First(o => o.OverrideConfigName == "WeekendRelax");
+
+        // --- Override metadata ---
+        Assert.True(relax.Enabled);
+        Assert.False(relax.ForceOverride);
+        Assert.Equal(2, relax.OverridePriority);
+        Assert.Contains(DayOfWeek.Saturday, relax.TargetDays);
+        Assert.Contains(DayOfWeek.Sunday, relax.TargetDays);
+
+        // --- Properties ---
+        var map = relax.MapConfig;
+        Assert.Equal(10, map.NominationConfig.MinPlayers);  // WeekendRelax override
+        Assert.Equal(32, map.NominationConfig.MaxPlayers);  // WeekendRelax override (over Premium's 48)
+        Assert.Equal(30, map.MapTime);  // WeekendRelax override (over HardZE's 45)
+        Assert.Equal(3, map.MaxExtends);  // Inherited from map base
+        Assert.Equal(48, map.CooldownConfig.ConfigCooldown);  // CooldownOverride still applies
+
+        // --- Extra: base map extra + WeekendRelax shop override ---
+        Assert.Equal(300L, map.ExtraConfiguration.GetValue<long>("shop", "cost", 0));
+        Assert.Equal("credits", map.ExtraConfiguration.GetValue<string>("shop", "currency", ""));
+        // Other sections preserved
+        Assert.Equal(50000L, map.ExtraConfiguration.GetValue<long>("difficulty", "boss_hp", 0));
+        Assert.Equal("finale_challenge", map.ExtraConfiguration.GetValue<string>("special", "event_name", ""));
+    }
+
+    [Fact]
+    public void ComplexRealistic_HardZEGroupAndOverrides()
+    {
+        var result = LoadAndParse("18_complex_realistic.toml");
+        var overrides = result.MapGroupSettings["HardZE"];
+
+        // --- Base ---
+        var baseGroup = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
+        Assert.Equal(2, baseGroup.MaxExtends);
+        Assert.Equal(45, baseGroup.MapTime);
+        Assert.Equal(72, baseGroup.CooldownConfig.ConfigCooldown);
+        Assert.Equal(48, baseGroup.MapCooldownOverride);
+        Assert.False(baseGroup.RandomPickConfig.IsPickable);  // OnlyNomination=true
+        Assert.Equal(20, baseGroup.NominationConfig.MinPlayers);
+        Assert.Equal(3, baseGroup.NominationConfig.DaysAllowed.Count);
+        Assert.Contains(1001u, baseGroup.NominationConfig.AllowedSteamIds);
+        Assert.Contains(1002u, baseGroup.NominationConfig.AllowedSteamIds);
+        // Base extra
+        Assert.Equal(5L, baseGroup.ExtraConfiguration.GetValue<long>("difficulty", "level", 0));
+        Assert.Equal("hard", baseGroup.ExtraConfiguration.GetValue<string>("difficulty", "mode", ""));
+        Assert.Equal(2L, baseGroup.ExtraConfiguration.GetValue<long>("rewards", "xp_multiplier", 0));
+
+        // --- WeekendPrime override ---
+        var weekendPrime = overrides.First(o => o.OverrideConfigName == "WeekendPrime");
+        Assert.True(weekendPrime.Enabled);
+        Assert.False(weekendPrime.ForceOverride);
+        Assert.Equal(2, weekendPrime.OverridePriority);
+        Assert.Contains(DayOfWeek.Saturday, weekendPrime.TargetDays);
+        Assert.Contains(DayOfWeek.Sunday, weekendPrime.TargetDays);
+        Assert.Single(weekendPrime.TargetTimeRanges);
+
+        var wpGroup = weekendPrime.GroupConfig;
+        Assert.True(wpGroup.RandomPickConfig.IsPickable);  // OnlyNomination=false
+        Assert.Equal(15, wpGroup.NominationConfig.MinPlayers);  // Override
+        Assert.Equal(45, wpGroup.MapTime);  // Inherited from HardZE base
+        Assert.Equal(2, wpGroup.MaxExtends);  // Inherited
+        // Extra: difficulty.level overridden to 4, mode preserved
+        Assert.Equal(4L, wpGroup.ExtraConfiguration.GetValue<long>("difficulty", "level", 0));
+        Assert.Equal("hard", wpGroup.ExtraConfiguration.GetValue<string>("difficulty", "mode", ""));
+        Assert.Equal(2L, wpGroup.ExtraConfiguration.GetValue<long>("rewards", "xp_multiplier", 0));
+
+        // --- WeekdayNight override ---
+        var weekdayNight = overrides.First(o => o.OverrideConfigName == "WeekdayNight");
+        Assert.True(weekdayNight.Enabled);
+        Assert.Equal(1, weekdayNight.OverridePriority);
+        Assert.Equal(5, weekdayNight.TargetDays.Count);  // Mon-Fri
+        Assert.Single(weekdayNight.TargetTimeRanges);
+
+        var wnGroup = weekdayNight.GroupConfig;
+        Assert.Equal(12, wnGroup.NominationConfig.MinPlayers);  // Override
+        Assert.False(wnGroup.RandomPickConfig.IsPickable);  // Inherited OnlyNomination=true
+        // Extra: rewards.xp_multiplier overridden to 3, difficulty preserved
+        Assert.Equal(3L, wnGroup.ExtraConfiguration.GetValue<long>("rewards", "xp_multiplier", 0));
+        Assert.Equal(5L, wnGroup.ExtraConfiguration.GetValue<long>("difficulty", "level", 0));
+    }
+
+    [Fact]
+    public void ComplexRealistic_PremiumGroupAndOverrides()
+    {
+        var result = LoadAndParse("18_complex_realistic.toml");
+        var overrides = result.MapGroupSettings["Premium"];
+
+        // --- Base ---
+        var baseGroup = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
+        Assert.Equal(["css/vip"], baseGroup.NominationConfig.RequiredPermissions);
+        Assert.True(baseGroup.NominationConfig.RestrictToAllowedUsersOnly);
+        Assert.Equal(48, baseGroup.NominationConfig.MaxPlayers);
+        Assert.True(baseGroup.NominationConfig.ProhibitAdminNomination);
+        Assert.Contains(2001u, baseGroup.NominationConfig.AllowedSteamIds);
+        Assert.Contains(9001u, baseGroup.NominationConfig.DisallowedSteamIds);
+        // Defaults inherited for properties Premium doesn't set
+        Assert.Equal(3, baseGroup.MaxExtends);
+        Assert.Equal(20, baseGroup.MapTime);
+        // Base extra
+        Assert.Equal(500L, baseGroup.ExtraConfiguration.GetValue<long>("shop", "cost", 0));
+        Assert.Equal("credits", baseGroup.ExtraConfiguration.GetValue<string>("shop", "currency", ""));
+
+        // --- FreeWeekend override (ForceOverride!) ---
+        var freeWeekend = overrides.First(o => o.OverrideConfigName == "FreeWeekend");
+        Assert.True(freeWeekend.Enabled);
+        Assert.True(freeWeekend.ForceOverride);
+        Assert.Equal(5, freeWeekend.OverridePriority);
+        Assert.Contains(DayOfWeek.Saturday, freeWeekend.TargetDays);
+        Assert.Contains(DayOfWeek.Sunday, freeWeekend.TargetDays);
+
+        var fwGroup = freeWeekend.GroupConfig;
+        // RequiredPermissions overridden to empty (removes VIP requirement)
+        Assert.Empty(fwGroup.NominationConfig.RequiredPermissions);
+        Assert.False(fwGroup.NominationConfig.RestrictToAllowedUsersOnly);
+        Assert.False(fwGroup.NominationConfig.ProhibitAdminNomination);
+        // MaxPlayers inherited from base Premium
+        Assert.Equal(48, fwGroup.NominationConfig.MaxPlayers);
+        // Extra: shop.cost discounted to 200, currency preserved
+        Assert.Equal(200L, fwGroup.ExtraConfiguration.GetValue<long>("shop", "cost", 0));
+        Assert.Equal("credits", fwGroup.ExtraConfiguration.GetValue<string>("shop", "currency", ""));
+    }
+
+    [Fact]
+    public void ComplexRealistic_LongMapsGroupAndOverrides()
+    {
+        var result = LoadAndParse("18_complex_realistic.toml");
+        var overrides = result.MapGroupSettings["LongMaps"];
+
+        // --- Base ---
+        var baseGroup = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
+        Assert.Equal(60, baseGroup.MapTime);
+        Assert.Equal(20, baseGroup.ExtendTimePerExtends);
+        Assert.Equal(4, baseGroup.MaxExtends);
+        Assert.Equal(2, baseGroup.MaxExtCommandUses);
+        Assert.Equal(48, baseGroup.CooldownConfig.ConfigCooldown);
+        Assert.Equal(TimeSpan.FromDays(3), baseGroup.CooldownConfig.TimedCooldown);  // "3d" = 3 days
+        Assert.Contains(3001u, baseGroup.NominationConfig.AllowedSteamIds);
+        Assert.Single(baseGroup.NominationConfig.AllowedTimeRanges);
+        // Base extra
+        Assert.Equal(1.0, baseGroup.ExtraConfiguration.GetValue<double>("gameplay", "speed", 0.0));
+        Assert.Equal(800L, baseGroup.ExtraConfiguration.GetValue<long>("gameplay", "gravity", 0));
+
+        // --- PeakHours override ---
+        var peakHours = overrides.First(o => o.OverrideConfigName == "PeakHours");
+        Assert.True(peakHours.Enabled);
+        Assert.Equal(3, peakHours.OverridePriority);
+        Assert.Contains(DayOfWeek.Saturday, peakHours.TargetDays);
+        Assert.Contains(DayOfWeek.Sunday, peakHours.TargetDays);
+
+        var phGroup = peakHours.GroupConfig;
+        Assert.Equal(30, phGroup.NominationConfig.MinPlayers);
+        Assert.Equal(64, phGroup.NominationConfig.MaxPlayers);
+        Assert.Equal(60, phGroup.MapTime);  // Inherited from LongMaps base
+        // Extra: speed overridden to 1.2, gravity preserved
+        Assert.Equal(1.2, phGroup.ExtraConfiguration.GetValue<double>("gameplay", "speed", 0.0));
+        Assert.Equal(800L, phGroup.ExtraConfiguration.GetValue<long>("gameplay", "gravity", 0));
+
+        // --- LateNight override ---
+        var lateNight = overrides.First(o => o.OverrideConfigName == "LateNight");
+        Assert.True(lateNight.Enabled);
+        Assert.Equal(1, lateNight.OverridePriority);
+        Assert.Equal(3, lateNight.TargetDays.Count);  // Fri, Sat, Sun
+        Assert.Contains(DayOfWeek.Friday, lateNight.TargetDays);
+
+        var lnGroup = lateNight.GroupConfig;
+        Assert.Equal(8, lnGroup.NominationConfig.MinPlayers);
+        Assert.Equal(90, lnGroup.MapTime);  // Override
+        Assert.Equal(6, lnGroup.MaxExtends);  // Override
+        Assert.Equal(20, lnGroup.ExtendTimePerExtends);  // Inherited from LongMaps base
+        // Extra: gravity overridden to 600, speed preserved
+        Assert.Equal(1.0, lnGroup.ExtraConfiguration.GetValue<double>("gameplay", "speed", 0.0));
+        Assert.Equal(600L, lnGroup.ExtraConfiguration.GetValue<long>("gameplay", "gravity", 0));
     }
 }
