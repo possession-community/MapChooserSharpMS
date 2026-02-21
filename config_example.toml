@@ -132,6 +132,10 @@ cost = 100
 # Cooldown is are special value.
 Cooldown = 30
 
+# CooldownOverride is group-only setting.
+# If set, this value will override the map's Cooldown with higher priority than map config.
+# CooldownOverride = 60
+
 OnlyNomination = true
 DaysAllowed = ["saturday", "sunday"]
 AllowedTimeRanges = ["18:00-00:00"]
@@ -149,8 +153,9 @@ GroupSettings = ["HardZeMap"]
 # But if we set value in map settings and already defined in group, it will override group settings.
 OnlyNomination = false
 
-# But cooldown is are individual
-# If
+# But cooldown is individual for map and group. They are tracked separately.
+# If ze_example_123 is played, group cooldown (30) applies to all maps in HardZeMap group,
+# and map cooldown (60) applies only to ze_example_123 itself.
 Cooldown = 60
 
 
@@ -165,6 +170,7 @@ AllowedTimeRanges = ["18:00-00:00"]
 MaxPlayers = 1000
 AllowedSteamIds = [987654321]
 DisallowedSteamIds = [987654321]
+NominationCountLimit = 2
 
 
 [MapChooserSharpSettings.Groups.Group2]
@@ -173,6 +179,7 @@ DaysAllowed = ["saturday", "sunday"]
 MinPlayers = 300
 AllowedSteamIds = [123456789]
 DisallowedSteamIds = [123456789]
+NominationCountLimit = 0
 
 
 
@@ -184,3 +191,64 @@ DisallowedSteamIds = [123456789]
 # All AllowedSteamIds and DisallowedSteamIds will combined to 1 array. this is intended for grouping the special user
 #
 GroupSettings = ["Group1", "Group2"]
+
+
+
+# ==============================================================
+# DaySettings (Override) configuration example
+# ==============================================================
+
+# DaySettings allows you to override map or group settings based on specific days and time ranges.
+# You can define any number of overrides using [<key>.DaySettings.<AnyName>]
+# The <AnyName> part is just a label and has no special meaning.
+#
+# Override priority: Higher OverridePriority value takes precedence.
+# TargetDays must always be explicitly specified.
+
+
+# ----- Map-level DaySettings -----
+
+[ze_example_abc.DaySettings.WeekendNight]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["18:00-03:00"]
+
+# These values override the base ze_example_abc settings on saturday/sunday 18:00-03:00
+MaxExtends = 5
+MinPlayers = 20
+OnlyNomination = false
+
+# Extra configuration is also available in DaySettings
+[ze_example_abc.DaySettings.WeekendNight.extra.shop]
+cost = 50
+
+
+# Another override for the same map with different schedule
+[ze_example_abc.DaySettings.Weekday]
+Enabled = true
+ForceOverride = false
+OverridePriority = 0
+TargetDays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+
+MaxPlayers = 32
+MinPlayers = 5
+
+
+# ----- Group-level DaySettings -----
+
+# Groups can also have DaySettings overrides.
+# This override applies to all maps that belong to the HardZeMap group.
+[MapChooserSharpSettings.Groups.HardZeMap.DaySettings.WeekendAfternoon]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["14:00-18:00"]
+
+OnlyNomination = false
+MinPlayers = 10
+
+[MapChooserSharpSettings.Groups.HardZeMap.DaySettings.WeekendAfternoon.extra.shop]
+cost = 50
