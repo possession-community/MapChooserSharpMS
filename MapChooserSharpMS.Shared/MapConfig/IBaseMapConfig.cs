@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace MapChooserSharpMS.Shared.MapConfig;
+﻿namespace MapChooserSharpMS.Shared.MapConfig;
 
 public interface IBaseMapConfig
 {
@@ -55,22 +53,14 @@ public interface IBaseMapConfig
     public ICooldownConfig CooldownConfig { get; }
     
     /// <summary>
-    /// This is for API developers to define custom value like integrate with shop plugin or any other custom plugin. <br/>
+    /// Type-safe accessor for extra configuration defined by API developers. <br/>
     /// <br/>
     /// If defined in config like this: <br/>
-    ///
-    /// [ze_xxxxx] <br/>
-    /// description = "ze xxxxx map!" <br/>
-    /// MapNameAlias = "ze xxxxx" <br/>
-    /// <br/>
-    /// [ze_xxxxxx.extra.shop] <br/>
-    /// cost = 10 <br/>
+    /// [ze_example.extra.shop] <br/>
+    /// cost = 100 <br/>
     /// <br/>
     /// Then you can access the value like this: <br/>
-    /// <br/>
-    /// string cost = ExtraConfiguration["shop"]["cost"] <br/>
-    /// 
-    /// 
+    /// int cost = ExtraConfiguration.GetValue&lt;int&gt;("shop", "cost", 0);
     /// </summary>
-    public Dictionary<string, Dictionary<string, string>> ExtraConfiguration { get; }
+    public IExtraConfigAccessor ExtraConfiguration { get; }
 }
