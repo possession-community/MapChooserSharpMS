@@ -1,0 +1,16 @@
+[MapChooserSharpSettings.Default]
+AllowedSteamIds = [100]
+DisallowedSteamIds = [1000]
+
+[MapChooserSharpSettings.Groups.SG1]
+AllowedSteamIds = [111, 222]
+DisallowedSteamIds = [1111, 2222]
+
+[MapChooserSharpSettings.Groups.SG2]
+AllowedSteamIds = [333]
+DisallowedSteamIds = [3333]
+
+[ze_steamid_all]
+GroupSettings = ["SG1", "SG2"]
+AllowedSteamIds = [444]
+DisallowedSteamIds = [4444]

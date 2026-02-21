@@ -1,0 +1,28 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+MapTime = 20
+
+[ze_ds_map]
+MaxExtends = 4
+
+[ze_ds_map.DaySettings.Override1]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["18:00-03:00"]
+MaxExtends = 6
+
+[ze_ds_map.DaySettings.Override2]
+Enabled = false
+ForceOverride = false
+OverridePriority = 0
+TargetDays = ["monday"]
+
+[ze_ds_map.DaySettings.Override3]
+Enabled = true
+ForceOverride = true
+OverridePriority = 5
+TargetDays = ["friday"]
+TargetTimeRanges = ["20:00-23:00"]
+MinPlayers = 30

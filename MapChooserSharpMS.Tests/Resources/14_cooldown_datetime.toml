@@ -1,0 +1,18 @@
+[MapChooserSharpSettings.Default]
+
+[ze_cd_2d]
+CooldownDateTime = "2d"
+
+[ze_cd_1m]
+CooldownDateTime = "1m"
+
+[ze_cd_7d]
+CooldownDateTime = "7d"
+
+[ze_cd_empty]
+CooldownDateTime = ""
+
+[ze_cd_none]
+
+[ze_cd_invalid]
+CooldownDateTime = "invalid"

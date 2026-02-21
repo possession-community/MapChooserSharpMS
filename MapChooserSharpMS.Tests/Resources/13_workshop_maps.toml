@@ -1,0 +1,9 @@
+[MapChooserSharpSettings.Default]
+
+[ze_ws_valid]
+WorkshopId = 123
+
+[ze_ws_zero]
+WorkshopId = 0
+
+[ze_ws_none]

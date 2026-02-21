@@ -1,0 +1,15 @@
+[MapChooserSharpSettings.Default]
+
+[ze_ds_extra]
+
+[ze_ds_extra.extra.shop]
+cost = 100
+discount = 10
+
+[ze_ds_extra.DaySettings.Sale]
+Enabled = true
+OverridePriority = 1
+TargetDays = ["saturday"]
+
+[ze_ds_extra.DaySettings.Sale.extra.shop]
+cost = 50

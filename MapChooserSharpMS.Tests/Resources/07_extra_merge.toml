@@ -1,0 +1,47 @@
+[MapChooserSharpSettings.Default]
+
+[MapChooserSharpSettings.Default.extra.shop]
+base_val = 1
+
+[MapChooserSharpSettings.Groups.GroupA]
+
+[MapChooserSharpSettings.Groups.GroupA.extra.shop]
+cost = 100
+bonus = 10
+
+[MapChooserSharpSettings.Groups.GroupB]
+
+[MapChooserSharpSettings.Groups.GroupB.extra.shop]
+cost = 200
+
+[MapChooserSharpSettings.Groups.GroupB.extra.rewards]
+xp = 50
+
+[map1]
+GroupSettings = ["GroupA"]
+
+[map1.extra.shop]
+discount = 20
+
+[map2]
+GroupSettings = ["GroupA"]
+
+[map2.extra.shop]
+cost = 300
+
+[map3]
+
+[map3.extra.rewards]
+xp = 500
+
+[map4]
+GroupSettings = ["GroupA", "GroupB"]
+
+[map5]
+GroupSettings = ["GroupB", "GroupA"]
+
+[map6]
+GroupSettings = ["GroupA", "GroupB"]
+
+[map6.extra.shop]
+cost = 999

@@ -1,0 +1,56 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+MapTime = 20
+MinPlayers = 0
+Cooldown = 10
+
+[MapChooserSharpSettings.Default.extra.shop]
+base_val = 1
+mode = "default"
+
+[MapChooserSharpSettings.Groups.CG1]
+MaxExtends = 5
+CooldownOverride = 60
+OnlyNomination = true
+AllowedSteamIds = [111]
+
+[MapChooserSharpSettings.Groups.CG1.extra.shop]
+cost = 100
+mode = "group1"
+
+[MapChooserSharpSettings.Groups.CG1.DaySettings.CG1Weekend]
+Enabled = true
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+OnlyNomination = false
+MinPlayers = 15
+
+[MapChooserSharpSettings.Groups.CG1.DaySettings.CG1Weekend.extra.shop]
+cost = 50
+
+[MapChooserSharpSettings.Groups.CG2]
+MinPlayers = 10
+MapTime = 30
+AllowedSteamIds = [222]
+
+[MapChooserSharpSettings.Groups.CG2.extra.shop]
+cost = 200
+bonus = 5
+
+[ze_complex]
+GroupSettings = ["CG1", "CG2"]
+MaxExtends = 7
+AllowedSteamIds = [333]
+
+[ze_complex.extra.shop]
+discount = 20
+
+[ze_complex.DaySettings.ComplexWeekend]
+Enabled = true
+OverridePriority = 2
+TargetDays = ["saturday"]
+TargetTimeRanges = ["18:00-03:00"]
+MinPlayers = 25
+
+[ze_complex.DaySettings.ComplexWeekend.extra.shop]
+cost = 30

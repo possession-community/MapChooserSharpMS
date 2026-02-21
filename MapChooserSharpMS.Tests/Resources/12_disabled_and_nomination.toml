@@ -1,0 +1,17 @@
+[MapChooserSharpSettings.Default]
+
+[MapChooserSharpSettings.Groups.NomGroup]
+OnlyNomination = true
+
+[ze_disabled]
+IsDisabled = true
+
+[ze_nomination_only]
+OnlyNomination = true
+
+[ze_nomination_from_group]
+GroupSettings = ["NomGroup"]
+
+[ze_nomination_group_override]
+GroupSettings = ["NomGroup"]
+OnlyNomination = false

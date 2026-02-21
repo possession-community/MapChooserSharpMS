@@ -1,0 +1,33 @@
+[MapChooserSharpSettings.Default]
+Cooldown = 10
+
+[MapChooserSharpSettings.Groups.Group_A]
+CooldownOverride = 60
+
+[MapChooserSharpSettings.Groups.Group_B]
+CooldownOverride = 90
+
+[MapChooserSharpSettings.Groups.Group_None]
+
+[MapChooserSharpSettings.Groups.Group_Zero]
+CooldownOverride = 0
+
+[map_a]
+GroupSettings = ["Group_A"]
+Cooldown = 30
+
+[map_b]
+GroupSettings = ["Group_None"]
+Cooldown = 30
+
+[map_c]
+GroupSettings = ["Group_Zero"]
+Cooldown = 30
+
+[map_d]
+GroupSettings = ["Group_A", "Group_B"]
+Cooldown = 30
+
+[map_e]
+GroupSettings = ["Group_None", "Group_B"]
+Cooldown = 30

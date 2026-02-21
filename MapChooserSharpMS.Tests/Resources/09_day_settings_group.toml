@@ -1,0 +1,21 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[MapChooserSharpSettings.Groups.DSGroup]
+MaxExtends = 5
+OnlyNomination = true
+Cooldown = 30
+
+[MapChooserSharpSettings.Groups.DSGroup.DaySettings.WeekendOverride]
+Enabled = true
+OverridePriority = 2
+TargetDays = ["saturday", "sunday"]
+OnlyNomination = false
+MinPlayers = 15
+
+[MapChooserSharpSettings.Groups.DSGroup.DaySettings.LateNight]
+Enabled = true
+OverridePriority = 1
+TargetDays = ["friday", "saturday"]
+TargetTimeRanges = ["23:00-05:00"]
+MaxExtends = 8
