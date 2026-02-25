@@ -14,15 +14,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_DefaultToMap_MapOverridesDefault()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-            MapTime = 20
-
-            [ze_test]
-            MaxExtends = 5
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("19_default_to_map.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -40,21 +32,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_DefaultToGroupToMap_Priority()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-            MapTime = 20
-            MinPlayers = 5
-
-            [MapChooserSharpSettings.Groups.TestGroup]
-            MaxExtends = 4
-            MapTime = 30
-
-            [ze_test]
-            GroupSettings = ["TestGroup"]
-            MaxExtends = 5
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("20_default_group_map_priority.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -69,33 +47,14 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_MultipleGroups_FirstGroupPriority()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 1
-
-            [MapChooserSharpSettings.Groups.Group1]
-            RequiredPermissions = ["css/root"]
-            MaxPlayers = 1000
-            AllowedSteamIds = [111]
-            DisallowedSteamIds = [222]
-
-            [MapChooserSharpSettings.Groups.Group2]
-            RequiredPermissions = ["css/generic"]
-            MinPlayers = 300
-            AllowedSteamIds = [333]
-            DisallowedSteamIds = [444]
-
-            [ze_test]
-            GroupSettings = ["Group1", "Group2"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("21_multiple_groups_priority.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
         var baseConfig = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
 
         // First group (Group1) takes priority for non-merge properties
-        Assert.Equal(["css/root"], baseConfig.NominationConfig.RequiredPermissions);
+        Assert.Equal(["mcs.nominate.management"], baseConfig.NominationConfig.RequiredPermissions);
         Assert.Equal(1000, baseConfig.NominationConfig.MaxPlayers);
 
         // AllowedSteamIds and DisallowedSteamIds are merged from all groups
@@ -108,23 +67,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_ExtraMerge_DefaultGroupMap()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.TestGroup]
-            Cooldown = 30
-
-            [MapChooserSharpSettings.Groups.TestGroup.extra.shop]
-            cost = 150
-
-            [ze_test]
-            GroupSettings = ["TestGroup"]
-
-            [ze_test.extra.shop]
-            discount = 20
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("22_extra_merge_default_group_map.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -138,18 +81,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_CooldownOverride_GroupOverridesMapCooldown()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            Cooldown = 10
-
-            [MapChooserSharpSettings.Groups.TestGroup]
-            CooldownOverride = 60
-
-            [ze_test]
-            GroupSettings = ["TestGroup"]
-            Cooldown = 30
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("23_cooldown_override_group.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -162,14 +94,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_WorkshopIdMapping()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_workshop_map]
-            WorkshopId = 1234567891234
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("24_workshop_id.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -183,24 +108,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_DaySettings_MapOverride()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-            MinPlayers = 5
-
-            [ze_test]
-            MaxExtends = 4
-
-            [ze_test.DaySettings.WeekendNight]
-            Enabled = true
-            ForceOverride = false
-            OverridePriority = 1
-            TargetDays = ["saturday", "sunday"]
-            TargetTimeRanges = ["18:00-03:00"]
-            MaxExtends = 5
-            MinPlayers = 20
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("25_day_settings_map_override.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -224,23 +132,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_DaySettings_GroupOverride()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.TestGroup]
-            OnlyNomination = true
-
-            [MapChooserSharpSettings.Groups.TestGroup.DaySettings.WeekendAfternoon]
-            Enabled = true
-            ForceOverride = false
-            OverridePriority = 1
-            TargetDays = ["saturday", "sunday"]
-            TargetTimeRanges = ["14:00-18:00"]
-            OnlyNomination = false
-            MinPlayers = 10
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("26_day_settings_group_override.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -259,24 +151,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_DaySettingsExtra_OverridesBaseExtra()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            MaxExtends = 4
-
-            [ze_test.extra.shop]
-            cost = 100
-
-            [ze_test.DaySettings.WeekendNight]
-            Enabled = true
-            TargetDays = ["saturday"]
-
-            [ze_test.DaySettings.WeekendNight.extra.shop]
-            cost = 50
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("27_day_settings_extra_override.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -294,15 +169,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_NonexistentGroupReference_Ignored()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            GroupSettings = ["NonexistentGroup"]
-            MaxExtends = 5
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("28_nonexistent_group_ref.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -317,15 +184,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_MinimalMap_UsesDefaults()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-            MapTime = 20
-            MapRounds = 10
-
-            [ze_minimal]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("29_minimal_map_defaults.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -342,14 +201,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_OnlyNomination_MapsToIsPickable()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            OnlyNomination = false
-
-            [ze_nom_only]
-            OnlyNomination = true
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("30_only_nomination.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -361,15 +213,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_CooldownDateTime_Parsed()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            Cooldown = 0
-
-            [ze_test]
-            Cooldown = 60
-            CooldownDateTime = "2d"
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("31_cooldown_datetime.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -382,14 +226,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_AllowedTimeRanges_Parsed()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            AllowedTimeRanges = ["10:00-12:00", "22:00-03:00"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("32_allowed_time_ranges.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -406,17 +243,7 @@ public class MapConfigParsingServiceTests
     [Fact]
     public void ParseConfigs_MultipleMaps_AllParsed()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_map_a]
-            MaxExtends = 5
-
-            [ze_map_b]
-            MaxExtends = 7
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("33_multiple_maps.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);

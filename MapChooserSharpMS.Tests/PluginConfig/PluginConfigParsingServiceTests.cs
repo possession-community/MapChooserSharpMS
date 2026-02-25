@@ -17,7 +17,7 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_AllSections_ParsesCorrectly()
     {
-        var doc = TomlTestHelper.ParseToml(FullConfigToml);
+        var doc = TomlTestHelper.LoadToml("PluginConfig/01_full.toml");
         var config = _service.ParseConfigFromDocument(doc);
 
         // General
@@ -140,11 +140,8 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_InvalidRtvBehaviour_FallsBackToDefault()
     {
-        var toml = """
-            [General]
-            RtvMapChangeBehaviour = "InvalidValue"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/02_invalid_rtv_behaviour.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(RtvMapChangeBehaviourType.ImmediatelyWithTime, config.GeneralConfig.RtvMapChangeBehaviour);
     }
 
@@ -172,11 +169,8 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_InvalidExecutionType_FallsBackToDefault()
     {
-        var toml = """
-            [MapCycle]
-            MapConfigExecutionType = "Unknown"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/03_invalid_execution_type.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(McsMapConfigExecutionType.ExactMatch, config.MapCycleConfig.MapConfigExecutionType);
     }
 
@@ -205,11 +199,8 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_InvalidSqlType_FallsBackToSqlite()
     {
-        var toml = """
-            [General.Sql]
-            Type = "Oracle"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/04_invalid_sql_type.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(McsSupportedSqlType.Sqlite, config.GeneralConfig.SqlConfig.DataBaseType);
     }
 
@@ -220,22 +211,16 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_MenuType_Default_Parsed()
     {
-        var toml = """
-            [MapVote]
-            MenuType = "Default"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/05_menu_type_default.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
     }
 
     [Fact]
     public void ParseConfigFromDocument_InvalidMenuType_FallsBackToDefault()
     {
-        var toml = """
-            [MapVote]
-            MenuType = "InvalidMenuType"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/06_invalid_menu_type.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
     }
 
@@ -258,22 +243,16 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_InvalidCountdownUiType_FallsBackToCenterHtml()
     {
-        var toml = """
-            [MapVote]
-            CountdownUiType = "InvalidType"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/07_invalid_countdown_ui.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(McsCountdownUiType.CenterHtml, config.VoteConfig.CurrentCountdownUiType);
     }
 
     [Fact]
     public void ParseConfigFromDocument_NominationMenuType_Default()
     {
-        var toml = """
-            [Nomination]
-            MenuType = "Default"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/08_nomination_menu_type.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
     }
 
@@ -284,38 +263,8 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_VoteSound_InitialAndRunoff_Parsed()
     {
-        var toml = """
-            [MapVote.Sound]
-            SoundFile = "soundevents/test.vsndevts"
-            InitialVoteCountdownStartSound = "initial_countdown_start"
-            InitialVoteStartSound = "initial_start"
-            InitialVoteFinishSound = "initial_finish"
-            InitialVoteCountdownSound1 = "tick1"
-            InitialVoteCountdownSound2 = "tick2"
-            InitialVoteCountdownSound3 = "tick3"
-            InitialVoteCountdownSound4 = ""
-            InitialVoteCountdownSound5 = ""
-            InitialVoteCountdownSound6 = ""
-            InitialVoteCountdownSound7 = ""
-            InitialVoteCountdownSound8 = ""
-            InitialVoteCountdownSound9 = ""
-            InitialVoteCountdownSound10 = "tick10"
-            RunoffVoteCountdownStartSound = "runoff_countdown_start"
-            RunoffVoteStartSound = "runoff_start"
-            RunoffVoteFinishSound = "runoff_finish"
-            RunoffVoteCountdownSound1 = "rtick1"
-            RunoffVoteCountdownSound2 = ""
-            RunoffVoteCountdownSound3 = ""
-            RunoffVoteCountdownSound4 = ""
-            RunoffVoteCountdownSound5 = ""
-            RunoffVoteCountdownSound6 = ""
-            RunoffVoteCountdownSound7 = ""
-            RunoffVoteCountdownSound8 = ""
-            RunoffVoteCountdownSound9 = ""
-            RunoffVoteCountdownSound10 = "rtick10"
-            """;
-
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/09_vote_sound.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         var soundConfig = config.VoteConfig.VoteSoundConfig;
 
         Assert.Equal("soundevents/test.vsndevts", soundConfig.VSndEvtsSoundFilePath);
@@ -365,22 +314,16 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_WorkshopCollectionIds_EmptyArray()
     {
-        var toml = """
-            [General]
-            WorkshopCollectionIds = []
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/10_workshop_ids_empty.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Empty(config.GeneralConfig.WorkshopCollectionIds);
     }
 
     [Fact]
     public void ParseConfigFromDocument_WorkshopCollectionIds_MultipleIds()
     {
-        var toml = """
-            [General]
-            WorkshopCollectionIds = ["111", "222", "333"]
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/11_workshop_ids_multiple.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(3, config.GeneralConfig.WorkshopCollectionIds.Length);
         Assert.Equal("111", config.GeneralConfig.WorkshopCollectionIds[0]);
         Assert.Equal("222", config.GeneralConfig.WorkshopCollectionIds[1]);
@@ -394,16 +337,8 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_SqlConfig_FullyParsed()
     {
-        var toml = """
-            [General.Sql]
-            Type = "PostgreSQL"
-            DatabaseName = "my_db"
-            Address = "192.168.1.1"
-            Port = "5432"
-            User = "admin"
-            Password = "secret123"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/12_sql_full.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         var sql = config.GeneralConfig.SqlConfig;
 
         Assert.Equal(McsSupportedSqlType.PostgreSQL, sql.DataBaseType);
@@ -422,33 +357,24 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_SoundFile_ValidVsndevts_Kept()
     {
-        var toml = """
-            [MapVote.Sound]
-            SoundFile = "soundevents/test.vsndevts"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/13_sound_valid.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal("soundevents/test.vsndevts", config.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath);
     }
 
     [Fact]
     public void ParseConfigFromDocument_SoundFile_InvalidExtension_ClearedToEmpty()
     {
-        var toml = """
-            [MapVote.Sound]
-            SoundFile = "soundevents/test.wav"
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/14_sound_invalid_ext.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath);
     }
 
     [Fact]
     public void ParseConfigFromDocument_SoundFile_Empty_StaysEmpty()
     {
-        var toml = """
-            [MapVote.Sound]
-            SoundFile = ""
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/15_sound_empty.toml");
+        var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath);
     }
 
@@ -476,11 +402,8 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_OnlyGeneralSection_OtherSectionsGetDefaults()
     {
-        var toml = """
-            [General]
-            ShouldUseAliasMapNameIfAvailable = false
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/16_only_general.toml");
+        var config = _service.ParseConfigFromDocument(doc);
 
         Assert.False(config.GeneralConfig.ShouldUseAliasMapNameIfAvailable);
 
@@ -493,12 +416,8 @@ public class PluginConfigParsingServiceTests
     [Fact]
     public void ParseConfigFromDocument_OnlyMapCycleSection_OtherSectionsGetDefaults()
     {
-        var toml = """
-            [MapCycle]
-            FallbackMaxExtends = 10
-            ShouldStopSourceTvRecording = true
-            """;
-        var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
+        var doc = TomlTestHelper.LoadToml("PluginConfig/17_only_mapcycle.toml");
+        var config = _service.ParseConfigFromDocument(doc);
 
         Assert.Equal(10, config.MapCycleConfig.FallbackDefaultMaxExtends);
         Assert.True(config.MapCycleConfig.ShouldStopSourceTvRecording);
@@ -507,76 +426,6 @@ public class PluginConfigParsingServiceTests
         Assert.True(config.GeneralConfig.ShouldUseAliasMapNameIfAvailable);
         Assert.Equal(5, config.VoteConfig.MaxMenuElements);
     }
-
-    #endregion
-
-    #region Test Data
-
-    private const string FullConfigToml = """
-        [General]
-        ShouldUseAliasMapNameIfAvailable = false
-        VerboseCooldownPrint = false
-        WorkshopCollectionIds = ["3070257939", "1234567890"]
-        ShouldAutoFixMapName = true
-        RtvMapChangeBehaviour = "Cs2EndMatchScreen"
-
-        [General.Sql]
-        Type = "MySQL"
-        DatabaseName = "MapChooserSharpTest.db"
-        Address = "localhost"
-        Port = "3306"
-        User = "root"
-        Password = "password123"
-
-        [MapCycle]
-        FallbackMaxExtends = 5
-        FallbackMaxExtCommandUses = 2
-        FallbackExtendTimePerExtends = 20
-        FallbackExtendRoundsPerExtends = 10
-        ShouldStopSourceTvRecording = true
-        MapConfigExecutionType = "StartWithMatch"
-        MapConfigDirectoryPath = "Custom/maps/"
-        GroupConfigDirectoryPath = "Custom/groups/"
-
-        [MapVote]
-        MenuType = "Default"
-        MaxVoteElements = 8
-        ShouldPrintVoteToChat = false
-        ShouldPrintVoteRemainingTime = false
-        CountdownUiType = "CenterHud"
-
-        [MapVote.Sound]
-        SoundFile = "soundevents/soundevents_mapchooser.vsndevts"
-        InitialVoteCountdownStartSound = "countdown_start"
-        InitialVoteStartSound = "vote_start"
-        InitialVoteFinishSound = "vote_finish"
-        InitialVoteCountdownSound1 = "tick1"
-        InitialVoteCountdownSound2 = "tick2"
-        InitialVoteCountdownSound3 = "tick3"
-        InitialVoteCountdownSound4 = "tick4"
-        InitialVoteCountdownSound5 = "tick5"
-        InitialVoteCountdownSound6 = ""
-        InitialVoteCountdownSound7 = ""
-        InitialVoteCountdownSound8 = ""
-        InitialVoteCountdownSound9 = ""
-        InitialVoteCountdownSound10 = ""
-        RunoffVoteCountdownStartSound = "runoff_countdown_start"
-        RunoffVoteStartSound = "runoff_start"
-        RunoffVoteFinishSound = "runoff_finish"
-        RunoffVoteCountdownSound1 = ""
-        RunoffVoteCountdownSound2 = ""
-        RunoffVoteCountdownSound3 = ""
-        RunoffVoteCountdownSound4 = ""
-        RunoffVoteCountdownSound5 = ""
-        RunoffVoteCountdownSound6 = ""
-        RunoffVoteCountdownSound7 = ""
-        RunoffVoteCountdownSound8 = ""
-        RunoffVoteCountdownSound9 = ""
-        RunoffVoteCountdownSound10 = ""
-
-        [Nomination]
-        MenuType = "Default"
-        """;
 
     #endregion
 }

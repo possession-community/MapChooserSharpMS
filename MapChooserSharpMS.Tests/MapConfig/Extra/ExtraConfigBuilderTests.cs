@@ -1,5 +1,3 @@
-using System.Text;
-using CsToml;
 using MapChooserSharpMS.Modules.MapConfig.Extra;
 using MapChooserSharpMS.Tests.Helpers;
 using Xunit;
@@ -11,12 +9,7 @@ public class ExtraConfigBuilderTests
     [Fact]
     public void Merge_FromTomlNode_BuildsAccessor()
     {
-        var toml = """
-            [extra.shop]
-            cost = 100
-            name = "MyShop"
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("ExtraConfigBuilder/01_basic_extra.toml");
         var extraNode = doc.RootNode["extra"u8];
 
         var accessor = new ExtraConfigBuilder()
@@ -31,17 +24,8 @@ public class ExtraConfigBuilderTests
     [Fact]
     public void Merge_MultipleTomlNodes_LastWins()
     {
-        var toml1 = """
-            [extra.shop]
-            cost = 100
-            discount = 10
-            """;
-        var toml2 = """
-            [extra.shop]
-            cost = 200
-            """;
-        var doc1 = TomlTestHelper.ParseToml(toml1);
-        var doc2 = TomlTestHelper.ParseToml(toml2);
+        var doc1 = TomlTestHelper.LoadToml("ExtraConfigBuilder/02a_multi_first.toml");
+        var doc2 = TomlTestHelper.LoadToml("ExtraConfigBuilder/02b_multi_second.toml");
 
         var accessor = new ExtraConfigBuilder()
             .Merge(doc1.RootNode["extra"u8])
@@ -57,14 +41,7 @@ public class ExtraConfigBuilderTests
     [Fact]
     public void Merge_DifferentSections_BothPreserved()
     {
-        var toml = """
-            [extra.shop]
-            cost = 100
-
-            [extra.rewards]
-            bonus = 50
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("ExtraConfigBuilder/03_different_sections.toml");
 
         var accessor = new ExtraConfigBuilder()
             .Merge(doc.RootNode["extra"u8])
@@ -80,22 +57,13 @@ public class ExtraConfigBuilderTests
     public void Merge_FromAccessor_LastWins()
     {
         // Build first accessor
-        var toml1 = """
-            [extra.shop]
-            cost = 100
-            discount = 10
-            """;
-        var doc1 = TomlTestHelper.ParseToml(toml1);
+        var doc1 = TomlTestHelper.LoadToml("ExtraConfigBuilder/04a_accessor_first.toml");
         var accessor1 = new ExtraConfigBuilder()
             .Merge(doc1.RootNode["extra"u8])
             .Build();
 
         // Build second accessor
-        var toml2 = """
-            [extra.shop]
-            cost = 200
-            """;
-        var doc2 = TomlTestHelper.ParseToml(toml2);
+        var doc2 = TomlTestHelper.LoadToml("ExtraConfigBuilder/04b_accessor_second.toml");
         var accessor2 = new ExtraConfigBuilder()
             .Merge(doc2.RootNode["extra"u8])
             .Build();
@@ -124,11 +92,7 @@ public class ExtraConfigBuilderTests
     [Fact]
     public void Merge_NullAccessor_NoEffect()
     {
-        var toml = """
-            [extra.shop]
-            cost = 100
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("ExtraConfigBuilder/06_null_accessor.toml");
 
         var accessor = new ExtraConfigBuilder()
             .Merge(doc.RootNode["extra"u8])
@@ -141,16 +105,8 @@ public class ExtraConfigBuilderTests
     [Fact]
     public void Merge_SameSectionSameKey_LastOverwritesPrevious()
     {
-        var toml1 = """
-            [extra.shop]
-            cost = 100
-            """;
-        var toml2 = """
-            [extra.shop]
-            cost = 50
-            """;
-        var doc1 = TomlTestHelper.ParseToml(toml1);
-        var doc2 = TomlTestHelper.ParseToml(toml2);
+        var doc1 = TomlTestHelper.LoadToml("ExtraConfigBuilder/07a_same_key_first.toml");
+        var doc2 = TomlTestHelper.LoadToml("ExtraConfigBuilder/07b_same_key_second.toml");
 
         var accessor = new ExtraConfigBuilder()
             .Merge(doc1.RootNode["extra"u8])

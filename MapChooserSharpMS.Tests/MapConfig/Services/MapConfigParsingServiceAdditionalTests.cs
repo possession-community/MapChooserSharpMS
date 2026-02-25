@@ -18,22 +18,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void GroupDaySettings_InheritedByMap_WhenMapHasNoDaySetting()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            MaxExtends = 5
-
-            [MapChooserSharpSettings.Groups.G1.DaySettings.EventDay]
-            Enabled = true
-            TargetDays = ["saturday"]
-            MaxExtends = 10
-
-            [ze_test]
-            GroupSettings = ["G1"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("34_group_daysettings_inherit.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -49,27 +34,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void GroupDaySettings_MapSameNameOverrideWins()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            MaxExtends = 5
-
-            [MapChooserSharpSettings.Groups.G1.DaySettings.Weekend]
-            Enabled = true
-            TargetDays = ["saturday"]
-            MaxExtends = 8
-
-            [ze_test]
-            GroupSettings = ["G1"]
-
-            [ze_test.DaySettings.Weekend]
-            Enabled = true
-            TargetDays = ["saturday", "sunday"]
-            MaxExtends = 15
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("35_group_daysettings_map_override_wins.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -87,30 +52,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void GroupDaySettings_MultipleGroupsDifferentDaySettings_BothInherited()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            MaxExtends = 5
-
-            [MapChooserSharpSettings.Groups.G1.DaySettings.EventDay]
-            Enabled = true
-            TargetDays = ["monday"]
-            MaxExtends = 10
-
-            [MapChooserSharpSettings.Groups.G2]
-            MaxExtends = 4
-
-            [MapChooserSharpSettings.Groups.G2.DaySettings.Holiday]
-            Enabled = true
-            TargetDays = ["friday"]
-            MaxExtends = 20
-
-            [ze_test]
-            GroupSettings = ["G1", "G2"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("36_group_daysettings_multiple_groups.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -129,30 +71,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void GroupDaySettings_MultipleGroupsSameName_FirstGroupWins()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            MaxExtends = 5
-
-            [MapChooserSharpSettings.Groups.G1.DaySettings.Weekend]
-            Enabled = true
-            TargetDays = ["saturday"]
-            MaxExtends = 10
-
-            [MapChooserSharpSettings.Groups.G2]
-            MaxExtends = 4
-
-            [MapChooserSharpSettings.Groups.G2.DaySettings.Weekend]
-            Enabled = true
-            TargetDays = ["sunday"]
-            MaxExtends = 20
-
-            [ze_test]
-            GroupSettings = ["G1", "G2"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("37_group_daysettings_same_name.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -169,24 +88,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void GroupDaySettings_InheritedPropertyMerge_GroupDaySettingsOnMapBase()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-            MinPlayers = 5
-
-            [MapChooserSharpSettings.Groups.G1]
-            MaxExtends = 5
-
-            [MapChooserSharpSettings.Groups.G1.DaySettings.EventDay]
-            Enabled = true
-            TargetDays = ["saturday"]
-            MinPlayers = 30
-
-            [ze_test]
-            GroupSettings = ["G1"]
-            MapTime = 45
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("38_group_daysettings_property_merge.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -208,15 +110,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void ParseError_TypeMismatch_FallbackToDefault()
     {
-        // MaxExtends expects int, but "five" is a string → TryGetInt64 fails → prop stays null → uses default 3
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            MaxExtends = "five"
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("39_parse_error_type_mismatch.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -227,14 +121,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void ParseError_InvalidDayOfWeek_Skipped()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            DaysAllowed = ["monday", "funday"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("40_parse_error_invalid_day.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -247,23 +134,12 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void ParseError_InvalidTimeRange_SilentlyIgnored()
     {
-        // Mixed valid and invalid: valid ones parsed, invalid skipped (TimeRange.Parse throws, caught by catch)
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            AllowedTimeRanges = ["10:00-12:00", "invalid", "22:00-03:00"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("41_parse_error_invalid_timerange.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
         var config = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
 
-        // TimeRange.Parse throws FormatException for "invalid", but
-        // ExtractTimeRangeArray catches all exceptions from the entire array processing
-        // So the behavior depends on whether the exception breaks the loop
         var ranges = config.NominationConfig.AllowedTimeRanges;
         // The catch block in ExtractTimeRangeArray catches the entire array parsing,
         // so only the first valid range before the error is preserved
@@ -278,24 +154,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void CooldownOverride_ThreeGroups_FirstNonZeroWins()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            Cooldown = 10
-
-            [MapChooserSharpSettings.Groups.G1]
-            CooldownOverride = 60
-
-            [MapChooserSharpSettings.Groups.G2]
-            CooldownOverride = 90
-
-            [MapChooserSharpSettings.Groups.G3]
-            CooldownOverride = 120
-
-            [ze_test]
-            GroupSettings = ["G1", "G2", "G3"]
-            Cooldown = 30
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("42_cooldown_three_groups.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -307,22 +166,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void CooldownOverride_AppliedToDaySettings()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            Cooldown = 10
-
-            [MapChooserSharpSettings.Groups.G1]
-            CooldownOverride = 60
-
-            [ze_test]
-            GroupSettings = ["G1"]
-            Cooldown = 30
-
-            [ze_test.DaySettings.Weekend]
-            Enabled = true
-            TargetDays = ["saturday"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("43_cooldown_daysettings.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -334,21 +178,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void CooldownOverride_FirstGroupZero_SecondApplied()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            Cooldown = 10
-
-            [MapChooserSharpSettings.Groups.G1]
-            CooldownOverride = 0
-
-            [MapChooserSharpSettings.Groups.G2]
-            CooldownOverride = 90
-
-            [ze_test]
-            GroupSettings = ["G1", "G2"]
-            Cooldown = 30
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("44_cooldown_first_zero.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -360,21 +190,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void CooldownOverride_AllGroupsZero_MapCooldownPreserved()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            Cooldown = 10
-
-            [MapChooserSharpSettings.Groups.G1]
-            CooldownOverride = 0
-
-            [MapChooserSharpSettings.Groups.G2]
-            CooldownOverride = 0
-
-            [ze_test]
-            GroupSettings = ["G1", "G2"]
-            Cooldown = 30
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("45_cooldown_all_zero.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -390,17 +206,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Priority_GroupOnlySet_GroupValueUsed()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            MinPlayers = 50
-
-            [ze_test]
-            GroupSettings = ["G1"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("46_priority_group_only.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -412,43 +218,19 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Priority_RequiredPermissions_LastWriteWins_FirstGroupPriority()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            RequiredPermissions = ["css/root"]
-
-            [MapChooserSharpSettings.Groups.G2]
-            RequiredPermissions = ["css/generic"]
-
-            [ze_test]
-            GroupSettings = ["G1", "G2"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("47_priority_required_permissions.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
         var config = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
         // Groups applied in reverse (G2 then G1), so G1 overwrites G2 → G1's permissions win
-        Assert.Equal(["css/root"], config.NominationConfig.RequiredPermissions);
+        Assert.Equal(["mcs.nominate.management"], config.NominationConfig.RequiredPermissions);
     }
 
     [Fact]
     public void Priority_DaysAllowed_MapOverridesGroup()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            DaysAllowed = ["monday", "tuesday"]
-
-            [ze_test]
-            GroupSettings = ["G1"]
-            DaysAllowed = ["saturday", "sunday"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("48_priority_days_allowed.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -463,31 +245,14 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Priority_SteamIdsAccumulate_RequiredPermissionsOverwrite()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            RequiredPermissions = ["css/default"]
-            AllowedSteamIds = [100]
-            DisallowedSteamIds = [200]
-
-            [MapChooserSharpSettings.Groups.G1]
-            RequiredPermissions = ["css/root"]
-            AllowedSteamIds = [111]
-            DisallowedSteamIds = [222]
-
-            [ze_test]
-            GroupSettings = ["G1"]
-            RequiredPermissions = ["css/vip"]
-            AllowedSteamIds = [333]
-            DisallowedSteamIds = [444]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("49_priority_steamids_vs_permissions.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
         var config = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
 
-        // RequiredPermissions: last-write-wins → Map's ["css/vip"]
-        Assert.Equal(["css/vip"], config.NominationConfig.RequiredPermissions);
+        // RequiredPermissions: last-write-wins → Map's ["mcs.nominate.map.vip"]
+        Assert.Equal(["mcs.nominate.map.vip"], config.NominationConfig.RequiredPermissions);
 
         // AllowedSteamIds: accumulated from all layers
         Assert.Contains(100u, config.NominationConfig.AllowedSteamIds);
@@ -507,14 +272,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Boundary_NegativeValue_AcceptedAsIs()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            MaxExtends = -5
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("50_boundary_negative.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -525,14 +283,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Boundary_DayOfWeek_CaseInsensitive()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            DaysAllowed = ["MONDAY", "Tuesday"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("51_boundary_dayofweek_case.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -545,14 +296,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Boundary_DayOfWeek_DuplicatesPreserved()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [ze_test]
-            DaysAllowed = ["monday", "monday"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("52_boundary_dayofweek_duplicates.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -565,31 +309,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Boundary_FourGroupCascade()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 1
-            MapTime = 10
-            MinPlayers = 5
-            MaxPlayers = 100
-
-            [MapChooserSharpSettings.Groups.G1]
-            MaxExtends = 2
-            MapTime = 20
-
-            [MapChooserSharpSettings.Groups.G2]
-            MaxExtends = 3
-            MinPlayers = 15
-
-            [MapChooserSharpSettings.Groups.G3]
-            MapTime = 40
-
-            [MapChooserSharpSettings.Groups.G4]
-            MaxPlayers = 500
-
-            [ze_test]
-            GroupSettings = ["G1", "G2", "G3", "G4"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("53_boundary_four_groups.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -609,18 +329,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Boundary_DuplicateGroupReference()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            MaxExtends = 5
-            AllowedSteamIds = [111]
-
-            [ze_test]
-            GroupSettings = ["G1", "G1"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("54_boundary_duplicate_group_ref.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -635,29 +344,7 @@ public class MapConfigParsingServiceAdditionalTests
     [Fact]
     public void Boundary_GroupDaySettingsInheritedToMap_Confirmed()
     {
-        // Same as GroupDaySettings_InheritedByMap_WhenMapHasNoDaySetting but verifying extra too
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MaxExtends = 3
-
-            [MapChooserSharpSettings.Groups.G1]
-            MaxExtends = 5
-
-            [MapChooserSharpSettings.Groups.G1.DaySettings.EventDay]
-            Enabled = true
-            ForceOverride = true
-            OverridePriority = 5
-            TargetDays = ["wednesday"]
-            TargetTimeRanges = ["18:00-22:00"]
-            MinPlayers = 50
-
-            [ze_test]
-            GroupSettings = ["G1"]
-
-            [ze_test.extra.shop]
-            cost = 100
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("55_boundary_group_daysettings_confirmed.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);

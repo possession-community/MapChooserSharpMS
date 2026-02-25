@@ -68,7 +68,7 @@ xp_multiplier = 3
 # ============================================================
 
 [MapChooserSharpSettings.Groups.Premium]
-RequiredPermissions = ["css/vip"]
+RequiredPermissions = ["mcs.nominate.map.vip"]
 RestrictToAllowedUsersOnly = true
 MaxPlayers = 48
 ProhibitAdminNomination = true

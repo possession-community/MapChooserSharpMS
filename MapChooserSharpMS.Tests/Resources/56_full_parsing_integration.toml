@@ -1,0 +1,112 @@
+[MapChooserSharpSettings.Default]
+MapNameAlias = ""
+MapDescription = ""
+IsDisabled = false
+WorkshopId = 0
+OnlyNomination = false
+Cooldown = 0
+MaxExtends = 3
+MaxExtCommandUses = 1
+ExtendTimePerExtends = 15
+MapTime = 20
+ExtendRoundsPerExtends = 5
+MapRounds = 10
+RequiredPermissions = []
+RestrictToAllowedUsersOnly = false
+AllowedSteamIds = []
+DisallowedSteamIds = []
+MaxPlayers = 0
+MinPlayers = 0
+ProhibitAdminNomination = false
+DaysAllowed = []
+AllowedTimeRanges = []
+
+[ze_example_abc]
+MapNameAlias = "ze example a b c"
+MapDescription = "Let's play ze_example_abc!"
+IsDisabled = false
+WorkshopId = 1234567891234
+OnlyNomination = false
+Cooldown = 60
+CooldownDateTime = "2d"
+MaxExtends = 3
+MaxExtCommandUses = 1
+ExtendTimePerExtends = 15
+RequiredPermissions = ["mcs.nominate.generic"]
+RestrictToAllowedUsersOnly = false
+AllowedSteamIds = [987654321]
+DisallowedSteamIds = [123456789]
+MaxPlayers = 64
+MinPlayers = 10
+ProhibitAdminNomination = false
+DaysAllowed = ["wednesday", "monday"]
+AllowedTimeRanges = ["10:00-12:00", "20:00-22:00", "22:00-03:00"]
+
+[ze_example_abc.extra.shop]
+cost = 100
+
+[ze_example_xyz]
+
+[MapChooserSharpSettings.Groups.HardZeMap]
+Cooldown = 30
+OnlyNomination = true
+DaysAllowed = ["saturday", "sunday"]
+AllowedTimeRanges = ["18:00-00:00"]
+
+[MapChooserSharpSettings.Groups.HardZeMap.extra.shop]
+cost = 100
+
+[ze_example_123]
+GroupSettings = ["HardZeMap"]
+OnlyNomination = false
+Cooldown = 60
+
+[MapChooserSharpSettings.Groups.Group1]
+RequiredPermissions = ["mcs.nominate.management"]
+AllowedTimeRanges = ["18:00-00:00"]
+MaxPlayers = 1000
+AllowedSteamIds = [987654321]
+DisallowedSteamIds = [987654321]
+
+[MapChooserSharpSettings.Groups.Group2]
+RequiredPermissions = ["mcs.nominate.generic"]
+DaysAllowed = ["saturday", "sunday"]
+MinPlayers = 300
+AllowedSteamIds = [123456789]
+DisallowedSteamIds = [123456789]
+
+[ze_example_789]
+GroupSettings = ["Group1", "Group2"]
+
+[ze_example_abc.DaySettings.WeekendNight]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["18:00-03:00"]
+MaxExtends = 5
+MinPlayers = 20
+OnlyNomination = false
+
+[ze_example_abc.DaySettings.WeekendNight.extra.shop]
+cost = 50
+
+[ze_example_abc.DaySettings.Weekday]
+Enabled = true
+ForceOverride = false
+OverridePriority = 0
+TargetDays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
+MaxPlayers = 32
+MinPlayers = 5
+
+[MapChooserSharpSettings.Groups.HardZeMap.DaySettings.WeekendAfternoon]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["14:00-18:00"]
+OnlyNomination = false
+MinPlayers = 10
+
+[MapChooserSharpSettings.Groups.HardZeMap.DaySettings.WeekendAfternoon.extra.shop]
+cost = 50

@@ -1,0 +1,3 @@
+[map]
+GroupSettings = ["Group1", "Group2"]
+CooldownOverride = 60

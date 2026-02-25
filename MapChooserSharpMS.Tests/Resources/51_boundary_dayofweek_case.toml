@@ -1,0 +1,5 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[ze_test]
+DaysAllowed = ["MONDAY", "Tuesday"]

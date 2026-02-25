@@ -1,0 +1,12 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+MapTime = 20
+MinPlayers = 5
+
+[MapChooserSharpSettings.Groups.TestGroup]
+MaxExtends = 4
+MapTime = 30
+
+[ze_test]
+GroupSettings = ["TestGroup"]
+MaxExtends = 5

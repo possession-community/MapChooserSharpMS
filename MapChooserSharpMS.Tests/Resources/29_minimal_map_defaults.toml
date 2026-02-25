@@ -1,0 +1,6 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+MapTime = 20
+MapRounds = 10
+
+[ze_minimal]

@@ -1,0 +1,18 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[MapChooserSharpSettings.Groups.G1]
+MaxExtends = 5
+
+[MapChooserSharpSettings.Groups.G1.DaySettings.Weekend]
+Enabled = true
+TargetDays = ["saturday"]
+MaxExtends = 8
+
+[ze_test]
+GroupSettings = ["G1"]
+
+[ze_test.DaySettings.Weekend]
+Enabled = true
+TargetDays = ["saturday", "sunday"]
+MaxExtends = 15

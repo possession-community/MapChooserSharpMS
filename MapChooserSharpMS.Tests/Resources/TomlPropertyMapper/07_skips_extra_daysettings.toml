@@ -1,0 +1,8 @@
+[map]
+MaxExtends = 5
+
+[map.extra.shop]
+cost = 100
+
+[map.DaySettings.Weekend]
+MaxExtends = 10

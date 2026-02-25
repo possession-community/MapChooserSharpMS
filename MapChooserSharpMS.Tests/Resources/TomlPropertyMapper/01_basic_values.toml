@@ -1,0 +1,11 @@
+[map]
+MapNameAlias = "Test Map"
+MapDescription = "A test map"
+WorkshopId = 12345
+IsDisabled = true
+MaxExtends = 5
+MaxExtCommandUses = 2
+MapTime = 30
+ExtendTimePerExtends = 10
+MapRounds = 8
+ExtendRoundsPerExtends = 3

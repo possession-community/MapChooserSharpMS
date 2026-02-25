@@ -263,7 +263,7 @@ internal sealed class McsMapNominationCommands(IServiceProvider serviceProvider)
         _mapNominationController.NominateMap(player, filteredMaps.First());
     }
 
-    [RequiresPermissions(@"css/map")]
+    [RequiresPermissions(@"mcs.admin.nominate")]
     private void CommandNominateAddMap(CCSPlayerController? player, CommandInfo info)
     {
         if (_mcsMapVoteController.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
@@ -307,7 +307,7 @@ internal sealed class McsMapNominationCommands(IServiceProvider serviceProvider)
         _mapNominationController.AdminNominateMap(player, matchedMaps.First().Value);
     }
 
-    [RequiresPermissions(@"css/map")]
+    [RequiresPermissions(@"mcs.admin.nominate")]
     private void CommandNominateRemoveMap(CCSPlayerController? player, CommandInfo info)
     {
         if (_mcsMapVoteController.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
@@ -373,7 +373,7 @@ internal sealed class McsMapNominationCommands(IServiceProvider serviceProvider)
 
         if (info.ArgCount > 1)
         {
-            if (info.ArgByIndex(1).Equals("full") && AdminManager.PlayerHasPermissions(player, "css/map"))
+            if (info.ArgByIndex(1).Equals("full") && AdminManager.PlayerHasPermissions(player, "mcs.admin.nominate"))
             {
                 isVerbose = true;
             }

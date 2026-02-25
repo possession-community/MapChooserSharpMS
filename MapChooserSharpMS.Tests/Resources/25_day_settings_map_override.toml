@@ -1,0 +1,15 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+MinPlayers = 5
+
+[ze_test]
+MaxExtends = 4
+
+[ze_test.DaySettings.WeekendNight]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["18:00-03:00"]
+MaxExtends = 5
+MinPlayers = 20

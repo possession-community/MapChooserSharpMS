@@ -1,0 +1,9 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[MapChooserSharpSettings.Groups.G1]
+DaysAllowed = ["monday", "tuesday"]
+
+[ze_test]
+GroupSettings = ["G1"]
+DaysAllowed = ["saturday", "sunday"]

@@ -1,0 +1,15 @@
+[MapChooserSharpSettings.Default]
+Cooldown = 10
+
+[MapChooserSharpSettings.Groups.G1]
+CooldownOverride = 60
+
+[MapChooserSharpSettings.Groups.G2]
+CooldownOverride = 90
+
+[MapChooserSharpSettings.Groups.G3]
+CooldownOverride = 120
+
+[ze_test]
+GroupSettings = ["G1", "G2", "G3"]
+Cooldown = 30

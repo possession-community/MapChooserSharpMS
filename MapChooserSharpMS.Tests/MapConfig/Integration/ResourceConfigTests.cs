@@ -136,7 +136,7 @@ public class ResourceConfigTests
         var config = result.MapConfigsNameMapping["ze_multi_group"].First().MapConfig;
 
         // G1 first priority for RequiredPermissions
-        Assert.Equal(["css/root"], config.NominationConfig.RequiredPermissions);
+        Assert.Equal(["mcs.nominate.management"], config.NominationConfig.RequiredPermissions);
         // G1 first priority for MaxPlayers
         Assert.Equal(1000, config.NominationConfig.MaxPlayers);
         // G2 for MinPlayers (G1 doesn't set it)
@@ -729,7 +729,7 @@ public class ResourceConfigTests
         Assert.False(map.RandomPickConfig.IsPickable);
         Assert.False(map.IsDisabled);
         // Premium RequiredPermissions (HardZE doesn't set it, Premium is next priority)
-        Assert.Equal(["css/vip"], map.NominationConfig.RequiredPermissions);
+        Assert.Equal(["mcs.nominate.map.vip"], map.NominationConfig.RequiredPermissions);
         // Premium RestrictToAllowedUsersOnly=true
         Assert.True(map.NominationConfig.RestrictToAllowedUsersOnly);
         // Premium MaxPlayers=48
@@ -937,7 +937,7 @@ public class ResourceConfigTests
 
         // --- Base ---
         var baseGroup = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
-        Assert.Equal(["css/vip"], baseGroup.NominationConfig.RequiredPermissions);
+        Assert.Equal(["mcs.nominate.map.vip"], baseGroup.NominationConfig.RequiredPermissions);
         Assert.True(baseGroup.NominationConfig.RestrictToAllowedUsersOnly);
         Assert.Equal(48, baseGroup.NominationConfig.MaxPlayers);
         Assert.True(baseGroup.NominationConfig.ProhibitAdminNomination);

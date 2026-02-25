@@ -2,13 +2,13 @@
 MinPlayers = 0
 
 [MapChooserSharpSettings.Groups.G1]
-RequiredPermissions = ["css/root"]
+RequiredPermissions = ["mcs.nominate.management"]
 MaxPlayers = 1000
 AllowedSteamIds = [111]
 DisallowedSteamIds = [11]
 
 [MapChooserSharpSettings.Groups.G2]
-RequiredPermissions = ["css/generic"]
+RequiredPermissions = ["mcs.nominate.generic"]
 MinPlayers = 300
 AllowedSteamIds = [222]
 DisallowedSteamIds = [22]

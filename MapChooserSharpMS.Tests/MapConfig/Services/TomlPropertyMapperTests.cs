@@ -10,20 +10,7 @@ public class TomlPropertyMapperTests
     [Fact]
     public void ExtractProperties_BasicValues_Extracted()
     {
-        var toml = """
-            [map]
-            MapNameAlias = "Test Map"
-            MapDescription = "A test map"
-            WorkshopId = 12345
-            IsDisabled = true
-            MaxExtends = 5
-            MaxExtCommandUses = 2
-            MapTime = 30
-            ExtendTimePerExtends = 10
-            MapRounds = 8
-            ExtendRoundsPerExtends = 3
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("TomlPropertyMapper/01_basic_values.toml");
         var mapNode = doc.RootNode["map"u8];
 
         var props = TomlPropertyMapper.ExtractProperties(mapNode);
@@ -43,24 +30,13 @@ public class TomlPropertyMapperTests
     [Fact]
     public void ExtractProperties_NominationSettings_Extracted()
     {
-        var toml = """
-            [map]
-            OnlyNomination = true
-            RequiredPermissions = ["css/generic", "css/root"]
-            RestrictToAllowedUsersOnly = true
-            AllowedSteamIds = [123456789]
-            DisallowedSteamIds = [987654321]
-            MaxPlayers = 64
-            MinPlayers = 10
-            ProhibitAdminNomination = true
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("TomlPropertyMapper/02_nomination_settings.toml");
         var mapNode = doc.RootNode["map"u8];
 
         var props = TomlPropertyMapper.ExtractProperties(mapNode);
 
         Assert.True(props.OnlyNomination);
-        Assert.Equal(["css/generic", "css/root"], props.RequiredPermissions);
+        Assert.Equal(["mcs.nominate.generic", "mcs.nominate.management"], props.RequiredPermissions);
         Assert.True(props.RestrictToAllowedUsersOnly);
         Assert.NotNull(props.AllowedSteamIds);
         Assert.Single(props.AllowedSteamIds!);
@@ -76,12 +52,7 @@ public class TomlPropertyMapperTests
     [Fact]
     public void ExtractProperties_DaysAndTimeRanges_Extracted()
     {
-        var toml = """
-            [map]
-            DaysAllowed = ["monday", "wednesday", "friday"]
-            AllowedTimeRanges = ["10:00-12:00", "18:00-22:00"]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("TomlPropertyMapper/03_days_and_timeranges.toml");
         var mapNode = doc.RootNode["map"u8];
 
         var props = TomlPropertyMapper.ExtractProperties(mapNode);
@@ -101,12 +72,7 @@ public class TomlPropertyMapperTests
     [Fact]
     public void ExtractProperties_CooldownSettings_Extracted()
     {
-        var toml = """
-            [map]
-            Cooldown = 60
-            CooldownDateTime = "2d"
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("TomlPropertyMapper/04_cooldown_settings.toml");
         var mapNode = doc.RootNode["map"u8];
 
         var props = TomlPropertyMapper.ExtractProperties(mapNode);
@@ -118,16 +84,7 @@ public class TomlPropertyMapperTests
     [Fact]
     public void ExtractProperties_OverrideSettings_Extracted()
     {
-        var toml = """
-            [override]
-            Enabled = true
-            ForceOverride = false
-            OverridePriority = 1
-            TargetDays = ["saturday", "sunday"]
-            TargetTimeRanges = ["18:00-03:00"]
-            MaxExtends = 5
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("TomlPropertyMapper/05_override_settings.toml");
         var node = doc.RootNode["override"u8];
 
         var props = TomlPropertyMapper.ExtractProperties(node);
@@ -147,12 +104,7 @@ public class TomlPropertyMapperTests
     [Fact]
     public void ExtractProperties_GroupSettings_Extracted()
     {
-        var toml = """
-            [map]
-            GroupSettings = ["Group1", "Group2"]
-            CooldownOverride = 60
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("TomlPropertyMapper/06_group_settings.toml");
         var mapNode = doc.RootNode["map"u8];
 
         var props = TomlPropertyMapper.ExtractProperties(mapNode);
@@ -165,17 +117,7 @@ public class TomlPropertyMapperTests
     [Fact]
     public void ExtractProperties_SkipsExtraAndDaySettings()
     {
-        var toml = """
-            [map]
-            MaxExtends = 5
-
-            [map.extra.shop]
-            cost = 100
-
-            [map.DaySettings.Weekend]
-            MaxExtends = 10
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("TomlPropertyMapper/07_skips_extra_daysettings.toml");
         var mapNode = doc.RootNode["map"u8];
 
         var props = TomlPropertyMapper.ExtractProperties(mapNode);
@@ -187,10 +129,7 @@ public class TomlPropertyMapperTests
     [Fact]
     public void ExtractProperties_EmptyNode_ReturnsAllNull()
     {
-        var toml = """
-            [map]
-            """;
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("TomlPropertyMapper/08_empty_node.toml");
         var mapNode = doc.RootNode["map"u8];
 
         var props = TomlPropertyMapper.ExtractProperties(mapNode);

@@ -1,0 +1,14 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[MapChooserSharpSettings.Groups.TestGroup]
+OnlyNomination = true
+
+[MapChooserSharpSettings.Groups.TestGroup.DaySettings.WeekendAfternoon]
+Enabled = true
+ForceOverride = false
+OverridePriority = 1
+TargetDays = ["saturday", "sunday"]
+TargetTimeRanges = ["14:00-18:00"]
+OnlyNomination = false
+MinPlayers = 10

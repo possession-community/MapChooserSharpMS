@@ -1,0 +1,6 @@
+[MapChooserSharpSettings.Default]
+Cooldown = 0
+
+[ze_test]
+Cooldown = 60
+CooldownDateTime = "2d"

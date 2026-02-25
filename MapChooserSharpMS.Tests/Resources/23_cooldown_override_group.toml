@@ -1,0 +1,9 @@
+[MapChooserSharpSettings.Default]
+Cooldown = 10
+
+[MapChooserSharpSettings.Groups.TestGroup]
+CooldownOverride = 60
+
+[ze_test]
+GroupSettings = ["TestGroup"]
+Cooldown = 30

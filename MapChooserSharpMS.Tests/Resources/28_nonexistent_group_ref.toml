@@ -1,0 +1,6 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[ze_test]
+GroupSettings = ["NonexistentGroup"]
+MaxExtends = 5

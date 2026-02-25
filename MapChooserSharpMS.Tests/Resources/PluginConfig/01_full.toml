@@ -1,0 +1,63 @@
+[General]
+ShouldUseAliasMapNameIfAvailable = false
+VerboseCooldownPrint = false
+WorkshopCollectionIds = ["3070257939", "1234567890"]
+ShouldAutoFixMapName = true
+RtvMapChangeBehaviour = "Cs2EndMatchScreen"
+
+[General.Sql]
+Type = "MySQL"
+DatabaseName = "MapChooserSharpTest.db"
+Address = "localhost"
+Port = "3306"
+User = "root"
+Password = "password123"
+
+[MapCycle]
+FallbackMaxExtends = 5
+FallbackMaxExtCommandUses = 2
+FallbackExtendTimePerExtends = 20
+FallbackExtendRoundsPerExtends = 10
+ShouldStopSourceTvRecording = true
+MapConfigExecutionType = "StartWithMatch"
+MapConfigDirectoryPath = "Custom/maps/"
+GroupConfigDirectoryPath = "Custom/groups/"
+
+[MapVote]
+MenuType = "Default"
+MaxVoteElements = 8
+ShouldPrintVoteToChat = false
+ShouldPrintVoteRemainingTime = false
+CountdownUiType = "CenterHud"
+
+[MapVote.Sound]
+SoundFile = "soundevents/soundevents_mapchooser.vsndevts"
+InitialVoteCountdownStartSound = "countdown_start"
+InitialVoteStartSound = "vote_start"
+InitialVoteFinishSound = "vote_finish"
+InitialVoteCountdownSound1 = "tick1"
+InitialVoteCountdownSound2 = "tick2"
+InitialVoteCountdownSound3 = "tick3"
+InitialVoteCountdownSound4 = "tick4"
+InitialVoteCountdownSound5 = "tick5"
+InitialVoteCountdownSound6 = ""
+InitialVoteCountdownSound7 = ""
+InitialVoteCountdownSound8 = ""
+InitialVoteCountdownSound9 = ""
+InitialVoteCountdownSound10 = ""
+RunoffVoteCountdownStartSound = "runoff_countdown_start"
+RunoffVoteStartSound = "runoff_start"
+RunoffVoteFinishSound = "runoff_finish"
+RunoffVoteCountdownSound1 = ""
+RunoffVoteCountdownSound2 = ""
+RunoffVoteCountdownSound3 = ""
+RunoffVoteCountdownSound4 = ""
+RunoffVoteCountdownSound5 = ""
+RunoffVoteCountdownSound6 = ""
+RunoffVoteCountdownSound7 = ""
+RunoffVoteCountdownSound8 = ""
+RunoffVoteCountdownSound9 = ""
+RunoffVoteCountdownSound10 = ""
+
+[Nomination]
+MenuType = "Default"

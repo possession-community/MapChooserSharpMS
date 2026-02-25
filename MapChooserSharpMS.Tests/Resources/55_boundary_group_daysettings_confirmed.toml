@@ -1,0 +1,19 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[MapChooserSharpSettings.Groups.G1]
+MaxExtends = 5
+
+[MapChooserSharpSettings.Groups.G1.DaySettings.EventDay]
+Enabled = true
+ForceOverride = true
+OverridePriority = 5
+TargetDays = ["wednesday"]
+TargetTimeRanges = ["18:00-22:00"]
+MinPlayers = 50
+
+[ze_test]
+GroupSettings = ["G1"]
+
+[ze_test.extra.shop]
+cost = 100

@@ -1,0 +1,22 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 1
+MapTime = 10
+MinPlayers = 5
+MaxPlayers = 100
+
+[MapChooserSharpSettings.Groups.G1]
+MaxExtends = 2
+MapTime = 20
+
+[MapChooserSharpSettings.Groups.G2]
+MaxExtends = 3
+MinPlayers = 15
+
+[MapChooserSharpSettings.Groups.G3]
+MapTime = 40
+
+[MapChooserSharpSettings.Groups.G4]
+MaxPlayers = 500
+
+[ze_test]
+GroupSettings = ["G1", "G2", "G3", "G4"]

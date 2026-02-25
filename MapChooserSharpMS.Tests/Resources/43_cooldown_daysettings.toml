@@ -1,0 +1,13 @@
+[MapChooserSharpSettings.Default]
+Cooldown = 10
+
+[MapChooserSharpSettings.Groups.G1]
+CooldownOverride = 60
+
+[ze_test]
+GroupSettings = ["G1"]
+Cooldown = 30
+
+[ze_test.DaySettings.Weekend]
+Enabled = true
+TargetDays = ["saturday"]

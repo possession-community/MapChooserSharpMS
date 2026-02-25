@@ -1,0 +1,5 @@
+[MapChooserSharpSettings.Default]
+OnlyNomination = false
+
+[ze_nom_only]
+OnlyNomination = true

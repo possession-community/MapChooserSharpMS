@@ -18,122 +18,7 @@ public class FullParsingIntegrationTests
     [Fact]
     public void ParseConfigs_FullConfigExample_AllSectionsCorrect()
     {
-        var toml = """
-            [MapChooserSharpSettings.Default]
-            MapNameAlias = ""
-            MapDescription = ""
-            IsDisabled = false
-            WorkshopId = 0
-            OnlyNomination = false
-            Cooldown = 0
-            MaxExtends = 3
-            MaxExtCommandUses = 1
-            ExtendTimePerExtends = 15
-            MapTime = 20
-            ExtendRoundsPerExtends = 5
-            MapRounds = 10
-            RequiredPermissions = []
-            RestrictToAllowedUsersOnly = false
-            AllowedSteamIds = []
-            DisallowedSteamIds = []
-            MaxPlayers = 0
-            MinPlayers = 0
-            ProhibitAdminNomination = false
-            DaysAllowed = []
-            AllowedTimeRanges = []
-
-            [ze_example_abc]
-            MapNameAlias = "ze example a b c"
-            MapDescription = "Let's play ze_example_abc!"
-            IsDisabled = false
-            WorkshopId = 1234567891234
-            OnlyNomination = false
-            Cooldown = 60
-            CooldownDateTime = "2d"
-            MaxExtends = 3
-            MaxExtCommandUses = 1
-            ExtendTimePerExtends = 15
-            RequiredPermissions = ["css/generic"]
-            RestrictToAllowedUsersOnly = false
-            AllowedSteamIds = [987654321]
-            DisallowedSteamIds = [123456789]
-            MaxPlayers = 64
-            MinPlayers = 10
-            ProhibitAdminNomination = false
-            DaysAllowed = ["wednesday", "monday"]
-            AllowedTimeRanges = ["10:00-12:00", "20:00-22:00", "22:00-03:00"]
-
-            [ze_example_abc.extra.shop]
-            cost = 100
-
-            [ze_example_xyz]
-
-            [MapChooserSharpSettings.Groups.HardZeMap]
-            Cooldown = 30
-            OnlyNomination = true
-            DaysAllowed = ["saturday", "sunday"]
-            AllowedTimeRanges = ["18:00-00:00"]
-
-            [MapChooserSharpSettings.Groups.HardZeMap.extra.shop]
-            cost = 100
-
-            [ze_example_123]
-            GroupSettings = ["HardZeMap"]
-            OnlyNomination = false
-            Cooldown = 60
-
-            [MapChooserSharpSettings.Groups.Group1]
-            RequiredPermissions = ["css/root"]
-            AllowedTimeRanges = ["18:00-00:00"]
-            MaxPlayers = 1000
-            AllowedSteamIds = [987654321]
-            DisallowedSteamIds = [987654321]
-
-            [MapChooserSharpSettings.Groups.Group2]
-            RequiredPermissions = ["css/generic"]
-            DaysAllowed = ["saturday", "sunday"]
-            MinPlayers = 300
-            AllowedSteamIds = [123456789]
-            DisallowedSteamIds = [123456789]
-
-            [ze_example_789]
-            GroupSettings = ["Group1", "Group2"]
-
-            [ze_example_abc.DaySettings.WeekendNight]
-            Enabled = true
-            ForceOverride = false
-            OverridePriority = 1
-            TargetDays = ["saturday", "sunday"]
-            TargetTimeRanges = ["18:00-03:00"]
-            MaxExtends = 5
-            MinPlayers = 20
-            OnlyNomination = false
-
-            [ze_example_abc.DaySettings.WeekendNight.extra.shop]
-            cost = 50
-
-            [ze_example_abc.DaySettings.Weekday]
-            Enabled = true
-            ForceOverride = false
-            OverridePriority = 0
-            TargetDays = ["monday", "tuesday", "wednesday", "thursday", "friday"]
-            MaxPlayers = 32
-            MinPlayers = 5
-
-            [MapChooserSharpSettings.Groups.HardZeMap.DaySettings.WeekendAfternoon]
-            Enabled = true
-            ForceOverride = false
-            OverridePriority = 1
-            TargetDays = ["saturday", "sunday"]
-            TargetTimeRanges = ["14:00-18:00"]
-            OnlyNomination = false
-            MinPlayers = 10
-
-            [MapChooserSharpSettings.Groups.HardZeMap.DaySettings.WeekendAfternoon.extra.shop]
-            cost = 50
-            """;
-
-        var doc = TomlTestHelper.ParseToml(toml);
+        var doc = TomlTestHelper.LoadToml("56_full_parsing_integration.toml");
         var result = _service.ParseConfigsFromDocument(doc);
 
         Assert.NotNull(result);
@@ -149,7 +34,7 @@ public class FullParsingIntegrationTests
         Assert.Equal(1234567891234L, abcBase.WorkshopId);
         Assert.Equal(60, abcBase.CooldownConfig.ConfigCooldown);
         Assert.Equal(TimeSpan.FromDays(2), abcBase.CooldownConfig.TimedCooldown);
-        Assert.Equal(["css/generic"], abcBase.NominationConfig.RequiredPermissions);
+        Assert.Equal(["mcs.nominate.generic"], abcBase.NominationConfig.RequiredPermissions);
         Assert.Contains(987654321u, abcBase.NominationConfig.AllowedSteamIds);
         Assert.Contains(123456789u, abcBase.NominationConfig.DisallowedSteamIds);
         Assert.Equal(64, abcBase.NominationConfig.MaxPlayers);
@@ -200,7 +85,7 @@ public class FullParsingIntegrationTests
         var map789Base = result.MapConfigsNameMapping["ze_example_789"].First().MapConfig;
         Assert.Equal(2, map789Base.GroupSettings.Count);
         // Group1 first priority for RequiredPermissions
-        Assert.Equal(["css/root"], map789Base.NominationConfig.RequiredPermissions);
+        Assert.Equal(["mcs.nominate.management"], map789Base.NominationConfig.RequiredPermissions);
         Assert.Equal(1000, map789Base.NominationConfig.MaxPlayers);
         // AllowedSteamIds merged
         Assert.Contains(987654321u, map789Base.NominationConfig.AllowedSteamIds);

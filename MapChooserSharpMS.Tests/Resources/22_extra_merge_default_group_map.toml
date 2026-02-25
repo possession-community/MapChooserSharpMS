@@ -1,0 +1,14 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[MapChooserSharpSettings.Groups.TestGroup]
+Cooldown = 30
+
+[MapChooserSharpSettings.Groups.TestGroup.extra.shop]
+cost = 150
+
+[ze_test]
+GroupSettings = ["TestGroup"]
+
+[ze_test.extra.shop]
+discount = 20

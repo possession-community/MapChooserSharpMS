@@ -1,0 +1,3 @@
+[MapCycle]
+FallbackMaxExtends = 10
+ShouldStopSourceTvRecording = true

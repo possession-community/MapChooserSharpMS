@@ -1,0 +1,15 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[ze_test]
+MaxExtends = 4
+
+[ze_test.extra.shop]
+cost = 100
+
+[ze_test.DaySettings.WeekendNight]
+Enabled = true
+TargetDays = ["saturday"]
+
+[ze_test.DaySettings.WeekendNight.extra.shop]
+cost = 50

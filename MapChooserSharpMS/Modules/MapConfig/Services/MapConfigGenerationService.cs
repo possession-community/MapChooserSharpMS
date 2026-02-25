@@ -90,7 +90,7 @@ ExtendTimePerExtends = 15
 # ===== Nomination Settings =====
 
 # If this value is set, nominator should have specified permission
-RequiredPermissions = [""css/generic""]
+RequiredPermissions = [""mcs.nominate.generic""]
 
 # Restrict nomination to user who in the AllowedSteamIds
 RestrictToAllowedUsersOnly = false
@@ -174,7 +174,7 @@ Cooldown = 60
 # ==============================================================
 
 [MapChooserSharpSettings.Groups.Group1]
-RequiredPermissions = [""css/root""]
+RequiredPermissions = [""mcs.nominate.management""]
 AllowedTimeRanges = [""18:00-00:00""]
 MaxPlayers = 1000
 AllowedSteamIds = [987654321]
@@ -182,7 +182,7 @@ DisallowedSteamIds = [987654321]
 
 
 [MapChooserSharpSettings.Groups.Group2]
-RequiredPermissions = [""css/generic""]
+RequiredPermissions = [""mcs.nominate.generic""]
 DaysAllowed = [""saturday"", ""sunday""]
 MinPlayers = 300
 AllowedSteamIds = [123456789]
@@ -192,7 +192,7 @@ DisallowedSteamIds = [123456789]
 
 [ze_example_789]
 # If there are multiple groups and the values of the groups are the same, the value of the first group specified takes precedence.
-# In the following example, Group1 has the highest priority and RequiredPermissions is ""css/root"".
+# In the following example, Group1 has the highest priority and RequiredPermissions is ""mcs.nominate.management"".
 #
 # But AllowedSteamIds and DisallowedSteamIds are exceptional.
 # All AllowedSteamIds and DisallowedSteamIds will combined to 1 array. this is intended for grouping the special user
