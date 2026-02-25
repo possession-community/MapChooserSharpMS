@@ -404,6 +404,101 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             overrides.Add(mapOverride);
         }
 
+        // Inherit Group DaySettings to Map (if Map doesn't already have a DaySettings with the same name)
+        var existingOverrideNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var o in overrides)
+        {
+            if (o.OverrideConfigName != IBaseOverrideConfig.BaseConfigName)
+                existingOverrideNames.Add(o.OverrideConfigName);
+        }
+
+        var inheritMapRawProps = FindSection(allSections, TomlSectionType.MapSetting, mapName, isGroup: false, out var inheritMapSection)
+            ? TomlPropertyMapper.ExtractProperties(inheritMapSection)
+            : new ParsedProperties();
+        var inheritGroupNames = inheritMapRawProps.GroupSettingNames ?? [];
+
+        foreach (var groupName in inheritGroupNames)
+        {
+            if (!groupConfigs.ContainsKey(groupName))
+                continue;
+
+            foreach (var (fullKey, type, node) in allSections)
+            {
+                if (type != TomlSectionType.GroupDaySetting)
+                    continue;
+
+                var thisGroupName = TomlSectionClassifier.ExtractGroupName(fullKey);
+                if (!string.Equals(thisGroupName, groupName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var overrideName = TomlSectionClassifier.ExtractDaySettingsName(fullKey);
+                if (existingOverrideNames.Contains(overrideName))
+                    continue;
+
+                var inheritOverrideProps = TomlPropertyMapper.ExtractProperties(node);
+
+                // Merge: default → groups(reverse) → map → GroupDaySetting override
+                var inheritMergedProps = CloneProperties(defaultProps);
+                for (int i = inheritGroupNames.Count - 1; i >= 0; i--)
+                {
+                    if (FindSection(allSections, TomlSectionType.GroupSetting, inheritGroupNames[i], isGroup: true, out var groupSectionNode))
+                    {
+                        var groupRawProps = TomlPropertyMapper.ExtractProperties(groupSectionNode);
+                        inheritMergedProps = MapConfigBuilder.MergeProperties(inheritMergedProps, groupRawProps);
+                    }
+                }
+                inheritMergedProps = MapConfigBuilder.MergeProperties(inheritMergedProps, inheritMapRawProps);
+                inheritMergedProps = MapConfigBuilder.MergeProperties(inheritMergedProps, inheritOverrideProps);
+
+                // Apply CooldownOverride from groups
+                foreach (var gn in inheritGroupNames)
+                {
+                    if (groupConfigs.TryGetValue(gn, out var gc) && gc.MapCooldownOverride > 0)
+                    {
+                        inheritMergedProps.Cooldown = gc.MapCooldownOverride;
+                        break;
+                    }
+                }
+
+                // Build extra: map base extra → GroupDaySetting inline extra → GroupDaySettingExtra sections
+                var inheritExtraBuilder = new ExtraConfigBuilder().Merge(baseConfig.ExtraConfiguration);
+                if (TryGetSubNode(node, "extra", out var inheritExtraNode))
+                {
+                    inheritExtraBuilder.Merge(inheritExtraNode);
+                }
+                foreach (var (ek, et, en) in allSections)
+                {
+                    if (et == TomlSectionType.GroupDaySettingExtra &&
+                        string.Equals(TomlSectionClassifier.ExtractGroupName(ek), groupName, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(TomlSectionClassifier.ExtractDaySettingsName(ek), overrideName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var sectionName = TomlSectionClassifier.ExtractExtraSectionName(ek);
+                        MergeExtraSectionNode(inheritExtraBuilder, sectionName, en);
+                    }
+                }
+
+                var inheritResolvedGroups = new List<IMapGroupConfig>();
+                foreach (var gn in inheritGroupNames)
+                {
+                    if (groupConfigs.TryGetValue(gn, out var gc))
+                        inheritResolvedGroups.Add(gc);
+                }
+
+                var inheritOverrideMapConfig = MapConfigBuilder.BuildMapConfig(mapName, inheritMergedProps, inheritExtraBuilder.Build(), inheritResolvedGroups);
+
+                var inheritMapOverride = new MapConfigOverrides(
+                    MapConfig: inheritOverrideMapConfig,
+                    OverrideConfigName: overrideName,
+                    Enabled: inheritOverrideProps.Enabled ?? true,
+                    ForceOverride: inheritOverrideProps.ForceOverride ?? false,
+                    OverridePriority: inheritOverrideProps.OverridePriority ?? 0,
+                    TargetDays: inheritOverrideProps.TargetDays ?? [],
+                    TargetTimeRanges: inheritOverrideProps.TargetTimeRanges ?? []);
+                overrides.Add(inheritMapOverride);
+                existingOverrideNames.Add(overrideName);
+            }
+        }
+
         return overrides;
     }
 

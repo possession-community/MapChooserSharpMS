@@ -90,4 +90,37 @@ public class TimeRangeTests
         // End is exclusive
         Assert.False(range.IsInRange(new TimeOnly(3, 0)));
     }
+
+    [Fact]
+    public void Parse_InvalidHour_ThrowsException()
+    {
+        // "25:00" is not a valid time
+        Assert.ThrowsAny<Exception>(() => TimeRange.Parse("25:00-12:00"));
+    }
+
+    [Fact]
+    public void Parse_SameStartAndEnd_CreatesRange()
+    {
+        var range = TimeRange.Parse("10:00-10:00");
+
+        Assert.Equal(new TimeOnly(10, 0), range.StartTime);
+        Assert.Equal(new TimeOnly(10, 0), range.EndTime);
+        // Same start/end means always in range (same as 0:0-0:0 behavior)
+        Assert.True(range.IsInRange(new TimeOnly(10, 0)));
+        Assert.True(range.IsInRange(new TimeOnly(15, 0)));
+        Assert.True(range.IsInRange(new TimeOnly(5, 0)));
+    }
+
+    [Fact]
+    public void Parse_OneMinuteRange_WorksCorrectly()
+    {
+        var range = TimeRange.Parse("10:00-10:01");
+
+        Assert.Equal(new TimeOnly(10, 0), range.StartTime);
+        Assert.Equal(new TimeOnly(10, 1), range.EndTime);
+
+        Assert.True(range.IsInRange(new TimeOnly(10, 0)));  // Start inclusive
+        Assert.False(range.IsInRange(new TimeOnly(10, 1))); // End exclusive
+        Assert.False(range.IsInRange(new TimeOnly(9, 59)));  // Before
+    }
 }

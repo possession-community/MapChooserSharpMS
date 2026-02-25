@@ -489,7 +489,7 @@ public class ResourceConfigTests
 
         // --- Base ze_complex ---
         var baseOverrides = result.MapConfigsNameMapping["ze_complex"];
-        Assert.Equal(2, baseOverrides.Count); // base + ComplexWeekend
+        Assert.Equal(3, baseOverrides.Count); // base + ComplexWeekend + CG1Weekend (inherited from CG1)
 
         var baseConfig = baseOverrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).MapConfig;
 
@@ -678,8 +678,9 @@ public class ResourceConfigTests
         Assert.True(result.MapGroupSettings.ContainsKey("Premium"));
         Assert.True(result.MapGroupSettings.ContainsKey("LongMaps"));
 
-        // Map overrides: base + EventMode + WeekendRelax = 3
-        Assert.Equal(3, result.MapConfigsNameMapping["ze_epic_finale_v3"].Count);
+        // Map overrides: base + EventMode + WeekendRelax + inherited group DaySettings
+        // HardZE: WeekendPrime, WeekdayNight; Premium: FreeWeekend; LongMaps: PeakHours, LateNight = 8 total
+        Assert.Equal(8, result.MapConfigsNameMapping["ze_epic_finale_v3"].Count);
 
         // Group override counts: HardZE(base+2), Premium(base+1), LongMaps(base+2)
         Assert.Equal(3, result.MapGroupSettings["HardZE"].Count);
