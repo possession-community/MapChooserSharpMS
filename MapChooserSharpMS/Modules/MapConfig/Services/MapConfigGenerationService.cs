@@ -33,10 +33,6 @@ ExtendTimePerExtends = 15
 MapTime = 20
 ExtendRoundsPerExtends = 5
 MapRounds = 10
-RequiredPermissions = []
-RestrictToAllowedUsersOnly = false
-AllowedSteamIds = []
-DisallowedSteamIds = []
 MaxPlayers = 0
 MinPlayers = 0
 ProhibitAdminNomination = false
@@ -88,19 +84,6 @@ ExtendTimePerExtends = 15
 # ExtendRoundsPerExtends = 5
 
 # ===== Nomination Settings =====
-
-# If this value is set, nominator should have specified permission
-RequiredPermissions = [""mcs.nominate.generic""]
-
-# Restrict nomination to user who in the AllowedSteamIds
-RestrictToAllowedUsersOnly = false
-
-# If this value(s) is set, Allowed clients are able to bypasses the permission check
-# But, cannot bypass check if ProhibitAdminNomination is true and user is not a root user.
-AllowedSteamIds = [987654321]
-
-# If this value(s) is set, Disallowed clients are not able to nominate this map
-DisallowedSteamIds = [123456789]
 
 # Max players requires to nominate this map
 MaxPlayers = 64
@@ -174,29 +157,18 @@ Cooldown = 60
 # ==============================================================
 
 [MapChooserSharpSettings.Groups.Group1]
-RequiredPermissions = [""mcs.nominate.management""]
 AllowedTimeRanges = [""18:00-00:00""]
 MaxPlayers = 1000
-AllowedSteamIds = [987654321]
-DisallowedSteamIds = [987654321]
 
 
 [MapChooserSharpSettings.Groups.Group2]
-RequiredPermissions = [""mcs.nominate.generic""]
 DaysAllowed = [""saturday"", ""sunday""]
 MinPlayers = 300
-AllowedSteamIds = [123456789]
-DisallowedSteamIds = [123456789]
 
 
 
 [ze_example_789]
 # If there are multiple groups and the values of the groups are the same, the value of the first group specified takes precedence.
-# In the following example, Group1 has the highest priority and RequiredPermissions is ""mcs.nominate.management"".
-#
-# But AllowedSteamIds and DisallowedSteamIds are exceptional.
-# All AllowedSteamIds and DisallowedSteamIds will combined to 1 array. this is intended for grouping the special user
-#
 GroupSettings = [""Group1"", ""Group2""]
 ";
     

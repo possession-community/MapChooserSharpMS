@@ -11,10 +11,6 @@ ExtendTimePerExtends = 15
 MapTime = 20
 ExtendRoundsPerExtends = 5
 MapRounds = 10
-RequiredPermissions = []
-RestrictToAllowedUsersOnly = false
-AllowedSteamIds = []
-DisallowedSteamIds = []
 MaxPlayers = 0
 MinPlayers = 0
 ProhibitAdminNomination = false
@@ -32,10 +28,6 @@ CooldownDateTime = "2d"
 MaxExtends = 3
 MaxExtCommandUses = 1
 ExtendTimePerExtends = 15
-RequiredPermissions = ["mcs.nominate.generic"]
-RestrictToAllowedUsersOnly = false
-AllowedSteamIds = [987654321]
-DisallowedSteamIds = [123456789]
 MaxPlayers = 64
 MinPlayers = 10
 ProhibitAdminNomination = false
@@ -62,18 +54,12 @@ OnlyNomination = false
 Cooldown = 60
 
 [MapChooserSharpSettings.Groups.Group1]
-RequiredPermissions = ["mcs.nominate.management"]
 AllowedTimeRanges = ["18:00-00:00"]
 MaxPlayers = 1000
-AllowedSteamIds = [987654321]
-DisallowedSteamIds = [987654321]
 
 [MapChooserSharpSettings.Groups.Group2]
-RequiredPermissions = ["mcs.nominate.generic"]
 DaysAllowed = ["saturday", "sunday"]
 MinPlayers = 300
-AllowedSteamIds = [123456789]
-DisallowedSteamIds = [123456789]
 
 [ze_example_789]
 GroupSettings = ["Group1", "Group2"]

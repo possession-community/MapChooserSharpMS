@@ -2,16 +2,10 @@
 MaxExtends = 1
 
 [MapChooserSharpSettings.Groups.Group1]
-RequiredPermissions = ["mcs.nominate.management"]
 MaxPlayers = 1000
-AllowedSteamIds = [111]
-DisallowedSteamIds = [222]
 
 [MapChooserSharpSettings.Groups.Group2]
-RequiredPermissions = ["mcs.nominate.generic"]
 MinPlayers = 300
-AllowedSteamIds = [333]
-DisallowedSteamIds = [444]
 
 [ze_test]
 GroupSettings = ["Group1", "Group2"]

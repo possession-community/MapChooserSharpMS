@@ -36,14 +36,6 @@ public class TomlPropertyMapperTests
         var props = TomlPropertyMapper.ExtractProperties(mapNode);
 
         Assert.True(props.OnlyNomination);
-        Assert.Equal(["mcs.nominate.generic", "mcs.nominate.management"], props.RequiredPermissions);
-        Assert.True(props.RestrictToAllowedUsersOnly);
-        Assert.NotNull(props.AllowedSteamIds);
-        Assert.Single(props.AllowedSteamIds!);
-        Assert.Equal(123456789u, props.AllowedSteamIds![0]);
-        Assert.NotNull(props.DisallowedSteamIds);
-        Assert.Single(props.DisallowedSteamIds!);
-        Assert.Equal(987654321u, props.DisallowedSteamIds![0]);
         Assert.Equal(64, props.MaxPlayers);
         Assert.Equal(10, props.MinPlayers);
         Assert.True(props.ProhibitAdminNomination);

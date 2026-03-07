@@ -1,9 +1,5 @@
 [map]
 OnlyNomination = true
-RequiredPermissions = ["mcs.nominate.generic", "mcs.nominate.management"]
-RestrictToAllowedUsersOnly = true
-AllowedSteamIds = [123456789]
-DisallowedSteamIds = [987654321]
 MaxPlayers = 64
 MinPlayers = 10
 ProhibitAdminNomination = true

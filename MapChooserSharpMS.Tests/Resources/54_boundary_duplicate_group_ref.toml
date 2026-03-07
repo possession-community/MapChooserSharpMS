@@ -3,7 +3,6 @@ MaxExtends = 3
 
 [MapChooserSharpSettings.Groups.G1]
 MaxExtends = 5
-AllowedSteamIds = [111]
 
 [ze_test]
 GroupSettings = ["G1", "G1"]

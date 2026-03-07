@@ -38,10 +38,6 @@ internal sealed class ParsedProperties
     public bool? OnlyNomination { get; set; }
 
     // Nomination
-    public List<string>? RequiredPermissions { get; set; }
-    public bool? RestrictToAllowedUsersOnly { get; set; }
-    public List<uint>? AllowedSteamIds { get; set; }
-    public List<uint>? DisallowedSteamIds { get; set; }
     public int? MaxPlayers { get; set; }
     public int? MinPlayers { get; set; }
     public bool? ProhibitAdminNomination { get; set; }
@@ -152,23 +148,6 @@ internal static class TomlPropertyMapper
                     props.OnlyNomination = onlyNom;
                 break;
 
-            case "RequiredPermissions":
-                props.RequiredPermissions = ExtractStringArray(valueNode);
-                break;
-
-            case "RestrictToAllowedUsersOnly":
-                if (valueNode.TryGetBool(out var restrict))
-                    props.RestrictToAllowedUsersOnly = restrict;
-                break;
-
-            case "AllowedSteamIds":
-                props.AllowedSteamIds = ExtractUintArray(valueNode);
-                break;
-
-            case "DisallowedSteamIds":
-                props.DisallowedSteamIds = ExtractUintArray(valueNode);
-                break;
-
             case "MaxPlayers":
                 if (valueNode.TryGetInt64(out var maxP))
                     props.MaxPlayers = (int)maxP;
@@ -238,25 +217,6 @@ internal static class TomlPropertyMapper
             {
                 if (item.TryGetString(out var s))
                     result.Add(s);
-            }
-        }
-        catch
-        {
-            // Not a valid array
-        }
-        return result;
-    }
-
-    internal static List<uint> ExtractUintArray(TomlDocumentNode node)
-    {
-        var result = new List<uint>();
-        try
-        {
-            var array = node.GetArray();
-            foreach (var item in array)
-            {
-                if (item.TryGetInt64(out var val))
-                    result.Add((uint)val);
             }
         }
         catch

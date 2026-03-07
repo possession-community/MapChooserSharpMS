@@ -216,18 +216,6 @@ public class MapConfigParsingServiceAdditionalTests
     }
 
     [Fact]
-    public void Priority_RequiredPermissions_LastWriteWins_FirstGroupPriority()
-    {
-        var doc = TomlTestHelper.LoadToml("47_priority_required_permissions.toml");
-        var result = _service.ParseConfigsFromDocument(doc);
-
-        Assert.NotNull(result);
-        var config = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
-        // Groups applied in reverse (G2 then G1), so G1 overwrites G2 → G1's permissions win
-        Assert.Equal(["mcs.nominate.management"], config.NominationConfig.RequiredPermissions);
-    }
-
-    [Fact]
     public void Priority_DaysAllowed_MapOverridesGroup()
     {
         var doc = TomlTestHelper.LoadToml("48_priority_days_allowed.toml");
@@ -240,29 +228,6 @@ public class MapConfigParsingServiceAdditionalTests
         Assert.Contains(DayOfWeek.Saturday, config.NominationConfig.DaysAllowed);
         Assert.Contains(DayOfWeek.Sunday, config.NominationConfig.DaysAllowed);
         Assert.DoesNotContain(DayOfWeek.Monday, config.NominationConfig.DaysAllowed);
-    }
-
-    [Fact]
-    public void Priority_SteamIdsAccumulate_RequiredPermissionsOverwrite()
-    {
-        var doc = TomlTestHelper.LoadToml("49_priority_steamids_vs_permissions.toml");
-        var result = _service.ParseConfigsFromDocument(doc);
-
-        Assert.NotNull(result);
-        var config = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
-
-        // RequiredPermissions: last-write-wins → Map's ["mcs.nominate.map.vip"]
-        Assert.Equal(["mcs.nominate.map.vip"], config.NominationConfig.RequiredPermissions);
-
-        // AllowedSteamIds: accumulated from all layers
-        Assert.Contains(100u, config.NominationConfig.AllowedSteamIds);
-        Assert.Contains(111u, config.NominationConfig.AllowedSteamIds);
-        Assert.Contains(333u, config.NominationConfig.AllowedSteamIds);
-
-        // DisallowedSteamIds: accumulated from all layers
-        Assert.Contains(200u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(222u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(444u, config.NominationConfig.DisallowedSteamIds);
     }
 
     // ========================================================================
@@ -337,8 +302,6 @@ public class MapConfigParsingServiceAdditionalTests
 
         // MaxExtends from G1 applied (twice in merge, but idempotent for overwrite)
         Assert.Equal(5, config.MaxExtends);
-        // AllowedSteamIds accumulated from both G1 references
-        Assert.Contains(111u, config.NominationConfig.AllowedSteamIds);
     }
 
     [Fact]

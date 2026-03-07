@@ -34,9 +34,6 @@ public class FullParsingIntegrationTests
         Assert.Equal(1234567891234L, abcBase.WorkshopId);
         Assert.Equal(60, abcBase.CooldownConfig.ConfigCooldown);
         Assert.Equal(TimeSpan.FromDays(2), abcBase.CooldownConfig.TimedCooldown);
-        Assert.Equal(["mcs.nominate.generic"], abcBase.NominationConfig.RequiredPermissions);
-        Assert.Contains(987654321u, abcBase.NominationConfig.AllowedSteamIds);
-        Assert.Contains(123456789u, abcBase.NominationConfig.DisallowedSteamIds);
         Assert.Equal(64, abcBase.NominationConfig.MaxPlayers);
         Assert.Equal(10, abcBase.NominationConfig.MinPlayers);
         Assert.Contains(DayOfWeek.Wednesday, abcBase.NominationConfig.DaysAllowed);
@@ -84,15 +81,7 @@ public class FullParsingIntegrationTests
         Assert.True(result.MapConfigsNameMapping.ContainsKey("ze_example_789"));
         var map789Base = result.MapConfigsNameMapping["ze_example_789"].First().MapConfig;
         Assert.Equal(2, map789Base.GroupSettings.Count);
-        // Group1 first priority for RequiredPermissions
-        Assert.Equal(["mcs.nominate.management"], map789Base.NominationConfig.RequiredPermissions);
         Assert.Equal(1000, map789Base.NominationConfig.MaxPlayers);
-        // AllowedSteamIds merged
-        Assert.Contains(987654321u, map789Base.NominationConfig.AllowedSteamIds);
-        Assert.Contains(123456789u, map789Base.NominationConfig.AllowedSteamIds);
-        // DisallowedSteamIds merged
-        Assert.Contains(987654321u, map789Base.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(123456789u, map789Base.NominationConfig.DisallowedSteamIds);
 
         // ---- Groups ----
         Assert.True(result.MapGroupSettings.ContainsKey("HardZeMap"));

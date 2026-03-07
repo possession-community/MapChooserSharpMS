@@ -12,7 +12,6 @@ mode = "default"
 MaxExtends = 5
 CooldownOverride = 60
 OnlyNomination = true
-AllowedSteamIds = [111]
 
 [MapChooserSharpSettings.Groups.CG1.extra.shop]
 cost = 100
@@ -31,7 +30,6 @@ cost = 50
 [MapChooserSharpSettings.Groups.CG2]
 MinPlayers = 10
 MapTime = 30
-AllowedSteamIds = [222]
 
 [MapChooserSharpSettings.Groups.CG2.extra.shop]
 cost = 200
@@ -40,7 +38,6 @@ bonus = 5
 [ze_complex]
 GroupSettings = ["CG1", "CG2"]
 MaxExtends = 7
-AllowedSteamIds = [333]
 
 [ze_complex.extra.shop]
 discount = 20

@@ -2,21 +2,13 @@
 MinPlayers = 0
 
 [MapChooserSharpSettings.Groups.G1]
-RequiredPermissions = ["mcs.nominate.management"]
 MaxPlayers = 1000
-AllowedSteamIds = [111]
-DisallowedSteamIds = [11]
 
 [MapChooserSharpSettings.Groups.G2]
-RequiredPermissions = ["mcs.nominate.generic"]
 MinPlayers = 300
-AllowedSteamIds = [222]
-DisallowedSteamIds = [22]
 
 [MapChooserSharpSettings.Groups.G3]
 MapTime = 40
-AllowedSteamIds = [333]
-DisallowedSteamIds = [33]
 
 [ze_multi_group]
 GroupSettings = ["G1", "G2", "G3"]

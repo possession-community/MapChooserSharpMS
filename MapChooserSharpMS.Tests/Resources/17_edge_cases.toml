@@ -12,14 +12,9 @@ MapTime = 20
 [ze_bad_group_settings]
 GroupSettings = [123]
 
-[ze_bad_steam_ids]
-AllowedSteamIds = ["abc"]
-
 [ze_bad_days]
 DaysAllowed = ["funday"]
 
 [ze_empty_arrays]
-RequiredPermissions = []
-AllowedSteamIds = []
 DaysAllowed = []
 AllowedTimeRanges = []

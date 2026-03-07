@@ -129,32 +129,18 @@ public class ResourceConfigTests
     // ================================================================
 
     [Fact]
-    public void MultipleGroups_FirstGroupPriority_SteamIdsAccumulated()
+    public void MultipleGroups_FirstGroupPriority()
     {
         var result = LoadAndParse("05_multiple_groups.toml");
 
         var config = result.MapConfigsNameMapping["ze_multi_group"].First().MapConfig;
 
-        // G1 first priority for RequiredPermissions
-        Assert.Equal(["mcs.nominate.management"], config.NominationConfig.RequiredPermissions);
         // G1 first priority for MaxPlayers
         Assert.Equal(1000, config.NominationConfig.MaxPlayers);
         // G2 for MinPlayers (G1 doesn't set it)
         Assert.Equal(300, config.NominationConfig.MinPlayers);
         // G3 for MapTime (G1, G2 don't set it)
         Assert.Equal(40, config.MapTime);
-
-        // AllowedSteamIds accumulated from all groups
-        Assert.Contains(111u, config.NominationConfig.AllowedSteamIds);
-        Assert.Contains(222u, config.NominationConfig.AllowedSteamIds);
-        Assert.Contains(333u, config.NominationConfig.AllowedSteamIds);
-        Assert.Equal(3, config.NominationConfig.AllowedSteamIds.Count);
-
-        // DisallowedSteamIds accumulated from all groups
-        Assert.Contains(11u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(22u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(33u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Equal(3, config.NominationConfig.DisallowedSteamIds.Count);
 
         // 3 groups resolved
         Assert.Equal(3, config.GroupSettings.Count);
@@ -451,34 +437,6 @@ public class ResourceConfigTests
     }
 
     // ================================================================
-    // 15: SteamId accumulation across all layers
-    // ================================================================
-
-    [Fact]
-    public void SteamIdAccumulation_AllLayersAccumulated()
-    {
-        var result = LoadAndParse("15_steamid_accumulation.toml");
-
-        var config = result.MapConfigsNameMapping["ze_steamid_all"].First().MapConfig;
-
-        // AllowedSteamIds: Default[100] + SG1[111,222] + SG2[333] + Map[444]
-        Assert.Contains(100u, config.NominationConfig.AllowedSteamIds);
-        Assert.Contains(111u, config.NominationConfig.AllowedSteamIds);
-        Assert.Contains(222u, config.NominationConfig.AllowedSteamIds);
-        Assert.Contains(333u, config.NominationConfig.AllowedSteamIds);
-        Assert.Contains(444u, config.NominationConfig.AllowedSteamIds);
-        Assert.Equal(5, config.NominationConfig.AllowedSteamIds.Count);
-
-        // DisallowedSteamIds: Default[1000] + SG1[1111,2222] + SG2[3333] + Map[4444]
-        Assert.Contains(1000u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(1111u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(2222u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(3333u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(4444u, config.NominationConfig.DisallowedSteamIds);
-        Assert.Equal(5, config.NominationConfig.DisallowedSteamIds.Count);
-    }
-
-    // ================================================================
     // 16: Complex Layers — all features integrated
     // ================================================================
 
@@ -501,12 +459,6 @@ public class ResourceConfigTests
 
         // CooldownOverride from CG1 (60) overrides default cooldown
         Assert.Equal(60, baseConfig.CooldownConfig.ConfigCooldown);
-
-        // SteamIds accumulated: CG1[111] + CG2[222] + Map[333]
-        Assert.Contains(111u, baseConfig.NominationConfig.AllowedSteamIds);
-        Assert.Contains(222u, baseConfig.NominationConfig.AllowedSteamIds);
-        Assert.Contains(333u, baseConfig.NominationConfig.AllowedSteamIds);
-        Assert.Equal(3, baseConfig.NominationConfig.AllowedSteamIds.Count);
 
         // Extra merge: Default→CG1→CG2→Map
         // Note: Each group accessor already includes default extra merged in.
@@ -585,16 +537,6 @@ public class ResourceConfigTests
     }
 
     [Fact]
-    public void EdgeCases_BadSteamIdsIgnored()
-    {
-        var result = LoadAndParse("17_edge_cases.toml");
-
-        // AllowedSteamIds=["abc"] — non-integer elements skipped → empty list
-        var badSteam = result.MapConfigsNameMapping["ze_bad_steam_ids"].First().MapConfig;
-        Assert.Empty(badSteam.NominationConfig.AllowedSteamIds);
-    }
-
-    [Fact]
     public void EdgeCases_BadDaysIgnored()
     {
         var result = LoadAndParse("17_edge_cases.toml");
@@ -610,8 +552,6 @@ public class ResourceConfigTests
         var result = LoadAndParse("17_edge_cases.toml");
 
         var empty = result.MapConfigsNameMapping["ze_empty_arrays"].First().MapConfig;
-        Assert.Empty(empty.NominationConfig.RequiredPermissions);
-        Assert.Empty(empty.NominationConfig.AllowedSteamIds);
         Assert.Empty(empty.NominationConfig.DaysAllowed);
         Assert.Empty(empty.NominationConfig.AllowedTimeRanges);
     }
@@ -728,10 +668,6 @@ public class ResourceConfigTests
         // HardZE OnlyNomination=true (map doesn't override) → IsPickable=false
         Assert.False(map.RandomPickConfig.IsPickable);
         Assert.False(map.IsDisabled);
-        // Premium RequiredPermissions (HardZE doesn't set it, Premium is next priority)
-        Assert.Equal(["mcs.nominate.map.vip"], map.NominationConfig.RequiredPermissions);
-        // Premium RestrictToAllowedUsersOnly=true
-        Assert.True(map.NominationConfig.RestrictToAllowedUsersOnly);
         // Premium MaxPlayers=48
         Assert.Equal(48, map.NominationConfig.MaxPlayers);
         // HardZE MinPlayers=20
@@ -745,22 +681,6 @@ public class ResourceConfigTests
         Assert.Equal(3, map.NominationConfig.DaysAllowed.Count);
         // LongMaps AllowedTimeRanges (HardZE/Premium don't set it)
         Assert.Single(map.NominationConfig.AllowedTimeRanges);
-
-        // --- SteamId accumulation across all layers ---
-        // LongMaps[3001] + Premium[2001] + HardZE[1001,1002] + Map[5001]
-        var allowed = map.NominationConfig.AllowedSteamIds;
-        Assert.Equal(5, allowed.Count);
-        Assert.Contains(1001u, allowed);
-        Assert.Contains(1002u, allowed);
-        Assert.Contains(2001u, allowed);
-        Assert.Contains(3001u, allowed);
-        Assert.Contains(5001u, allowed);
-
-        // Premium[9001] + Map[9999]
-        var disallowed = map.NominationConfig.DisallowedSteamIds;
-        Assert.Equal(2, disallowed.Count);
-        Assert.Contains(9001u, disallowed);
-        Assert.Contains(9999u, disallowed);
 
         // --- 3 groups resolved ---
         Assert.Equal(3, map.GroupSettings.Count);
@@ -888,8 +808,6 @@ public class ResourceConfigTests
         Assert.False(baseGroup.RandomPickConfig.IsPickable);  // OnlyNomination=true
         Assert.Equal(20, baseGroup.NominationConfig.MinPlayers);
         Assert.Equal(3, baseGroup.NominationConfig.DaysAllowed.Count);
-        Assert.Contains(1001u, baseGroup.NominationConfig.AllowedSteamIds);
-        Assert.Contains(1002u, baseGroup.NominationConfig.AllowedSteamIds);
         // Base extra
         Assert.Equal(5L, baseGroup.ExtraConfiguration.GetValue<long>("difficulty", "level", 0));
         Assert.Equal("hard", baseGroup.ExtraConfiguration.GetValue<string>("difficulty", "mode", ""));
@@ -937,12 +855,8 @@ public class ResourceConfigTests
 
         // --- Base ---
         var baseGroup = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
-        Assert.Equal(["mcs.nominate.map.vip"], baseGroup.NominationConfig.RequiredPermissions);
-        Assert.True(baseGroup.NominationConfig.RestrictToAllowedUsersOnly);
         Assert.Equal(48, baseGroup.NominationConfig.MaxPlayers);
         Assert.True(baseGroup.NominationConfig.ProhibitAdminNomination);
-        Assert.Contains(2001u, baseGroup.NominationConfig.AllowedSteamIds);
-        Assert.Contains(9001u, baseGroup.NominationConfig.DisallowedSteamIds);
         // Defaults inherited for properties Premium doesn't set
         Assert.Equal(3, baseGroup.MaxExtends);
         Assert.Equal(20, baseGroup.MapTime);
@@ -959,9 +873,6 @@ public class ResourceConfigTests
         Assert.Contains(DayOfWeek.Sunday, freeWeekend.TargetDays);
 
         var fwGroup = freeWeekend.GroupConfig;
-        // RequiredPermissions overridden to empty (removes VIP requirement)
-        Assert.Empty(fwGroup.NominationConfig.RequiredPermissions);
-        Assert.False(fwGroup.NominationConfig.RestrictToAllowedUsersOnly);
         Assert.False(fwGroup.NominationConfig.ProhibitAdminNomination);
         // MaxPlayers inherited from base Premium
         Assert.Equal(48, fwGroup.NominationConfig.MaxPlayers);
@@ -984,7 +895,6 @@ public class ResourceConfigTests
         Assert.Equal(2, baseGroup.MaxExtCommandUses);
         Assert.Equal(48, baseGroup.CooldownConfig.ConfigCooldown);
         Assert.Equal(TimeSpan.FromDays(3), baseGroup.CooldownConfig.TimedCooldown);  // "3d" = 3 days
-        Assert.Contains(3001u, baseGroup.NominationConfig.AllowedSteamIds);
         Assert.Single(baseGroup.NominationConfig.AllowedTimeRanges);
         // Base extra
         Assert.Equal(1.0, baseGroup.ExtraConfiguration.GetValue<double>("gameplay", "speed", 0.0));

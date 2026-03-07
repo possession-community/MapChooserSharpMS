@@ -29,7 +29,6 @@ CooldownOverride = 48
 OnlyNomination = true
 MinPlayers = 20
 DaysAllowed = ["friday", "saturday", "sunday"]
-AllowedSteamIds = [1001, 1002]
 
 [MapChooserSharpSettings.Groups.HardZE.extra.difficulty]
 level = 5
@@ -68,12 +67,8 @@ xp_multiplier = 3
 # ============================================================
 
 [MapChooserSharpSettings.Groups.Premium]
-RequiredPermissions = ["mcs.nominate.map.vip"]
-RestrictToAllowedUsersOnly = true
 MaxPlayers = 48
 ProhibitAdminNomination = true
-AllowedSteamIds = [2001]
-DisallowedSteamIds = [9001]
 
 [MapChooserSharpSettings.Groups.Premium.extra.shop]
 cost = 500
@@ -85,8 +80,6 @@ Enabled = true
 ForceOverride = true
 OverridePriority = 5
 TargetDays = ["saturday", "sunday"]
-RequiredPermissions = []
-RestrictToAllowedUsersOnly = false
 ProhibitAdminNomination = false
 
 [MapChooserSharpSettings.Groups.Premium.DaySettings.FreeWeekend.extra.shop]
@@ -103,7 +96,6 @@ MaxExtends = 4
 MaxExtCommandUses = 2
 Cooldown = 48
 CooldownDateTime = "3d"
-AllowedSteamIds = [3001]
 AllowedTimeRanges = ["14:00-04:00"]
 
 [MapChooserSharpSettings.Groups.LongMaps.extra.gameplay]
@@ -149,8 +141,6 @@ WorkshopId = 987654321
 MaxExtends = 3
 Cooldown = 96
 CooldownDateTime = "7d"
-AllowedSteamIds = [5001]
-DisallowedSteamIds = [9999]
 
 [ze_epic_finale_v3.extra.shop]
 cost = 1000

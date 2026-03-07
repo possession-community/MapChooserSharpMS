@@ -54,14 +54,7 @@ public class MapConfigParsingServiceTests
         var baseConfig = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
 
         // First group (Group1) takes priority for non-merge properties
-        Assert.Equal(["mcs.nominate.management"], baseConfig.NominationConfig.RequiredPermissions);
         Assert.Equal(1000, baseConfig.NominationConfig.MaxPlayers);
-
-        // AllowedSteamIds and DisallowedSteamIds are merged from all groups
-        Assert.Contains(111u, baseConfig.NominationConfig.AllowedSteamIds);
-        Assert.Contains(333u, baseConfig.NominationConfig.AllowedSteamIds);
-        Assert.Contains(222u, baseConfig.NominationConfig.DisallowedSteamIds);
-        Assert.Contains(444u, baseConfig.NominationConfig.DisallowedSteamIds);
     }
 
     [Fact]

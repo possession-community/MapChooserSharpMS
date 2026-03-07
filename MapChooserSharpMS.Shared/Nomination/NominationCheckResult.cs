@@ -18,8 +18,6 @@ public enum NominationCheckResult
     NotEnoughPermissions = 1 << 1,
     TooMuchPlayers = 1 << 2,
     NotEnoughPlayers = 1 << 3,
-    RestrictedToCertainUser = 1 << 4,
-    BlockedBySteamId = 1 << 5,
     VotingPeriod = 1 << 6,
     OnlySpecificDay = 1 << 7,
     OnlySpecificTime = 1 << 8,

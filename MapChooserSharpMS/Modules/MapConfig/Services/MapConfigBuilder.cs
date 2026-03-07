@@ -15,11 +15,10 @@ internal static class MapConfigBuilder
     /// <summary>
     /// Merges override properties onto base properties.
     /// Non-null fields in override replace fields in base.
-    /// AllowedSteamIds and DisallowedSteamIds are accumulated (concatenated).
     /// </summary>
     public static ParsedProperties MergeProperties(ParsedProperties baseProps, ParsedProperties overrideProps)
     {
-        var merged = new ParsedProperties
+        return new ParsedProperties
         {
             MapNameAlias = overrideProps.MapNameAlias ?? baseProps.MapNameAlias,
             MapDescription = overrideProps.MapDescription ?? baseProps.MapDescription,
@@ -34,8 +33,6 @@ internal static class MapConfigBuilder
             MapRounds = overrideProps.MapRounds ?? baseProps.MapRounds,
             ExtendRoundsPerExtends = overrideProps.ExtendRoundsPerExtends ?? baseProps.ExtendRoundsPerExtends,
             OnlyNomination = overrideProps.OnlyNomination ?? baseProps.OnlyNomination,
-            RequiredPermissions = overrideProps.RequiredPermissions ?? baseProps.RequiredPermissions,
-            RestrictToAllowedUsersOnly = overrideProps.RestrictToAllowedUsersOnly ?? baseProps.RestrictToAllowedUsersOnly,
             MaxPlayers = overrideProps.MaxPlayers ?? baseProps.MaxPlayers,
             MinPlayers = overrideProps.MinPlayers ?? baseProps.MinPlayers,
             ProhibitAdminNomination = overrideProps.ProhibitAdminNomination ?? baseProps.ProhibitAdminNomination,
@@ -49,12 +46,6 @@ internal static class MapConfigBuilder
             TargetDays = overrideProps.TargetDays ?? baseProps.TargetDays,
             TargetTimeRanges = overrideProps.TargetTimeRanges ?? baseProps.TargetTimeRanges,
         };
-
-        // AllowedSteamIds and DisallowedSteamIds: accumulate from both layers
-        merged.AllowedSteamIds = MergeLists(baseProps.AllowedSteamIds, overrideProps.AllowedSteamIds);
-        merged.DisallowedSteamIds = MergeLists(baseProps.DisallowedSteamIds, overrideProps.DisallowedSteamIds);
-
-        return merged;
     }
 
     /// <summary>
@@ -84,10 +75,6 @@ internal static class MapConfigBuilder
                 IsPickable: !(props.OnlyNomination ?? false),
                 BypassNominationRestriction: false),
             NominationConfig: new NominationConfig(
-                RequiredPermissions: props.RequiredPermissions ?? [],
-                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false,
-                AllowedSteamIds: props.AllowedSteamIds ?? [],
-                DisallowedSteamIds: props.DisallowedSteamIds ?? [],
                 MaxPlayers: props.MaxPlayers ?? 0,
                 MinPlayers: props.MinPlayers ?? 0,
                 ProhibitAdminNomination: props.ProhibitAdminNomination ?? false,
@@ -122,10 +109,6 @@ internal static class MapConfigBuilder
                 IsPickable: !(props.OnlyNomination ?? false),
                 BypassNominationRestriction: false),
             NominationConfig: new NominationConfig(
-                RequiredPermissions: props.RequiredPermissions ?? [],
-                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false,
-                AllowedSteamIds: props.AllowedSteamIds ?? [],
-                DisallowedSteamIds: props.DisallowedSteamIds ?? [],
                 MaxPlayers: props.MaxPlayers ?? 0,
                 MinPlayers: props.MinPlayers ?? 0,
                 ProhibitAdminNomination: props.ProhibitAdminNomination ?? false,
@@ -135,20 +118,5 @@ internal static class MapConfigBuilder
                 configCooldown: props.Cooldown ?? 0,
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime)),
             ExtraConfiguration: extraConfig);
-    }
-
-    private static List<T>? MergeLists<T>(List<T>? baseList, List<T>? overrideList)
-    {
-        if (baseList is null && overrideList is null)
-            return null;
-        if (baseList is null)
-            return overrideList;
-        if (overrideList is null)
-            return baseList;
-
-        var merged = new List<T>(baseList.Count + overrideList.Count);
-        merged.AddRange(baseList);
-        merged.AddRange(overrideList);
-        return merged;
     }
 }
