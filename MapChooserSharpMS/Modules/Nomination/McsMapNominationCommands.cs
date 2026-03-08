@@ -234,13 +234,9 @@ internal sealed class McsMapNominationCommands(IServiceProvider serviceProvider)
 
         foreach (IMapConfig map in matchedMaps)
         {
-            if (map.IsDisabled || map.NominationConfig.RestrictToAllowedUsersOnly)
+            if (map.IsDisabled)
                 continue;
 
-            if (map.NominationConfig.RequiredPermissions.Any() &&
-                !AdminManager.PlayerHasPermissions(player, map.NominationConfig.RequiredPermissions.ToArray()))
-                continue;
-            
             filteredMaps.Add(map);
         }
         

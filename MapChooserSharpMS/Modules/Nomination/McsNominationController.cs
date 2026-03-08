@@ -95,70 +95,64 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         }
     }
 
-    private bool ProcessNominationCheckResult(IGameClient player, IMapConfig mapConfig, NominationCheckResult check)
+    private bool ProcessNominationCheckResult(IGameClient player, IMapConfig mapConfig, IReadOnlyList<NominationCheckResult> check)
     {
-        // Success - no flags set
-        if (check == NominationCheckResult.None)
+        // Success - empty list
+        if (check.Count == 0)
             return true;
 
-        // Process each flag and notify player
+        // Process each result and notify player
         int playerCountCurrently = SharedSystem.GetClientManager().GetClientCount();
 
-        if (check.HasFlag(NominationCheckResult.Disabled))
+        if (check.Contains(NominationCheckResult.Disabled))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.MapDisabled", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
 
-        if (check.HasFlag(NominationCheckResult.NotEnoughPermissions))
+        if (check.Contains(NominationCheckResult.NotEnoughPermissions))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotEnoughPermission", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
 
-        if (check.HasFlag(NominationCheckResult.TooMuchPlayers))
+        if (check.Contains(NominationCheckResult.TooMuchPlayers))
         {
             int maxPlayers = mapConfig.NominationConfig.MaxPlayers;
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.TooMuchPlayers", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig), playerCountCurrently, maxPlayers));
         }
 
-        if (check.HasFlag(NominationCheckResult.NotEnoughPlayers))
+        if (check.Contains(NominationCheckResult.NotEnoughPlayers))
         {
             int minPlayers = mapConfig.NominationConfig.MinPlayers;
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotEnoughPlayers", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig), playerCountCurrently, minPlayers));
         }
 
-        if (check.HasFlag(NominationCheckResult.RestrictedToCertainUser))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotAllowed", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
-
-        if (check.HasFlag(NominationCheckResult.BlockedBySteamId))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotAllowed", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
-
-        if (check.HasFlag(NominationCheckResult.VotingPeriod))
+        if (check.Contains(NominationCheckResult.VotingPeriod))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.DisableAtThisTime"));
 
-        if (check.HasFlag(NominationCheckResult.OnlySpecificDay))
+        if (check.Contains(NominationCheckResult.OnlySpecificDay))
         {
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.OnlySpecificDay", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
             player.GetPlayerController()?.PrintToChat(GetTextWithModulePrefix(player, LocalizeString(player, "Nomination.Notification.Failure.OnlySpecificDay.Days", string.Join(", ", mapConfig.NominationConfig.DaysAllowed))));
         }
 
-        if (check.HasFlag(NominationCheckResult.OnlySpecificTime))
+        if (check.Contains(NominationCheckResult.OnlySpecificTime))
         {
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.OnlySpecificTime", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
             player.GetPlayerController()?.PrintToChat(GetTextWithModulePrefix(player, LocalizeString(player, "Nomination.Notification.Failure.OnlySpecificTime.Times", string.Join(", ", mapConfig.NominationConfig.AllowedTimeRanges))));
         }
 
-        if (check.HasFlag(NominationCheckResult.MapIsInCooldown))
+        if (check.Contains(NominationCheckResult.MapIsInCooldown))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.MapIsInCooldown", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig), GetHighestCooldown(mapConfig)));
 
-        if (check.HasFlag(NominationCheckResult.AlreadyNominated))
+        if (check.Contains(NominationCheckResult.AlreadyNominated))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.AlreadyNominatedSameMap", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
 
-        if (check.HasFlag(NominationCheckResult.NominatedByAdmin))
+        if (check.Contains(NominationCheckResult.NominatedByAdmin))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.AlreadyNominatedByAdmin", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
 
-        if (check.HasFlag(NominationCheckResult.SameMap))
+        if (check.Contains(NominationCheckResult.SameMap))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.SameMap"));
 
-        if (check.HasFlag(NominationCheckResult.GroupNominationLimitReached))
+        if (check.Contains(NominationCheckResult.GroupNominationLimitReached))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.GroupLimitReached", PerGroupNominationLimit.Value));
 
-        if (check.HasFlag(NominationCheckResult.CancelledByExternalPlugin))
+        if (check.Contains(NominationCheckResult.CancelledByExternalPlugin))
             player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.Generic.WithMapName", _mcsInternalMapConfigProviderApi.GetMapName(mapConfig)));
 
         return false;

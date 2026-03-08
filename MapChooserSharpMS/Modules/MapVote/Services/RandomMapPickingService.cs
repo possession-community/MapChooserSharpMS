@@ -23,8 +23,11 @@ internal class RandomMapPickingService(IServiceProvider provider, INominationVal
         
         foreach (var mapConfig in sorted.AsEnumerable())
         {
-            if (nominationValidateService.PlayerCanNominateMap())
+            if (nominationValidateService.CanPickupMap(mapConfig).Count == 0)
             {
+                picked.Add(mapConfig);
+                if (picked.Count >= amount)
+                    break;
             }
         }
         

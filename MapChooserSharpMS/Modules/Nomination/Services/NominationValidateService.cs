@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
@@ -16,7 +16,6 @@ using MapChooserSharpMS.Shared.Nomination.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Enums;
 using Sharp.Shared.Objects;
-using Sharp.Shared.Units;
 using TnmsPluginFoundation;
 using TnmsPluginFoundation.Models.Plugin;
 
@@ -26,7 +25,7 @@ internal sealed class NominationValidateService
     : PluginBasicFeatureBase, INominationValidateService
 {
     public readonly IConVar PerGroupNominationLimit;
-    
+
     private readonly IMcsInternalNominationManager _nominationManager;
     private readonly IInternalEventManager _eventManager;
     private readonly IMcsInternalNominationController _nominationController;
@@ -36,7 +35,7 @@ internal sealed class NominationValidateService
     public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager):base(serviceProvider)
     {
         var conv = SharedSystem.GetConVarManager().CreateConVar("", 0, 0, 999, "Help", ConVarFlags.None);
-        
+
         if (conv == null)
             throw new InvalidOperationException($"Failed to initialize ConVar in {GetType().Name}");
 
@@ -47,116 +46,95 @@ internal sealed class NominationValidateService
         _mapTransitionManager = mapTransitionManager;
         _serviceProvider = serviceProvider;
     }
-    
-    public NominationCheckResult PlayerCanNominateMap(IGameClient client, IMapConfig mapConfig)
+
+    public IReadOnlyList<NominationCheckResult> PlayerCanNominateMap(IGameClient client, IMapConfig mapConfig)
     {
-        var result = NominationCheckResult.None;
+        var result = new List<NominationCheckResult>();
 
         if (IsMapDisabled(mapConfig))
-            result |= NominationCheckResult.Disabled;
+            result.Add(NominationCheckResult.Disabled);
 
         if (IsCurrentMap(mapConfig))
-            result |= NominationCheckResult.SameMap;
+            result.Add(NominationCheckResult.SameMap);
 
-        result |= GetNominationState(mapConfig, client);
+        result.AddRange(GetNominationState(mapConfig, client));
 
         if (HasReachedGroupNominationLimit(mapConfig))
-            result |= NominationCheckResult.GroupNominationLimitReached;
+            result.Add(NominationCheckResult.GroupNominationLimitReached);
 
         if (IsDuringVotingPeriod())
-            result |= NominationCheckResult.VotingPeriod;
+            result.Add(NominationCheckResult.VotingPeriod);
 
         if (IsMapInCooldown(mapConfig))
-            result |= NominationCheckResult.MapIsInCooldown;
-
-        SteamID steamId = client.SteamId;
-
-        // Bypasses admin check - if allowed by SteamId, skip permission/restriction checks
-        bool bypassedByAllowList = IsAllowedBySteamId(mapConfig, steamId);
-
-        if (!bypassedByAllowList)
-        {
-            if (IsRestrictedToCertainUser(mapConfig))
-                result |= NominationCheckResult.RestrictedToCertainUser;
-
-            // Bypasses admin check too
-            if (IsDisallowedBySteamId(mapConfig, steamId))
-                result |= NominationCheckResult.BlockedBySteamId;
-
-            if (!IsPlayerHasRequiredPermission(mapConfig, client))
-                result |= NominationCheckResult.NotEnoughPermissions;
-        }
+            result.Add(NominationCheckResult.MapIsInCooldown);
 
         if (!IsLowerThanMaxPlayers(mapConfig))
-            result |= NominationCheckResult.TooMuchPlayers;
+            result.Add(NominationCheckResult.TooMuchPlayers);
 
         if (!IsGreaterThanMinPlayers(mapConfig))
-            result |= NominationCheckResult.NotEnoughPlayers;
+            result.Add(NominationCheckResult.NotEnoughPlayers);
 
         if (!IsWithinAllowedDays(mapConfig))
-            result |= NominationCheckResult.OnlySpecificDay;
+            result.Add(NominationCheckResult.OnlySpecificDay);
 
         if (!IsWithinTimeRange(mapConfig))
-            result |= NominationCheckResult.OnlySpecificTime;
+            result.Add(NominationCheckResult.OnlySpecificTime);
+
+        if (IsPlayerDeniedByPermission(mapConfig, client))
+            result.Add(NominationCheckResult.NotEnoughPermissions);
 
         // Only fire event if all other checks passed
-        if (result == NominationCheckResult.None)
+        if (result.Count == 0)
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)))
             {
-                result |= NominationCheckResult.CancelledByExternalPlugin;
+                result.Add(NominationCheckResult.CancelledByExternalPlugin);
             }
         }
 
         return result;
     }
 
-    public NominationCheckResult CanPickupMap(IMapConfig mapConfig)
+    public IReadOnlyList<NominationCheckResult> CanPickupMap(IMapConfig mapConfig)
     {
-        var result = NominationCheckResult.None;
+        var result = new List<NominationCheckResult>();
 
         if (IsMapDisabled(mapConfig))
-            result |= NominationCheckResult.Disabled;
+            result.Add(NominationCheckResult.Disabled);
 
         if (IsCurrentMap(mapConfig))
-            result |= NominationCheckResult.SameMap;
+            result.Add(NominationCheckResult.SameMap);
 
-        result |= GetNominationState(mapConfig);
+        result.AddRange(GetNominationState(mapConfig));
 
         if (HasReachedGroupNominationLimit(mapConfig))
-            result |= NominationCheckResult.GroupNominationLimitReached;
+            result.Add(NominationCheckResult.GroupNominationLimitReached);
 
         if (IsMapInCooldown(mapConfig))
-            result |= NominationCheckResult.MapIsInCooldown;
-
-        if (IsRestrictedToCertainUser(mapConfig))
-            result |= NominationCheckResult.RestrictedToCertainUser;
-
-        if (IsRequiresAnyPermission(mapConfig))
-            result |= NominationCheckResult.NotEnoughPermissions;
+            result.Add(NominationCheckResult.MapIsInCooldown);
 
         if (!IsLowerThanMaxPlayers(mapConfig))
-            result |= NominationCheckResult.TooMuchPlayers;
+            result.Add(NominationCheckResult.TooMuchPlayers);
 
         if (!IsGreaterThanMinPlayers(mapConfig))
-            result |= NominationCheckResult.NotEnoughPlayers;
+            result.Add(NominationCheckResult.NotEnoughPlayers);
 
         if (!IsWithinAllowedDays(mapConfig))
-            result |= NominationCheckResult.OnlySpecificDay;
+            result.Add(NominationCheckResult.OnlySpecificDay);
 
         if (!IsWithinTimeRange(mapConfig))
-            result |= NominationCheckResult.OnlySpecificTime;
+            result.Add(NominationCheckResult.OnlySpecificTime);
 
         // Only fire event if all other checks passed
-        if (result == NominationCheckResult.None)
+        if (result.Count == 0)
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)))
             {
-                result |= NominationCheckResult.CancelledByExternalPlugin;
+                result.Add(NominationCheckResult.CancelledByExternalPlugin);
             }
         }
 
@@ -208,72 +186,29 @@ internal sealed class NominationValidateService
                    .Count(u => u.IsFakeClient == includeBots && !u.IsHltv);
     }
 
-    public bool IsPlayerHasRequiredPermission(IMapConfig mapConfig, IGameClient? client)
-    {
-        if (!mapConfig.NominationConfig.RequiredPermissions.Any())
-            return true;
-        
-        foreach (var perm in mapConfig.NominationConfig.RequiredPermissions.ToArray())
-        {
-            if (TnmsPlugin.AdminManager.ClientHasPermission(client, perm))
-                return true;
-        }
-        return false;
-    }
-
-    public bool IsRequiresAnyPermission(IMapConfig mapConfig)
-    {
-        return mapConfig.NominationConfig.RequiredPermissions.Any();
-    }
-
-    public bool IsPlayerHasRequiredPermission(IMapConfig mapConfig, SteamID steamId)
-    {
-        var perm = mapConfig.NominationConfig.RequiredPermissions;
-        if (!perm.Any())
-            return true;
-        
-        TnmsPlugin.AdminManager.ClientHasPermission(steamId, perm);
-    }
-
-    public bool IsDisallowedBySteamId(IMapConfig mapConfig, SteamID steamId)
-    {
-        return mapConfig.NominationConfig.DisallowedSteamIds.Contains(steamId.AccountId);
-    }
-
-    public bool IsAllowedBySteamId(IMapConfig mapConfig, SteamID steamId)
-    {
-        return mapConfig.NominationConfig.AllowedSteamIds.Contains(steamId.AccountId);
-    }
-
-    public bool IsRestrictedToCertainUser(IMapConfig mapConfig)
-    {
-        return mapConfig.NominationConfig.RestrictToAllowedUsersOnly;
-    }
-
     public bool IsMapInCooldown(IMapConfig mapConfig)
     {
         return GetCooldownInformations(mapConfig).HasCooldown;
     }
 
-
-    public NominationCheckResult GetNominationState(IMapConfig mapConfig, IGameClient? client = null)
+    public IReadOnlyList<NominationCheckResult> GetNominationState(IMapConfig mapConfig, IGameClient? client = null)
     {
         if (!_nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var nominated))
-            return NominationCheckResult.None;
+            return [];
 
         if (nominated.IsForceNominated)
-            return NominationCheckResult.NominatedByAdmin;
+            return [NominationCheckResult.NominatedByAdmin];
 
         if (client != null)
         {
             if (nominated.NominationParticipants.Contains(client.Slot))
-                return NominationCheckResult.AlreadyNominated;
+                return [NominationCheckResult.AlreadyNominated];
 
-            return NominationCheckResult.None;
+            return [];
         }
 
         // For CanPickupMap (client is null), map is already nominated
-        return NominationCheckResult.AlreadyNominated;
+        return [NominationCheckResult.AlreadyNominated];
     }
 
     public IDetailedCooldownResult GetCooldownInformations(IMapConfig mapConfig)
@@ -282,14 +217,31 @@ internal sealed class NominationValidateService
         var curMapTimedCooldown = mapConfig.CooldownConfig.LastPlayedAt + mapConfig.CooldownConfig.TimedCooldown;
         Dictionary<string, int> groupCooldown = new Dictionary<string, int>();
         Dictionary<string, DateTime> groupTimedCooldown = new ();
-        
+
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
             groupCooldown[groupSetting.GroupName] = groupSetting.CooldownConfig.CurrentCooldown;
             groupTimedCooldown[groupSetting.GroupName] = groupSetting.CooldownConfig.LastPlayedAt + groupSetting.CooldownConfig.TimedCooldown;
         }
-        
+
         return new DetailedCooldownResult(mapConfig, curMapCooldown, groupCooldown, curMapTimedCooldown, groupTimedCooldown);
+    }
+
+    public bool IsPlayerDeniedByPermission(IMapConfig mapConfig, IGameClient client)
+    {
+        // Resolution: Any Deny > Any Allow > Default (allowed)
+        // Check map-level deny
+        if (TnmsPlugin.AdminManager.ClientHasPermission(client, $"mcs.nominate.map.deny.{mapConfig.MapName}"))
+            return true;
+
+        // Check group-level deny
+        foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
+        {
+            if (TnmsPlugin.AdminManager.ClientHasPermission(client, $"mcs.nominate.group.deny.{groupSetting.GroupName}"))
+                return true;
+        }
+
+        return false;
     }
 
     public bool HasReachedGroupNominationLimit(IMapConfig mapConfig)
@@ -306,17 +258,17 @@ internal sealed class NominationValidateService
                 {
                     groupsNominatedCount.Add(groupSetting.GroupName, 0);
                 }
-                
+
                 groupsNominatedCount[groupSetting.GroupName]++;
             }
         }
-        
+
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
             if (groupsNominatedCount[groupSetting.GroupName] >= PerGroupNominationLimit.GetInt16())
                 return true;
         }
-        
+
         return false;
     }
 }

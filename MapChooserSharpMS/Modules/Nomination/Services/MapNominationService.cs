@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.Nomination;
@@ -16,32 +17,32 @@ namespace MapChooserSharpMS.Modules.Nomination.Services;
 
 internal sealed class MapNominationService(
     IServiceProvider provider,
-    IPluginConfigProvider configProvider, 
+    IPluginConfigProvider configProvider,
     IInternalEventManager eventManager,
     IMcsInternalNominationManager nominationManager,
     IMcsNominationController nominationController,
     INominationValidateService nominationValidator
 ) : IMcsInternalMapNominationService
 {
-    
+
     public int NominationCountLimit => configProvider.PluginConfig.VoteConfig.MaxMenuElements;
-    
-    public NominationCheckResult TryNominateMap(IGameClient nominator, IMapConfig mapConfig)
+
+    public IReadOnlyList<NominationCheckResult> TryNominateMap(IGameClient nominator, IMapConfig mapConfig)
     {
         var result = nominationValidator.PlayerCanNominateMap(nominator, mapConfig);
 
-        if (result != NominationCheckResult.None)
+        if (result.Count != 0)
             return result;
-        
+
         if (!nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var nomination))
         {
             var newNom = new McsNominationData(mapConfig);
-            
+
             nomination = newNom;
             var nominationParam = ActivatorUtilities.CreateInstance<NominationParams>(provider, nominationController, nomination, nominator);
             if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNomination(nominationParam)))
-                return NominationCheckResult.CancelledByExternalPlugin;
-            
+                return [NominationCheckResult.CancelledByExternalPlugin];
+
             if (!nominationManager.AddNomination(newNom))
                 throw new InvalidOperationException("Failed to add nomination");
         }
@@ -49,10 +50,10 @@ internal sealed class MapNominationService(
         {
             var nominationParam = ActivatorUtilities.CreateInstance<NominationParams>(provider, nominationController, nomination, nominator);
             if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNomination(nominationParam)))
-                return NominationCheckResult.CancelledByExternalPlugin;
+                return [NominationCheckResult.CancelledByExternalPlugin];
         }
+    
 
-        
 
         IMcsNominationData? previousNomination = null;
         foreach (var nominatedMapsValue in nominationManager.NominatedMaps.Values)
@@ -71,13 +72,13 @@ internal sealed class MapNominationService(
             if (previousNomination.NominationParticipants.Count <= 0)
                 TryRemoveNomination(mapConfig, nominator);
         }
-        
+
         nomination.NominationParticipants.Add(nominator.Slot);
-        
-        return NominationCheckResult.None;
+
+        return [];
     }
 
-    public NominationCheckResult TryAdminNominateMap(IGameClient? nominator, IMapConfig mapConfig)
+    public IReadOnlyList<NominationCheckResult> TryAdminNominateMap(IGameClient? nominator, IMapConfig mapConfig)
     {
         throw new NotImplementedException();
     }
@@ -86,13 +87,13 @@ internal sealed class MapNominationService(
     {
         if (!nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var nomination))
             return false;
-        
+
         if (nomination.IsForceNominated && !forceRemoval)
             return false;
 
         if (!nominationManager.RemoveNomination(nomination))
             return false;
-        
+
         // TODO()
         var nominationRemovedParam = ActivatorUtilities.CreateInstance<NominationRemovedEventParams>(provider, nominationController, nomination);
         eventManager.Fire<INominationEventListener>(evt => evt.OnNominationRemoved(nominationRemovedParam));
