@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
 using Sharp.Shared.Units;
 using TnmsPluginFoundation;
+using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.RockTheVote.Services;
 
@@ -90,6 +91,13 @@ internal sealed class RtvService(
 
     public void InitiateRtvVote()
     {
+        if (rtvManager.RtvStatus != RtvStatus.Enabled)
+            return;
+
+        rtvManager.ForceSetRtvStatus(RtvStatus.TriggeredWaitingForVote);
+
+        IRtvConfirmedParams @params = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, null, false);
+        eventManager.Fire<IRockTheVoteEventListener>(e => e.OnRtvConfirmed(@params));
     }
 
     public void EnableRtvCommand(IGameClient? client = null, bool silently = false)
@@ -128,5 +136,15 @@ internal sealed class RtvService(
 
     public void InitiateForceRtvVote(IGameClient? client)
     {
+        var forceParams = new ForceRtvParams(plugin, (PluginModuleBase)controller, client);
+        bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnForceRtv(forceParams));
+
+        if (cancelled)
+            return;
+
+        rtvManager.ForceSetRtvStatus(RtvStatus.TriggeredWaitingForVote);
+
+        IRtvConfirmedParams confirmedParams = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, client, true);
+        eventManager.Fire<IRockTheVoteEventListener>(e => e.OnRtvConfirmed(confirmedParams));
     }
 }
