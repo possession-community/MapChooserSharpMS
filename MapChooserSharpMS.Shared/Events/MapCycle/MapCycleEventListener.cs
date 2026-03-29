@@ -54,4 +54,14 @@ public interface IMapCycleEventListener : IEventListenerBase
     /// Fired when MCS about to apply map cooldown
     /// </summary>
     void OnMapCooldownApply(IMapCooldownApplyEventParams eventParams) {}
+
+    /// <summary>
+    /// Fired when time or round limit has been reached
+    /// </summary>
+    void OnTimeLimitReached(ITimeLimitReachedEventParams @params) {}
+
+    /// <summary>
+    /// Fired when remaining time or rounds cross the vote-start threshold
+    /// </summary>
+    void OnVoteStartThresholdReached(IVoteStartThresholdReachedEventParams @params) {}
 }

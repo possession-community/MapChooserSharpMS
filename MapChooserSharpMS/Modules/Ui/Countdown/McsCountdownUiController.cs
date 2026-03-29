@@ -25,7 +25,7 @@ internal sealed class McsCountdownUiController(IServiceProvider serviceProvider,
     
     private readonly Dictionary<McsCountdownUiType, IMcsCountdownUi> _countdownUis = new();
     
-    private IPluginConfigProvider _mcsPluginConfigProvider = null!;
+    private IMcsPluginConfigProvider _mcsPluginConfigProvider = null!;
     
     public override void RegisterServices(IServiceCollection services)
     {
@@ -41,11 +41,11 @@ internal sealed class McsCountdownUiController(IServiceProvider serviceProvider,
         _countdownUis[McsCountdownUiType.CenterHtml] = new CenterHtmlCountdownUi(ServiceProvider);
         _countdownUis[McsCountdownUiType.Chat] = new ChatCountdownUi(ServiceProvider);
 
-        _mcsPluginConfigProvider = ServiceProvider.GetRequiredService<IPluginConfigProvider>();
+        _mcsPluginConfigProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         
         if (HotReload)
         {
-            foreach (IGameClient client in SharedSystem.GetModSharp().GetIServer().GetGameClients())
+            foreach (IGameClient client in SharedSystem.GetModSharp().GetIServer().GetGameClients(false, false))
             {
                 if (client.IsFakeClient || client.IsHltv)
                     continue;
@@ -83,7 +83,7 @@ internal sealed class McsCountdownUiController(IServiceProvider serviceProvider,
 
     internal void CloseCountdownUiAll()
     {
-        foreach (IGameClient client in SharedSystem.GetModSharp().GetIServer().GetGameClients())
+        foreach (IGameClient client in SharedSystem.GetModSharp().GetIServer().GetGameClients(false, false))
         {
             if (client.IsFakeClient || client.IsHltv)
                 continue;
@@ -94,7 +94,7 @@ internal sealed class McsCountdownUiController(IServiceProvider serviceProvider,
 
     internal void ShowCountdownToAll(int secondsLeft, McsCountdownType countdownType)
     {
-        foreach (IGameClient client in SharedSystem.GetModSharp().GetIServer().GetGameClients())
+        foreach (IGameClient client in SharedSystem.GetModSharp().GetIServer().GetGameClients(false, false))
         {
             if (client.IsFakeClient || client.IsHltv)
                 continue;

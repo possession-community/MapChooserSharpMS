@@ -29,18 +29,11 @@
     <Folder Include="Modules\MapCycle\Managers\" />
   </ItemGroup>
 
-  <!-- Temporarily exclude WIP modules with pre-existing build errors -->
+  <!-- Temporarily exclude files with unresolved build errors (CounterStrikeSharp / old API references) -->
   <ItemGroup>
-    <Compile Remove="Modules\Nomination\**\*.cs" />
-    <Compile Remove="Modules\Ui\**\*.cs" />
-    <!-- Re-include enum files needed by PluginConfig -->
-    <Compile Include="Modules\Ui\Menu\McsSupportedMenuType.cs" />
-    <Compile Include="Modules\Ui\Countdown\McsCountdownUiType.cs" />
-    <Compile Remove="Modules\MapVote\**\*.cs" />
-    <Compile Remove="Modules\RockTheVote\**\*.cs" />
-    <Compile Remove="Modules\EventManager\**\*.cs" />
-    <Compile Remove="Modules\MapCycle\**\*.cs" />
-    <Compile Remove="MapChooserSharpMs.cs" />
+    <Compile Remove="Modules\Nomination\McsMapNominationCommands.cs" />
+    <Compile Remove="Modules\Nomination\McsNominationController.cs" />
+    <Compile Remove="Modules\MapVote\Services\RandomMapPickingService.cs" />
   </ItemGroup>
   
 </Project>

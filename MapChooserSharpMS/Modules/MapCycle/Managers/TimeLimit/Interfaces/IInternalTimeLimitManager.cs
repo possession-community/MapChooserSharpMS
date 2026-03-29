@@ -2,5 +2,5 @@
 
 internal interface IInternalTimeLimitManager
 {
-    TimeLimitStatusFlag Tick();
+    void OnTick();
 }

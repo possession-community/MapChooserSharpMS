@@ -8,7 +8,7 @@ using MapChooserSharpMS.Shared.Nomination.Services;
 
 namespace MapChooserSharpMS.Modules.MapVote.Services;
 
-internal class RandomMapPickingService(IServiceProvider provider, INominationValidateService nominationValidateService, IPluginConfigProvider pluginConfigProvider, IMcsMapConfigProvider mapConfigProvider)
+internal class RandomMapPickingService(IServiceProvider provider, INominationValidateService nominationValidateService, IMcsPluginConfigProvider pluginConfigProvider, IMcsMapConfigProvider mapConfigProvider)
 {
     public List<IMapConfig> PickRandomMaps(int amount = -1)
     {

@@ -17,7 +17,7 @@ namespace MapChooserSharpMS.Modules.Nomination.Services;
 
 internal sealed class MapNominationService(
     IServiceProvider provider,
-    IPluginConfigProvider configProvider,
+    IMcsPluginConfigProvider configProvider,
     IInternalEventManager eventManager,
     IMcsInternalNominationManager nominationManager,
     IMcsNominationController nominationController,

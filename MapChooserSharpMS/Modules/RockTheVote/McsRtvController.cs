@@ -26,7 +26,7 @@ internal sealed class McsRtvController(IServiceProvider serviceProvider, bool ho
     private InternalRtvManager _rtvManager = null!;
     private RtvService _rtvService = null!;
     private IInternalEventManager _eventManager = null!;
-    private IPluginConfigProvider _configProvider = null!;
+    private IMcsPluginConfigProvider _configProvider = null!;
 
     public IRtvManager RtvManager => _rtvManager;
     public IRtvService RtvService => _rtvService;
@@ -40,7 +40,7 @@ internal sealed class McsRtvController(IServiceProvider serviceProvider, bool ho
     {
         _rtvManager = new InternalRtvManager();
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
-        _configProvider = ServiceProvider.GetRequiredService<IPluginConfigProvider>();
+        _configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         _rtvService = new RtvService(Plugin, this, _rtvManager, _eventManager, ServiceProvider);
     }
 
