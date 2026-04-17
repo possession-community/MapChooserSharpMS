@@ -1,0 +1,3 @@
+[submodule "refs/modsharp-knowledge"]
+	path = refs/modsharp-knowledge
+	url = git@github.com:fltuna/modsharp-knowledge.git
