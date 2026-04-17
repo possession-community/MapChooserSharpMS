@@ -12,12 +12,12 @@ using MapChooserSharpMS.Shared.RockTheVote.Managers;
 using MapChooserSharpMS.Shared.RockTheVote.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Listeners;
+using Sharp.Shared.Objects;
 using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.RockTheVote;
 
-internal sealed class McsRtvController(IServiceProvider serviceProvider, bool hotReload)
-    : PluginModuleBase(serviceProvider, hotReload), IMcsInternalRtvController, IMapVoteEventListener, IMapCycleEventListener, IGameListener
+internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvController, IMapVoteEventListener, IMapCycleEventListener, IGameListener
 {
     public override string PluginModuleName => "McsRtvController";
     public override string ModuleChatPrefix => "Prefix.Rtv";
@@ -27,10 +27,18 @@ internal sealed class McsRtvController(IServiceProvider serviceProvider, bool ho
     private RtvService _rtvService = null!;
     private IInternalEventManager _eventManager = null!;
     private IMcsPluginConfigProvider _configProvider = null!;
+    private RtvConVars _conVars = null!;
 
     public IRtvManager RtvManager => _rtvManager;
     public IRtvService RtvService => _rtvService;
+    public RtvConVars ConVars => _conVars;
 
+    internal McsRtvController(IServiceProvider serviceProvider, bool hotReload): base(serviceProvider, hotReload)
+    {
+        _conVars = new RtvConVars(Plugin.SharedSystem.GetConVarManager());
+        foreach (var cv in _conVars.All()) TrackConVar(cv);
+    }
+    
     public override void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<IMcsInternalRtvController>(this);
