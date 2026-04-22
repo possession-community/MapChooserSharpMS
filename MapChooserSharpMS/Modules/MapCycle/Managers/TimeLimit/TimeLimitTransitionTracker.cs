@@ -46,7 +46,7 @@ internal sealed class TimeLimitTransitionTracker
 
     public void ResetFlags()
     {
-        _voteThresholdFired = _isVoteThresholdReached();
-        _limitReachedFired = _isLimitReached();
+        _voteThresholdFired = false;
+        _limitReachedFired = false;
     }
 }
