@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\config.props" />
+
+    <PropertyGroup>
+        <AssemblyName>McsFPMCompat</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ModSharp.Sharp.Shared" Version="2.1.118" ExcludeAssets="runtime" />
+        <PackageReference Include="ModSharp.Sharp.Modules.MenuManager.Shared" Version="2.1.118" ExcludeAssets="runtime" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\MapChooserSharpMS.Shared\MapChooserSharpMS.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

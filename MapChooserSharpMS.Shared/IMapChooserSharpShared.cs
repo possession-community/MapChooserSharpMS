@@ -4,6 +4,7 @@ using MapChooserSharpMS.Shared.MapCycleController;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.RockTheVote;
+using MapChooserSharpMS.Shared.Ui.Menu;
 
 namespace MapChooserSharpMS.Shared;
 
@@ -51,4 +52,15 @@ public interface IMapChooserSharpShared
     /// MapConfigProvider API, You can manipulate map config
     /// </summary>
     IMcsMapConfigProvider McsMapConfigProvider { get; }
+
+    /// <summary>
+    /// Register the default menu compat adapter. Intended to be called once,
+    /// during <c>OnAllModulesLoaded</c> of a companion compat module
+    /// (see <c>McsFPMCompat</c>). Calling again replaces the previous adapter.
+    /// The registered instance is consumed internally by MCS — it is not exposed
+    /// back to external callers. MCS menu flows will throw
+    /// <see cref="System.InvalidOperationException"/> if no compat has been
+    /// registered by the time a menu is requested.
+    /// </summary>
+    void SetDefaultMenuCompat(IMcsMenuCompat menuCompat);
 }
