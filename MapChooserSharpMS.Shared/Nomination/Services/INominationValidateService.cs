@@ -19,6 +19,26 @@ public interface INominationValidateService
     /// </summary>
     IReadOnlyList<NominationCheckResult> CanPickupMap(IMapConfig mapConfig);
 
+    /// <summary>
+    /// Checks whether an admin-forced nomination is allowed for the given map.<br/>
+    /// Admin nominations bypass player-oriented gameplay restrictions (player
+    /// count, day/time, permission). The only shared hard stops are
+    /// <see cref="NominationCheckResult.ProhibitAdminNomination"/> (map-level
+    /// opt-out) and <see cref="NominationCheckResult.SameMap"/>.<br/>
+    /// <br/>
+    /// When <paramref name="nominator"/> is <c>null</c> the call is treated as
+    /// a console invocation (server operator): extra integrity checks are
+    /// skipped, but any pre-existing nomination blocks with
+    /// <see cref="NominationCheckResult.AlreadyNominated"/> to prevent
+    /// clobbering live state. When non-null (player-initiated admin), the
+    /// validator additionally rejects <see cref="NominationCheckResult.Disabled"/>
+    /// / <see cref="NominationCheckResult.MapIsInCooldown"/>, and returns
+    /// <see cref="NominationCheckResult.NominatedByAdmin"/> only when another
+    /// admin has already locked the map — a non-admin existing nomination is
+    /// considered upgradable and passes.
+    /// </summary>
+    IReadOnlyList<NominationCheckResult> CanAdminNominateMap(IMapConfig mapConfig, IGameClient? nominator);
+
     bool IsDuringVotingPeriod();
 
     bool IsMapDisabled(IMapConfig mapConfig);

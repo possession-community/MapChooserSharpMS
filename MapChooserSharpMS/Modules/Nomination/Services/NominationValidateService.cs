@@ -83,7 +83,46 @@ internal sealed class NominationValidateService
         if (IsPlayerDeniedByPermission(mapConfig, client))
             result.Add(NominationCheckResult.NotEnoughPermissions);
 
-        // Only fire event if all other checks passed
+        if (result.Count == 0)
+        {
+            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
+            if (_eventManager.FireCancellable<INominationEventListener>(evt =>
+                    evt.OnNominationCheckPassed(nominationEvent)))
+            {
+                result.Add(NominationCheckResult.CancelledByExternalPlugin);
+            }
+        }
+
+        return result;
+    }
+
+    public IReadOnlyList<NominationCheckResult> CanAdminNominateMap(IMapConfig mapConfig, IGameClient? nominator)
+    {
+        var result = new List<NominationCheckResult>();
+        bool isConsole = nominator == null;
+
+        if (IsCurrentMap(mapConfig))
+            result.Add(NominationCheckResult.SameMap);
+
+        if (_nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var existing))
+        {
+            if (isConsole)
+                result.Add(NominationCheckResult.AlreadyNominated);
+            else if (existing.IsForceNominated)
+                result.Add(NominationCheckResult.NominatedByAdmin);
+        }
+
+        if (!isConsole)
+        {
+            if (mapConfig.NominationConfig.ProhibitAdminNomination)
+                result.Add(NominationCheckResult.ProhibitAdminNomination);
+            if (IsMapDisabled(mapConfig))
+                result.Add(NominationCheckResult.Disabled);
+
+            if (IsMapInCooldown(mapConfig))
+                result.Add(NominationCheckResult.MapIsInCooldown);
+        }
+
         if (result.Count == 0)
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);

@@ -19,4 +19,5 @@ public enum NominationCheckResult
     SameMap,
     GroupNominationLimitReached,
     CancelledByExternalPlugin,
+    ProhibitAdminNomination,
 }

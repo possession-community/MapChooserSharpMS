@@ -1,12 +1,21 @@
 ﻿using System.Collections.Generic;
+using MapChooserSharpMS.Shared.MapConfig.Services;
 
 namespace MapChooserSharpMS.Shared.MapConfig;
 
 /// <summary>
-/// 
+///
 /// </summary>
 public interface IMcsMapConfigProvider
 {
+    /// <summary>
+    /// Stateless helpers that derive information from an <see cref="IMapConfig"/>
+    /// (display name resolution, cooldown aggregation, ...). Exposed here so
+    /// external consumers reaching us through <c>IMapChooserSharpShared</c> can
+    /// pick the same helpers up without a second DI lookup.
+    /// </summary>
+    IMapConfigToolingService ToolingService { get; }
+
     /// <summary>
     /// Reloads the configs from disk.
     /// </summary>

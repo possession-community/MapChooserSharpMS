@@ -12,11 +12,14 @@ using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
+using TnmsPluginFoundation;
+using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.Nomination.Services;
 
 internal sealed class MapNominationService(
     IServiceProvider provider,
+    TnmsPlugin plugin,
     IMcsPluginConfigProvider configProvider,
     IInternalEventManager eventManager,
     IMcsInternalNominationManager nominationManager,
@@ -80,7 +83,49 @@ internal sealed class MapNominationService(
 
     public IReadOnlyList<NominationCheckResult> TryAdminNominateMap(IGameClient? nominator, IMapConfig mapConfig)
     {
-        throw new NotImplementedException();
+        var checkResult = nominationValidator.CanAdminNominateMap(mapConfig, nominator);
+        if (checkResult.Count != 0)
+            return checkResult;
+
+        // Post-validation: console path is guaranteed `existing == null`.
+        // Player-admin path may have a non-admin existing nomination to upgrade.
+        nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var existing);
+
+        IMcsNominationData nomination;
+        if (existing == null)
+        {
+            var newNom = new McsNominationData(mapConfig)
+            {
+                IsForceNominated = true
+            };
+
+            var adminNominationParam = new AdminNominationEventParams(
+                plugin, (PluginModuleBase)nominationController, newNom, nominator);
+
+            if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnAdminNomination(adminNominationParam)))
+                return [NominationCheckResult.CancelledByExternalPlugin];
+
+            if (!nominationManager.AddNomination(newNom))
+                throw new InvalidOperationException("Failed to add admin nomination");
+
+            nomination = newNom;
+        }
+        else
+        {
+            var adminNominationParam = new AdminNominationEventParams(
+                plugin, (PluginModuleBase)nominationController, existing, nominator);
+
+            if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnAdminNomination(adminNominationParam)))
+                return [NominationCheckResult.CancelledByExternalPlugin];
+
+            existing.IsForceNominated = true;
+            nomination = existing;
+        }
+
+        if (nominator != null)
+            nomination.NominationParticipants.Add(nominator.Slot);
+
+        return [];
     }
 
     public bool TryRemoveNomination(IMapConfig mapConfig, IGameClient? executor = null, bool forceRemoval = false)
@@ -94,9 +139,53 @@ internal sealed class MapNominationService(
         if (!nominationManager.RemoveNomination(nomination))
             return false;
 
-        // TODO()
-        var nominationRemovedParam = ActivatorUtilities.CreateInstance<NominationRemovedEventParams>(provider, nominationController, nomination);
+        var nominationRemovedParam = new NominationRemovedEventParams(
+            plugin,
+            (PluginModuleBase)nominationController,
+            nomination,
+            forceRemoval,
+            executor,
+            executor);
+
         eventManager.Fire<INominationEventListener>(evt => evt.OnNominationRemoved(nominationRemovedParam));
+
+        return true;
+    }
+
+    public bool TryUnNominate(IGameClient client, UnNominateReason reason = UnNominateReason.Normally)
+        => TryUnNominateInternal(client.Slot, client, reason);
+
+    public bool TryUnNominate(int slot, UnNominateReason reason = UnNominateReason.Normally)
+        => TryUnNominateInternal(slot, client: null, reason);
+
+    private bool TryUnNominateInternal(int slot, IGameClient? client, UnNominateReason reason)
+    {
+        IMcsNominationData? participating = null;
+        foreach (var nomination in nominationManager.NominatedMaps.Values)
+        {
+            if (nomination.NominationParticipants.Contains(slot))
+            {
+                participating = nomination;
+                break;
+            }
+        }
+
+        if (participating == null)
+            return false;
+
+        participating.NominationParticipants.Remove(slot);
+
+        var unNominateParam = new UnNominateEventParams(
+            plugin, (PluginModuleBase)nominationController, participating, slot, reason, client);
+
+        eventManager.Fire<INominationEventListener>(evt => evt.OnUnNominate(unNominateParam));
+
+        // Prune the nomination entry when the last participant leaves — but
+        // only for organic nominations. Admin-forced nominations are kept
+        // even with zero participants (they represent an operator decision,
+        // not a player vote).
+        if (participating.NominationParticipants.Count == 0 && !participating.IsForceNominated)
+            TryRemoveNomination(participating.MapConfig);
 
         return true;
     }

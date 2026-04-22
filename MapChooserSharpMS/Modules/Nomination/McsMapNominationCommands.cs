@@ -1,4 +1,18 @@
-﻿using System.Collections.Concurrent;
+﻿// =============================================================================
+// NOTE(nomination): This file is LEGACY (CounterStrikeSharp API).
+// It is excluded from the build via <Compile Remove> in MapChooserSharpMS.csproj.
+// It is kept in-tree ONLY as reference for the upcoming ModSharp command-layer
+// rewrite (option A per the Phase 2 nomination agent brief — delete/rewrite
+// deferred to a follow-up task).
+// DO NOT try to make this file compile under ModSharp piecemeal; it pulls in
+// CCSPlayerController / AdminManager / FakeConVar / Plugin.AddCommand which
+// all need to be replaced with ModSharp idioms
+// (IGameClient, TnmsPlugin.AdminManager, SharedSystem.GetConVarManager(),
+// SharedSystem.GetCommandManager()...).
+// Any permission checks in the rewrite MUST use the new NODE-based scheme:
+//   mcs.admin.nominate, mcs.nominate.map.allow.<map>, etc.
+// =============================================================================
+using System.Collections.Concurrent;
 using System.Text;
 using System.Xml.Linq;
 using CounterStrikeSharp.API;

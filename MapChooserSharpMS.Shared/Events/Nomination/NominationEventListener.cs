@@ -29,4 +29,13 @@ public interface INominationEventListener: IEventListenerBase
     void OnNominationChanged(INominationChangeParams @params) {}
 
     void OnNominationRemoved(INominationRemovedParams @params) {}
+
+    /// <summary>
+    /// Fired when a specific client is removed from a nomination's participant
+    /// list (voluntary un-nomination or disconnect cleanup). This fires per
+    /// client — if the last participant leaves a non-admin nomination, an
+    /// additional <see cref="OnNominationRemoved"/> will fire for the whole
+    /// entry.
+    /// </summary>
+    void OnUnNominate(IUnNominateParams @params) {}
 }

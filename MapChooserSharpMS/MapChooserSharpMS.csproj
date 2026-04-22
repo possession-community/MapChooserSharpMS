@@ -30,10 +30,10 @@
     <Folder Include="Modules\MapCycle\Managers\" />
   </ItemGroup>
 
-  <!-- Temporarily exclude files with unresolved build errors (CounterStrikeSharp / old API references) -->
+  <!-- Kept excluded: McsMapNominationCommands is CSS-legacy (pending ModSharp rewrite, see file header NOTE).
+       RandomMapPickingService has unresolved references in this snapshot. -->
   <ItemGroup>
     <Compile Remove="Modules\Nomination\McsMapNominationCommands.cs" />
-    <Compile Remove="Modules\Nomination\McsNominationController.cs" />
     <Compile Remove="Modules\MapVote\Services\RandomMapPickingService.cs" />
   </ItemGroup>
   

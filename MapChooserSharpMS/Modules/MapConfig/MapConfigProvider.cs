@@ -4,6 +4,7 @@ using System.IO;
 using MapChooserSharpMS.Modules.MapConfig.Interfaces;
 using MapChooserSharpMS.Modules.MapConfig.Services;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapConfig.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TnmsPluginFoundation.Models.Plugin;
@@ -22,10 +23,17 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
     private Dictionary<string, IReadOnlyCollection<IMapConfigOverrides>>  _mapConfigsNameMapping = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<long, IReadOnlyCollection<IMapConfigOverrides>>  _mapConfigsWorkshopIdMapping = new();
 
+    // Stateless; built once here and shared with the DI container so both
+    // the `IMcsMapConfigProvider.ToolingService` getter and direct DI resolve
+    // return the same instance.
+    public IMapConfigToolingService ToolingService { get; } = new MapConfigToolingService();
+
     public override void RegisterServices(IServiceCollection services)
     {
+        services.AddSingleton<IMcsMapConfigProvider>(this);
         services.AddTransient<IMapConfigGenerationService, MapConfigGenerationService>();
         services.AddTransient<IMapConfigParsingService, MapConfigParsingService>();
+        services.AddSingleton<IMapConfigToolingService>(ToolingService);
     }
 
 
