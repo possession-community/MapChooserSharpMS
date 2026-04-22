@@ -1,27 +1,44 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MapChooserSharpMS.Modules.RockTheVote.Interfaces;
 using MapChooserSharpMS.Shared.RockTheVote;
 using Sharp.Shared.Objects;
+using TnmsPluginFoundation;
 
 namespace MapChooserSharpMS.Modules.RockTheVote.Managers;
 
-internal sealed class InternalRtvManager : IInternalRtvManager
+internal sealed class InternalRtvManager(TnmsPlugin plugin, RtvConVars conVars) : IInternalRtvManager
 {
     private readonly HashSet<int> _participants = new();
     private RtvStatus _status = RtvStatus.Enabled;
-    private TimeSpan _rtvCommandUnlockTime =  TimeSpan.Zero;
-    
+    private TimeSpan _rtvCommandUnlockTime = TimeSpan.Zero;
+
     public RtvStatus RtvStatus => _status;
     public TimeSpan RtvCommandUnlockTime => _rtvCommandUnlockTime;
     public int RtvCounts => RtvParticipants.Count;
 
+    /// <summary>
+    /// Number of distinct real-player RTVs needed to trigger a vote.
+    /// Computed live from current headcount × <c>VoteStartThreshold</c>,
+    /// ceil-rounded, then floored by <c>MinimumRequirements</c> and 1.
+    /// Bots / HLTV are excluded from the headcount.
+    /// </summary>
     public int RequiredCounts
     {
         get
         {
-            // TODO()
-            return 0;
+            int realPlayers = plugin.SharedSystem.GetModSharp().GetIServer()
+                .GetGameClients(true)
+                .Count(c => !c.IsFakeClient && !c.IsHltv);
+
+            float ratio = conVars.VoteStartThreshold.GetFloat();
+            int minRequired = conVars.MinimumRequirements.GetInt32();
+            int fromRatio = (int)Math.Ceiling(realPlayers * ratio);
+
+            // Floor at MinimumRequirements (0 disables that floor); always at least 1
+            // so we never divide by zero in RtvCompletionRatio.
+            return Math.Max(Math.Max(fromRatio, minRequired), 1);
         }
     }
 

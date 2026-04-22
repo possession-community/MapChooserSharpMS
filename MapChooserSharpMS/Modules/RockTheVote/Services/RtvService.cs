@@ -106,15 +106,12 @@ internal sealed class RtvService(
 
         if (silently)
             return;
-        
-        if (success)
-        {
-            // TODO() Set notification
-        }
-        else
-        {
-            // TODO() Failure notification
-        }
+
+        controller.NotifyAdminCommandResult(
+            client,
+            success
+                ? "Rtv.Notification.Admin.Enable.Success"
+                : "Rtv.Notification.Admin.Enable.Failure");
     }
 
     public void DisableRtvCommand(IGameClient? client = null, bool silently = false)
@@ -123,15 +120,12 @@ internal sealed class RtvService(
 
         if (silently)
             return;
-        
-        if (success)
-        {
-            // TODO() Set notification
-        }
-        else
-        {
-            // TODO() Failure notification
-        }
+
+        controller.NotifyAdminCommandResult(
+            client,
+            success
+                ? "Rtv.Notification.Admin.Disable.Success"
+                : "Rtv.Notification.Admin.Disable.Failure");
     }
 
     public void InitiateForceRtvVote(IGameClient? client)

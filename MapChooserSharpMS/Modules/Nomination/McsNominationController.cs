@@ -58,8 +58,11 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
 
     public override void RegisterServices(IServiceCollection services)
     {
+        // IMcsInternalNominationController : IMcsNominationController — the
+        // public API is wired by the plugin entrypoint (MapChooserSharpMs.cs),
+        // which resolves this instance and casts to IMcsNominationController
+        // when building the shared API object.
         services.AddSingleton<IMcsInternalNominationController>(this);
-        services.AddSingleton<IMcsNominationController>(this);
         // NominationManager is created during OnInitialize; register a factory
         // so other modules resolving IMcsInternalNominationManager via DI
         // still get the same instance.
