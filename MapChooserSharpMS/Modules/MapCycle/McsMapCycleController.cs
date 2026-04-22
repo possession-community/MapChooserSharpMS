@@ -2,6 +2,7 @@ using System;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
+using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapCycle;
 using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
@@ -24,6 +25,11 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     private IInternalEventManager _eventManager = null!;
     private MapCycleConVars _conVars = null!;
 
+    // Writer for the extend-vote slot of the plugin-owned state manager.
+    // Received via ctor already narrowed to <see cref="IMcsInternalExtendVoteState"/>
+    // — this controller cannot touch the main-vote slot even by accident.
+    private readonly IMcsInternalExtendVoteState _voteState;
+
     private IInternalTimeLimitManager? _internalTimeLimitManager;
     private TimeLimitTransitionTracker? _transitionTracker;
 
@@ -41,8 +47,12 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     public int ListenerVersion => 1;
     public int ListenerPriority => 0;
 
-    internal McsMapCycleController(IServiceProvider serviceProvider, bool hotReload) : base(serviceProvider, hotReload)
+    internal McsMapCycleController(
+        IServiceProvider serviceProvider,
+        bool hotReload,
+        IMcsInternalExtendVoteState voteState) : base(serviceProvider, hotReload)
     {
+        _voteState = voteState;
         _conVars = new MapCycleConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);
     }

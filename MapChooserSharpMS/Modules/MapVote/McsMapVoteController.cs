@@ -8,7 +8,6 @@ using MapChooserSharpMS.Shared.MapVote.Managers;
 using MapChooserSharpMS.Shared.MapVote.Services;
 using Microsoft.Extensions.DependencyInjection;
 using NativeVoteManagerMS.Shared;
-using Sharp.Shared.Objects;
 using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.MapVote;
@@ -23,7 +22,11 @@ internal sealed class McsMapVoteController : PluginModuleBase, IMcsInternalVoteC
     private MapVoteConVars _conVars = null!;
     private INativeVoteManager _nativeVoteManager = null!;
 
-    public McsMapVoteState? CurrentVoteState => throw new NotImplementedException();
+    // Writer for the main-vote slot of the plugin-owned state manager.
+    // Received via ctor already narrowed to <see cref="IMcsInternalMainVoteState"/>
+    // — this controller cannot touch the extend-vote slot even by accident.
+    private readonly IMcsInternalMainVoteState _voteState;
+
     public IVoteControllingManager MapVoteManager => throw new NotImplementedException();
     public IMapVoteControllingService MapVoteControllingService => throw new NotImplementedException();
     public IClientVoteHandlingService ClientVoteHandlingService => throw new NotImplementedException();
@@ -31,8 +34,12 @@ internal sealed class McsMapVoteController : PluginModuleBase, IMcsInternalVoteC
 
     internal INativeVoteManager NativeVoteManager => _nativeVoteManager;
 
-    internal McsMapVoteController(IServiceProvider serviceProvider, bool hotReload) : base(serviceProvider, hotReload)
+    internal McsMapVoteController(
+        IServiceProvider serviceProvider,
+        bool hotReload,
+        IMcsInternalMainVoteState voteState) : base(serviceProvider, hotReload)
     {
+        _voteState = voteState;
         _conVars = new MapVoteConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);
     }
@@ -40,6 +47,12 @@ internal sealed class McsMapVoteController : PluginModuleBase, IMcsInternalVoteC
     public override void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<IMcsInternalVoteController>(this);
+
+        // Only the read-only view is DI-registered — consumers have no way to
+        // mutate vote state through this handle. Reader pulls from the
+        // plugin-owned concrete (which also satisfies the writer interfaces);
+        // modules that write receive narrow writer interfaces via their ctor.
+        services.AddSingleton<IMcsReadOnlyVoteState>(((MapChooserSharpMs)Plugin).VoteState);
     }
 
     protected override void OnInitialize()
@@ -69,10 +82,5 @@ internal sealed class McsMapVoteController : PluginModuleBase, IMcsInternalVoteC
     public void RemoveEventListener(IMapVoteEventListener listener)
     {
         _eventManager.RemoveListener(listener);
-    }
-
-    public bool IsVotingPeriod()
-    {
-        return CurrentVoteState != null;
     }
 }

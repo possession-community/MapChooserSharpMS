@@ -1,35 +1,17 @@
 ﻿using MapChooserSharpMS.Shared.Events.MapVote;
-using MapChooserSharpMS.Shared.MapVote.Managers;
-using MapChooserSharpMS.Shared.MapVote.Services;
-using Sharp.Shared.Objects;
 
 namespace MapChooserSharpMS.Shared.MapVote;
 
 /// <summary>
-/// MapVoteController API
+/// Public MapVoteController API. Kept deliberately thin: read-only vote
+/// state lives on <see cref="IMcsMainVoteState"/> (and
+/// <see cref="IMcsExtendVoteState"/> for the extend vote) so consumers that
+/// only query state depend on those narrower interfaces. Writable internals
+/// (managers, controlling service, client-vote handling service) live on
+/// the internal controller and are not exposed here.
 /// </summary>
 public interface IMcsMapVoteController
 {
-    /// <summary>
-    /// Current state of vote <see cref="McsMapVoteState"/>
-    /// </summary>
-    McsMapVoteState? CurrentVoteState { get; }
-    
-    /// <summary>
-    /// MapVoteManager
-    /// </summary>
-    IVoteControllingManager MapVoteManager { get; }
-
-    /// <summary>
-    /// Service class for starting/cancelling map vote
-    /// </summary>
-    IMapVoteControllingService MapVoteControllingService { get; }
-    
-    /// <summary>
-    /// Handles player votes
-    /// </summary>
-    IClientVoteHandlingService  ClientVoteHandlingService { get; }
-    
     /// <summary>
     /// Installs event listener
     /// </summary>
@@ -39,10 +21,4 @@ public interface IMcsMapVoteController
     /// Remove event listener
     /// </summary>
     void RemoveEventListener(IMapVoteEventListener listener);
-
-    /// <summary>
-    /// Describes whether voting or not
-    /// </summary>
-    /// <returns></returns>
-    bool IsVotingPeriod();
 }

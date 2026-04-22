@@ -182,7 +182,11 @@ internal sealed class NominationValidateService
 
     public bool IsDuringVotingPeriod()
     {
-        return _serviceProvider.GetRequiredService<IMcsInternalVoteController>().IsVotingPeriod();
+        // IMcsReadOnlyVoteState is the combined view exposed by MapVote — it
+        // reports true when *any* vote (main or extend) is in progress, so
+        // nomination is blocked in either case. No code change needed here
+        // when MapCycle later wires its extend-vote state.
+        return _serviceProvider.GetRequiredService<IMcsReadOnlyVoteState>().IsVotingPeriod();
     }
 
     public bool IsMapDisabled(IMapConfig mapConfig)
