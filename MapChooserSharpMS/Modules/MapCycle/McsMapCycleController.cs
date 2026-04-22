@@ -259,6 +259,9 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     /// </summary>
     private void OnRoundStart()
     {
+        if (_mode != MapCycleMode.Round)
+            return;
+        
         _internalTimeLimitManager?.OnTick();
     }
 
