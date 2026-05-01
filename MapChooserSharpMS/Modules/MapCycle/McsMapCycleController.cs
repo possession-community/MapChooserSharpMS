@@ -1,10 +1,14 @@
 using System;
 using MapChooserSharpMS.Modules.EventManager;
+using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
+using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapCycle;
+using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
+using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Shared.MapCycle.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,13 +36,16 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
 
     private IInternalTimeLimitManager? _internalTimeLimitManager;
     private TimeLimitTransitionTracker? _transitionTracker;
+    private IMcsInternalMapTransitionManager _mapTransitionManager = null!;
 
     private MapCycleMode _mode = MapCycleMode.None;
     private Guid _tickTimerId = Guid.Empty;
 
     public ITimeLimitManager CurrentMapTimeLimitManager =>
-        (ITimeLimitManager?)_internalTimeLimitManager
+        _internalTimeLimitManager
         ?? throw new InvalidOperationException("TimeLimit manager is not initialized for the current map");
+
+    public IMapTransitionManager MapTransitionManager => _mapTransitionManager;
 
     // TODO Implement MapCooldown services
     public IMapCooldownQueryService MapCooldownQueryService => throw new NotImplementedException();
@@ -60,11 +67,19 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     public override void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<IMapCycleController>(this);
+        // Created during OnInitialize; expose via factory so DI consumers
+        // resolve the same instance once it's constructed.
+        services.AddSingleton<IMapTransitionManager>(_ => _mapTransitionManager);
+        services.AddSingleton<IMcsInternalMapTransitionManager>(_ => _mapTransitionManager);
     }
 
     protected override void OnInitialize()
     {
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
+        _mapTransitionManager = new McsMapTransitionManager(
+            SharedSystem,
+            ServiceProvider.GetRequiredService<IMcsMapConfigProvider>(),
+            Logger);
 
         SharedSystem.GetModSharp().InstallGameListener(this);
 
@@ -119,16 +134,14 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
 
     public void FireGameEvent(IGameEvent @event)
     {
-        if (_mode != MapCycleMode.Round)
-            return;
-
         switch (@event.Name)
         {
             case "round_start":
-                OnRoundStart();
+                if (_mode == MapCycleMode.Round)
+                    OnRoundStart();
                 break;
             case "round_end":
-                OnRoundEnd();
+                _mapTransitionManager.OnRoundEnd();
                 break;
         }
     }
@@ -140,6 +153,9 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     private void InitializeForCurrentMap()
     {
         TearDownCurrentMap();
+
+        var currentMapName = SharedSystem.GetModSharp().GetMapName() ?? string.Empty;
+        _mapTransitionManager.SetCurrentMap(currentMapName);
 
         var mode = ParseMode(_conVars.Mode.GetString());
         var cvm = SharedSystem.GetConVarManager();
@@ -211,6 +227,9 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
         _internalTimeLimitManager = null;
         _transitionTracker = null;
         _mode = MapCycleMode.None;
+        // Defensive: only clear when the manager is already constructed.
+        // OnUnload may run before OnInitialize on certain failure paths.
+        _mapTransitionManager?.ClearState();
     }
 
     #endregion
@@ -218,7 +237,7 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     /// <summary>
     /// Initializes a time-based time limit for the current map.
     /// </summary>
-    public void InitializeTimeBasedLimit(TimeSpan timeLimit, TimeSpan voteStartThreshold)
+    private void InitializeTimeBasedLimit(TimeSpan timeLimit, TimeSpan voteStartThreshold)
     {
         var clock = new SystemTimeLimitClock();
         var manager = new TimeBasedTimeLimitManager(timeLimit, clock);
@@ -232,7 +251,7 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     /// <summary>
     /// Initializes a round-based time limit for the current map.
     /// </summary>
-    public void InitializeRoundBasedLimit(int roundLimit, int voteStartThreshold)
+    private void InitializeRoundBasedLimit(int roundLimit, int voteStartThreshold)
     {
         var manager = new RoundsTimeLimitManager(roundLimit);
         _internalTimeLimitManager = manager;
@@ -245,7 +264,7 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     /// <summary>
     /// Called every second by the map-scoped timer. Drives time-based limits.
     /// </summary>
-    public void OnTimerTick()
+    private void OnTimerTick()
     {
         if (_mode != MapCycleMode.Time)
             return;
@@ -263,13 +282,6 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
             return;
         
         _internalTimeLimitManager?.OnTick();
-    }
-
-    /// <summary>
-    /// Called on round_end. Checks transitions for round-based limits.
-    /// </summary>
-    private void OnRoundEnd()
-    {
         FireTransitions();
     }
 
@@ -296,14 +308,14 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
                     _eventManager.Fire<IMapCycleEventListener>(
                         l => l.OnVoteStartThresholdReached(
                             new EventManager.Events.MapCycle.VoteStartThresholdReachedParams(
-                                Plugin, this, CurrentMapTimeLimitManager.TimeLimitType)));
+                                Plugin, this, _internalTimeLimitManager.TimeLimitType)));
                     break;
 
                 case TimeLimitTransitionState.LimitReached:
                     _eventManager.Fire<IMapCycleEventListener>(
                         l => l.OnTimeLimitReached(
                             new EventManager.Events.MapCycle.TimeLimitReachedParams(
-                                Plugin, this, CurrentMapTimeLimitManager.TimeLimitType)));
+                                Plugin, this, _internalTimeLimitManager.TimeLimitType)));
                     break;
             }
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using MapChooserSharpMS.Modules.MapConfig.Interfaces;
 using MapChooserSharpMS.Modules.MapConfig.Services;
 using MapChooserSharpMS.Shared.MapConfig;
@@ -90,18 +91,35 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
         return _mapConfigsWorkshopIdMapping.TryGetValue(workshopId, out found);
     }
 
+    // Naive resolution: returns the first override's MapConfig. Day-of-week
+    // / time-range aware selection is deferred — this is the minimum needed
+    // to unblock MapTransitionManager and downstream consumers.
     public bool TryGetMapConfig(string mapName, out IMapConfig found)
     {
-        throw new NotImplementedException();
+        if (_mapConfigsNameMapping.TryGetValue(mapName, out var overrides) && overrides.Count > 0)
+        {
+            found = overrides.First().MapConfig;
+            return true;
+        }
+
+        found = null!;
+        return false;
     }
 
     public bool TryGetMapConfig(long workshopId, out IMapConfig found)
     {
-        throw new NotImplementedException();
+        if (_mapConfigsWorkshopIdMapping.TryGetValue(workshopId, out var overrides) && overrides.Count > 0)
+        {
+            found = overrides.First().MapConfig;
+            return true;
+        }
+
+        found = null!;
+        return false;
     }
 
     public IMapGroupConfig? TryGetGroupConfig(IMapGroupConfigOverrides overrides)
     {
-        throw new NotImplementedException();
+        return overrides.GroupConfig;
     }
 }

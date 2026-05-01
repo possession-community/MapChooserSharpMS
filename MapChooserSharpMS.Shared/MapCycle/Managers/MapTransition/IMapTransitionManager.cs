@@ -48,9 +48,11 @@ public interface IMapTransitionManager
     /// Second, will find from Steam Workshop by using HTTP client and fetch existence.
     /// </summary>
     /// <param name="workshopId">Workshop ID</param>
-    /// <param name="fetchResult">Result of fetch</param>
-    /// <returns>True if map is found and successfully set, otherwise false</returns>
-    Task<bool> TrySetNextMap(long workshopId, out IWorkshopFetchResult fetchResult);
+    /// <returns>
+    /// Tuple of (Success, FetchResult). Success is true if map is found and successfully set.
+    /// FetchResult always carries the resolution outcome (in-memory hit, workshop hit, or fetch error).
+    /// </returns>
+    Task<(bool Success, IWorkshopFetchResult FetchResult)> TrySetNextMap(long workshopId);
     
     /// <summary>
     /// Removes next map

@@ -1,6 +1,8 @@
-﻿namespace MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
+﻿using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
 
-internal interface IInternalTimeLimitManager
+namespace MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
+
+internal interface IInternalTimeLimitManager : ITimeLimitManager
 {
     void OnTick();
 }
