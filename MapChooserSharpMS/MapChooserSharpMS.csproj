@@ -10,7 +10,7 @@
       <PackageReference Include="ModSharp.Sharp.Shared" Version="2.1.123" ExcludeAssets="runtime" />
       <PackageReference Include="NativeVoteManagerMS.Shared" Version="0.0.3" ExcludeAssets="runtime" />
       <ProjectReference Include="..\..\TnmsPluginFoundation\TnmsPluginFoundation\TnmsPluginFoundation.csproj" />
-      <ProjectReference Include="..\..\Wuling\Wuling.Abstract\Wuling.Abstract.csproj" Private="false" ExcludeAssets="runtime" />
+      <ProjectReference Include="..\..\Wuling\Wuling.Abstract\Wuling.Abstract.csproj" Private="false" />
 
       <ProjectReference Include="..\MapChooserSharpMS.Shared\MapChooserSharpMS.Shared.csproj" />
 
