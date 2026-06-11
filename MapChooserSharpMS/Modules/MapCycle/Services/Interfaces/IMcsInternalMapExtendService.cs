@@ -14,17 +14,13 @@ internal enum McsExtendTrigger
     MapVote,
 
     /// <summary>
-    /// Extend vote (!ve) passed. Consumes <c>MaxExtends</c>.
-    /// </summary>
-    ExtendVote,
-
-    /// <summary>
     /// !ext participation threshold reached. Consumes <c>MaxExtCommandUses</c>.
     /// </summary>
     ExtCommand,
 
     /// <summary>
-    /// Admin command or external API call. Consumes nothing.
+    /// Admin command, extend vote (!ve, admin-only) pass, or external API
+    /// call. Consumes nothing.
     /// </summary>
     AdminOrApi,
 }

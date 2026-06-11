@@ -81,7 +81,7 @@ internal sealed class McsMapExtendService : IMcsInternalMapExtendService
     {
         switch (trigger)
         {
-            case McsExtendTrigger.MapVote or McsExtendTrigger.ExtendVote when ExtendsLeft <= 0:
+            case McsExtendTrigger.MapVote when ExtendsLeft <= 0:
                 return McsMapExtendResult.NoExtendsLeft;
             case McsExtendTrigger.ExtCommand when ExtCommandUsesLeft <= 0:
                 return McsMapExtendResult.NoExtCommandUsesLeft;
@@ -108,7 +108,7 @@ internal sealed class McsMapExtendService : IMcsInternalMapExtendService
 
         switch (trigger)
         {
-            case McsExtendTrigger.MapVote or McsExtendTrigger.ExtendVote:
+            case McsExtendTrigger.MapVote:
                 ExtendsLeft--;
                 break;
             case McsExtendTrigger.ExtCommand:

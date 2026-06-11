@@ -21,7 +21,7 @@ namespace MapChooserSharpMS.Modules.MapCycle.Services;
 /// <summary>
 /// Admin-triggered extend vote (!ve / !voteextend) backed by NativeVoteManager's
 /// yes/no native vote. On pass, extends via <see cref="IMcsInternalMapExtendService"/>
-/// consuming the vote-extend budget (MaxExtends).
+/// through the admin path — no extend budget is consumed.
 /// </summary>
 internal sealed class McsExtendVoteService
 {
@@ -89,9 +89,6 @@ internal sealed class McsExtendVoteService
 
         if (!_extendService.CanExtendNow)
             return McsExtendVoteStartResult.TimeLimitNotActive;
-
-        if (_extendService.ExtendsLeft <= 0)
-            return McsExtendVoteStartResult.NoExtendsLeft;
 
         float duration = _conVars.VoteExtendVoteTime.GetFloat();
         float threshold = _conVars.VoteExtendSuccessThreshold.GetFloat();
@@ -161,7 +158,9 @@ internal sealed class McsExtendVoteService
 
         FinishVoteSession();
 
-        var result = _extendService.TryExtend(McsExtendTrigger.ExtendVote);
+        // !ve is admin-only — the pass goes through the admin path and does
+        // not consume any extend budget.
+        var result = _extendService.TryExtend(McsExtendTrigger.AdminOrApi);
         if (result != McsMapExtendResult.Extended)
             _logger.LogWarning("[MapCycle] Extend vote passed but extend failed: {Result}", result);
 

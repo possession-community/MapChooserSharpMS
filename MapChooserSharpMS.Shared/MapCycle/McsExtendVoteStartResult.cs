@@ -11,11 +11,6 @@ public enum McsExtendVoteStartResult
     Started = 0,
 
     /// <summary>
-    /// No vote-based extends left (MaxExtends exhausted).
-    /// </summary>
-    NoExtendsLeft,
-
-    /// <summary>
     /// A map vote / another native vote is in progress, or next map is
     /// already confirmed.
     /// </summary>

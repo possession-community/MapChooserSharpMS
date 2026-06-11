@@ -6,9 +6,11 @@ namespace MapChooserSharpMS.Shared.MapCycle;
 /// Public facade for the map-extend system. <br/>
 /// Two independent extend budgets exist per map: <br/>
 /// - <see cref="ExtendsLeft"/> (map config <c>MaxExtends</c>) — consumed by the
-///   map-vote "Extend Map" option and by extend votes (<c>!ve</c>). <br/>
+///   map-vote "Extend Map" option. <br/>
 /// - <see cref="ExtCommandUsesLeft"/> (map config <c>MaxExtCommandUses</c>) —
-///   consumed by player-driven <c>!ext</c> extends.
+///   consumed by player-driven <c>!ext</c> extends. <br/>
+/// Admin paths (<see cref="TryExtendCurrentMap"/> and extend votes —
+/// <c>!ve</c> is admin-only) consume neither budget.
 /// </summary>
 public interface IMapCycleExtendController
 {
@@ -36,8 +38,9 @@ public interface IMapCycleExtendController
     McsMapExtendResult TryExtendCurrentMap();
 
     /// <summary>
-    /// Starts a native yes/no extend vote. On pass, the map is extended and
-    /// <see cref="ExtendsLeft"/> is consumed.
+    /// Starts a native yes/no extend vote (admin-only entry point). On pass,
+    /// the map is extended through the admin path — no extend budget is
+    /// consumed.
     /// </summary>
     /// <param name="initiator">Vote initiator. null means console/server.</param>
     McsExtendVoteStartResult StartExtendVote(IGameClient? initiator = null);
