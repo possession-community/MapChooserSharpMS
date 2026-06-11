@@ -23,7 +23,10 @@ public interface IMapCooldownCommandService
     Task<bool> SetTimedCooldown(IMapConfig mapConfig, TimeSpan cooldown);
     
     /// <summary>
-    /// This will apply the maximum int32 number to nomination cooldown.
+    /// Sets the map cooldown to <see cref="int.MaxValue"/>, effectively excluding
+    /// the map from nomination and random picking until the cooldown is cleared.
+    /// Note: this manipulates the <b>map</b> cooldown (play-based), not the
+    /// planned nomination cooldown axis.
     /// </summary>
     /// <param name="mapConfig"></param>
     /// <returns>True when successfully saved to database, otherwise false</returns>

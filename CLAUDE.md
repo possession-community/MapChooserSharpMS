@@ -37,3 +37,31 @@ start in this repo's integration history):
 - Never load per-namespace files unnecessarily — `_global.md` alone exceeds 60k lines.
 - All the paths above are plain, do NOT prefix any of them with `@`.
   <!-- END modsharp-knowledge integration -->
+
+## Wuling integration (internal framework)
+
+New infrastructure-level design in this project builds on **Wuling**, an
+internal CS2 server framework cloned at `D:\myworks\github\cs2\ModSharp\Wuling`
+(local clone, not a submodule — not publicly licensed).
+
+- External modules reference **`Wuling.Abstract` only**. Browse
+  `Wuling.Abstract/Tianshi/<Module>/` for the contract of each module.
+- Obtain the facade via ModSharp's module system:
+  `GetOptionalSharpModuleInterface<IWuling>(IWuling.Identity)` in
+  `OnAllModulesLoaded`. Simple per-player operations are also available as
+  extension methods on `IPlayerEntry` with zero setup.
+- Persistence backend is SurrealDB (`Wuling/Core/Infrastructure/Surreal/`) —
+  MCS should NOT talk to it directly; go through Tianshi interfaces.
+
+Planned/decided usage in MapChooserSharpMS:
+- **Client preferences** (e.g. countdown UI type per player) → migrate to
+  `ICookie` (`GetCookie<T>(steamId, key)` / `SetCookie<T>`). Replaces the
+  in-memory-only preference in `McsCountdownUiController`.
+- **Permissions** (node-based `mcs.*` scheme) → candidate for
+  `IAuthority.PlayerHasPermission(steamId, node)` instead of
+  `TnmsPlugin.AdminManager`. Confirm before migrating existing checks.
+- **MapCycle cooldown persistence** → design on top of Wuling rather than a
+  bespoke DB provider (exact Tianshi module TBD — Cookie is per-player keyed,
+  so map-keyed cooldowns may need a different surface; decide with the user).
+- **Menus** → `IMenu`/`IMenuInstance` (world-HUD paged menus) is a candidate
+  backend for `IMcsMenuCompat` alongside the FPM compat plugin.
