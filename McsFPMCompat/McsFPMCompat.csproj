@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\config.props" />
 
@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ModSharp.Sharp.Shared" Version="2.1.118" ExcludeAssets="runtime" />
+        <PackageReference Include="ModSharp.Sharp.Shared" Version="2.1.123" ExcludeAssets="runtime" />
         <PackageReference Include="ModSharp.Sharp.Modules.MenuManager.Shared" Version="2.1.118" ExcludeAssets="runtime" />
     </ItemGroup>
 

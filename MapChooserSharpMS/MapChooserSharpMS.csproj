@@ -7,7 +7,7 @@
     </PropertyGroup>
 
   <ItemGroup>
-      <PackageReference Include="ModSharp.Sharp.Shared" Version="2.1.118" ExcludeAssets="runtime" />
+      <PackageReference Include="ModSharp.Sharp.Shared" Version="2.1.123" ExcludeAssets="runtime" />
       <PackageReference Include="NativeVoteManagerMS.Shared" Version="0.0.3" ExcludeAssets="runtime" />
       <PackageReference Include="TnmsPluginFoundation" Version="0.0.6" />
 
