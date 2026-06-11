@@ -5,6 +5,8 @@ namespace MapChooserSharpMS.Shared.MapVote;
 public interface IMapVoteInformation
 {
     McsMapVoteState CurrentState { get; }
-    
+
     IReadOnlyCollection<IMapVoteOption> VoteOptions { get; }
+
+    IMapVoteOption? Winner { get; }
 }

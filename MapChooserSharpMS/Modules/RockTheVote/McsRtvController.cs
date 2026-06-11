@@ -8,11 +8,13 @@ using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.Events.MapVote;
 using MapChooserSharpMS.Shared.Events.MapVote.Params;
 using MapChooserSharpMS.Shared.Events.RockTheVote;
+using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.RockTheVote;
 using MapChooserSharpMS.Shared.RockTheVote.Managers;
 using MapChooserSharpMS.Shared.RockTheVote.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Sharp.Shared.Enums;
 using Sharp.Shared.Listeners;
 using Sharp.Shared.Objects;
 using TnmsPluginFoundation.Extensions.Client;
@@ -31,6 +33,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
     private IInternalEventManager _eventManager = null!;
     private IMcsPluginConfigProvider _configProvider = null!;
     private RtvConVars _conVars = null!;
+    private Guid _cooldownTimerId = Guid.Empty;
 
     public IRtvManager RtvManager => _rtvManager;
     public IRtvService RtvService => _rtvService;
@@ -41,13 +44,9 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _conVars = new RtvConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);
     }
-    
+
     public override void RegisterServices(IServiceCollection services)
     {
-        // IMcsInternalRtvController : IMcsRtvController — the public API is
-        // wired by the plugin entrypoint (MapChooserSharpMs.cs), which resolves
-        // this instance and casts to IMcsRtvController when building the shared
-        // API object. No duplicate registration needed.
         services.AddSingleton<IMcsInternalRtvController>(this);
     }
 
@@ -71,16 +70,10 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         SharedSystem.GetModSharp().RemoveGameListener(this);
         _eventManager.RemoveListener<IMapVoteEventListener>(this);
         _eventManager.RemoveListener<IMapCycleEventListener>(this);
+        StopCooldownTimer();
         _rtvManager.ForceReset();
     }
 
-    /// <summary>
-    /// Surfaces the outcome of an admin RTV command (enable/disable) to the
-    /// invoker. Routed through the controller so <see cref="RtvService"/>
-    /// (a plain service, no localization helpers) can reach the module's
-    /// <c>LocalizeWithModulePrefix</c>. Falls back to a server-log line when
-    /// no client context is available (e.g. server console).
-    /// </summary>
     public void NotifyAdminCommandResult(IGameClient? client, string translationKey)
     {
         if (client is null)
@@ -92,11 +85,6 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         client.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(client, translationKey));
     }
 
-    /// <summary>
-    /// Lock RTV while another (non-RTV) vote is in flight. RTV-initiated votes
-    /// are already represented by <see cref="RtvStatus.TriggeredWaitingForVote"/>;
-    /// don't clobber those.
-    /// </summary>
     public bool OnMapVoteStart(IMapVoteStartParams @params)
     {
         if (_rtvManager.RtvStatus != RtvStatus.TriggeredWaitingForVote
@@ -107,24 +95,37 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         return false;
     }
 
-    /// <summary>
-    /// Vote finished — regardless of outcome, clear RTV state.
-    /// </summary>
     public void OnMapVoteFinished(IMapVoteFinishedEventParams @params)
     {
-        // TODO(rtv): schedule CommandUnlockTime* cooldown based on outcome
-        // (NextMapConfirmed / MapNotChanged / MapExtend) instead of full reset.
-        _rtvManager.ForceReset();
+        _rtvManager.ClearParticipants();
     }
 
-    /// <summary>
-    /// New map started — clear RTV state so the next round begins fresh.
-    /// </summary>
+    public void OnMapConfirmed(IMapVoteMapConfirmedEventParams @params)
+    {
+        ScheduleCooldown(_conVars.CommandUnlockTimeNextMapConfirmed.GetFloat());
+    }
+
+    public void OnMapExtended(IMapVoteExtendParams @params)
+    {
+        ScheduleCooldown(_conVars.CommandUnlockTimeMapExtend.GetFloat());
+    }
+
+    public void OnMapNotChanged(IMapVoteNotChangedParams @params)
+    {
+        ScheduleCooldown(_conVars.CommandUnlockTimeMapNotChanged.GetFloat());
+    }
+
+    public void OnMapVoteCancelled(IMapVoteCancelledParams @params)
+    {
+        _rtvManager.ClearParticipants();
+        _rtvManager.ForceSetRtvStatus(RtvStatus.Enabled);
+    }
+
     public void OnGameActivate()
     {
-        // TODO(rtv): schedule CommandUnlockTimeMapStart cooldown instead of
-        // going straight to Enabled.
+        StopCooldownTimer();
         _rtvManager.ForceReset();
+        ScheduleCooldown(_conVars.CommandUnlockTimeMapStart.GetFloat());
     }
 
     public void InstallEventListener(IRockTheVoteEventListener listener)
@@ -139,6 +140,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
 
     internal void ResetRtvState()
     {
+        StopCooldownTimer();
         _rtvManager.ForceReset();
     }
 
@@ -147,6 +149,42 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _rtvService.RemoveClientFromRtv(slot);
     }
 
+    private void ScheduleCooldown(float seconds)
+    {
+        StopCooldownTimer();
+
+        if (seconds <= 0)
+        {
+            _rtvManager.ForceSetRtvStatus(RtvStatus.Enabled);
+            return;
+        }
+
+        _rtvManager.ForceSetRtvStatus(RtvStatus.InCooldown);
+        _rtvManager.SetNextRtvCommandUnlockTime(TimeSpan.FromSeconds(seconds));
+
+        _cooldownTimerId = SharedSystem.GetModSharp().PushTimer(
+            OnCooldownExpired,
+            seconds,
+            GameTimerFlags.StopOnMapEnd);
+    }
+
+    private void OnCooldownExpired()
+    {
+        _cooldownTimerId = Guid.Empty;
+        _rtvManager.SetNextRtvCommandUnlockTime(TimeSpan.Zero);
+
+        if (_rtvManager.RtvStatus == RtvStatus.InCooldown)
+            _rtvManager.ForceSetRtvStatus(RtvStatus.Enabled);
+    }
+
+    private void StopCooldownTimer()
+    {
+        if (_cooldownTimerId != Guid.Empty)
+        {
+            SharedSystem.GetModSharp().StopTimer(_cooldownTimerId);
+            _cooldownTimerId = Guid.Empty;
+        }
+    }
 
     public int ListenerVersion => 1;
     public int ListenerPriority => 9999999;

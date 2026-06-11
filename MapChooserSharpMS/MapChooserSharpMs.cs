@@ -1,7 +1,12 @@
-﻿using System;
-using System.IO;
+using System;
+using MapChooserSharpMS.Modules.MapCycle;
+using MapChooserSharpMS.Modules.MapVote;
+using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.State;
+using MapChooserSharpMS.Shared;
+using MapChooserSharpMS.Shared.Ui.Menu;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared;
 using TnmsPluginFoundation;
 
@@ -23,40 +28,56 @@ public sealed class MapChooserSharpMs(
     public override string PluginPrefix => "Plugin.Prefix";
     public override bool UseTranslationKeyInPluginPrefix => true;
 
-    /// <summary>
-    /// Single vote-state holder for the whole plugin lifetime. Owned here at
-    /// the plugin root so modules that need to mutate state (MapVote for the
-    /// main vote, MapCycle for the extend vote) can receive the same concrete
-    /// instance — typed down to the narrow writer interface at each call
-    /// site — without going through DI for writable access.
-    ///
-    /// <para>
-    /// <b>Wiring checklist</b> (when <see cref="TnmsOnPluginLoad"/> is filled in):
-    /// <list type="bullet">
-    ///   <item>Pass <see cref="VoteState"/> to <c>McsMapVoteController</c>'s
-    ///   ctor — it auto-narrows to <c>IMcsInternalMainVoteState</c>.</item>
-    ///   <item>Pass <see cref="VoteState"/> to <c>McsMapCycleController</c>'s
-    ///   ctor — it auto-narrows to <c>IMcsInternalExtendVoteState</c>.</item>
-    ///   <item><b>Don't forget consumers</b>: MapVote's RegisterServices
-    ///   registers <c>IMcsReadOnlyVoteState</c> pointing at this instance so
-    ///   consumer modules (Nomination, RTV, …) can query state through DI.
-    ///   If MapVote ever stops being responsible for that registration, make
-    ///   sure someone else registers the reader — otherwise consumer
-    ///   <c>GetRequiredService&lt;IMcsReadOnlyVoteState&gt;()</c> calls will
-    ///   throw.<br/>
-    ///   <i>(Wishlist: ideally we'd also pass the reader via constructor to
-    ///   consumer modules for the same type-safety benefit writers already
-    ///   enjoy, instead of resolving through <c>ServiceProvider</c> — do
-    ///   that when <see cref="TnmsOnPluginLoad"/> wires everything up.)</i>
-    ///   </item>
-    /// </list>
-    /// </para>
-    /// </summary>
     internal McsVoteStateManager VoteState { get; } = new();
 
+    internal IMcsMenuCompat? MenuCompat { get; set; }
+
+    protected override void RegisterRequiredPluginServices(IServiceCollection collection, IServiceProvider provider)
+    {
+        collection.AddSingleton<IMcsInternalMainVoteState>(VoteState);
+        collection.AddSingleton<IMcsInternalExtendVoteState>(VoteState);
+    }
 
     protected override void TnmsOnPluginLoad(bool hotReload)
     {
-        // TODO() Should Initialize One By One
+        // Core infrastructure
+        RegisterModule<Modules.PluginConfig.PluginConfigProvider>();
+        RegisterModule<Modules.MapConfig.MapConfigProvider>();
+        RegisterModule<Modules.EventManager.EventManager>();
+
+        // Nomination (before MapVote — MapVote resolves INominationManager)
+        RegisterModule<Modules.Nomination.McsNominationController>();
+
+        // Voting system
+        RegisterModule<McsMapVoteController>();
+        RegisterModule<Modules.Ui.Countdown.McsCountdownUiController>();
+
+        // Rock The Vote
+        RegisterModule<Modules.RockTheVote.McsRtvController>();
+
+        // Map Cycle
+        RegisterModule<McsMapCycleController>();
+    }
+
+    protected override void LateRegisterPluginServices(IServiceCollection collection, IServiceProvider provider)
+    {
+        var nominationController = provider.GetRequiredService<Modules.Nomination.Interfaces.IMcsInternalNominationController>();
+        var mapVoteController = provider.GetRequiredService<IMcsInternalVoteController>();
+        var rtvController = provider.GetRequiredService<Modules.RockTheVote.Interfaces.IMcsInternalRtvController>();
+        var mapConfigProvider = provider.GetRequiredService<Shared.MapConfig.IMcsMapConfigProvider>();
+
+        var sharedApi = new McsSharedApi(
+            this,
+            new MapCycleControllerApiStub(),
+            new MapCycleExtendControllerApiStub(),
+            new MapCycleExtendVoteControllerApiStub(),
+            nominationController,
+            mapVoteController,
+            rtvController,
+            mapConfigProvider);
+
+        SharedSystem.GetSharpModuleManager()
+            .RegisterSharpModuleInterface<IMapChooserSharpShared>(
+                this, IMapChooserSharpShared.ModSharpModuleIdentity, sharedApi);
     }
 }

@@ -68,9 +68,11 @@ internal sealed class McsCountdownUiController(IServiceProvider serviceProvider,
     private void PlayerConnectFull(IGameClient client)
     {
         McsCountdownUiType uiType = _mcsPluginConfigProvider.PluginConfig.VoteConfig.CurrentCountdownUiType;
-            
-        // TODO() Player preference from DB
-        
+        UpdateCountdownType(client, uiType);
+    }
+
+    internal void SetPlayerPreference(IGameClient client, McsCountdownUiType uiType)
+    {
         UpdateCountdownType(client, uiType);
     }
     

@@ -67,6 +67,8 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         // so other modules resolving IMcsInternalNominationManager via DI
         // still get the same instance.
         services.AddSingleton<IMcsInternalNominationManager>(_ => _internalNominationManager);
+        services.AddSingleton<INominationManager>(_ => _internalNominationManager);
+        services.AddSingleton<INominationValidateService>(_ => NominationValidateService);
     }
 
     protected override void OnInitialize()
@@ -79,9 +81,12 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this);
         NominationService          = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService);
 
-        // TODO(nomination): replace with the real menu management service once the
-        // Ui provider agent lands a concrete `NominationMenuManagementService`.
-        NominationMenuManagementService = new StubNominationMenuManagementService();
+        NominationMenuManagementService = new NominationMenuManagementService(
+            () => ((MapChooserSharpMs)Plugin).MenuCompat,
+            _mapConfigProvider,
+            _internalNominationManager,
+            NominationService,
+            _mapConfigToolingService);
 
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         _mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
@@ -89,6 +94,8 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         SharedSystem.GetClientManager().InstallClientListener(this);
+
+        AddCommandsUnderNamespace("MapChooserSharpMS.Modules.Nomination.Commands");
     }
 
     protected override void OnUnloadModule()
@@ -167,25 +174,4 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
 
         return false;
     }
-}
-
-/// <summary>
-/// Stub adapter used while the real menu management service is wired up by the
-/// Ui provider agent. All calls throw to make accidental usage obvious.
-/// </summary>
-// TODO(nomination): replace with a real implementation that consumes IMcsMenuCompat
-// registered via IMapChooserSharpShared.SetDefaultMenuCompat. See refs on
-// IMcsMenuCompat and the McsFPMCompat companion plugin.
-internal sealed class StubNominationMenuManagementService : INominationMenuManagementService
-{
-    private const string NotWiredMessage =
-        "Nomination menu management is not wired yet. "
-        + "The Ui provider agent must register a concrete INominationMenuManagementService.";
-
-    public void ShowNominationMenu(IGameClient client, List<IMapConfig> configs) => throw new NotImplementedException(NotWiredMessage);
-    public void ShowNominationMenu(IGameClient client) => throw new NotImplementedException(NotWiredMessage);
-    public void ShowAdminNominationMenu(IGameClient client, List<IMapConfig> configs) => throw new NotImplementedException(NotWiredMessage);
-    public void ShowAdminNominationMenu(IGameClient client) => throw new NotImplementedException(NotWiredMessage);
-    public void ShowRemoveNominationMenu(IGameClient client, List<IMcsNominationData> configs) => throw new NotImplementedException(NotWiredMessage);
-    public void ShowRemoveNominationMenu(IGameClient client) => throw new NotImplementedException(NotWiredMessage);
 }

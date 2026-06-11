@@ -8,7 +8,7 @@ public interface IMapVoteOption
 {
     string MapName { get; }
     
-    IMapConfig MapConfig { get; }
+    IMapConfig? MapConfig { get; }
     
     IReadOnlyCollection<PlayerSlot> VoteParticipants { get; }
 }

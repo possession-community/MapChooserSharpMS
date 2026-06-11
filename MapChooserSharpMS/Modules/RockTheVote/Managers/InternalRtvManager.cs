@@ -81,6 +81,11 @@ internal sealed class InternalRtvManager(TnmsPlugin plugin, RtvConVars conVars) 
         _rtvCommandUnlockTime = nextRtvCommandUnlockTime;
     }
 
+    public void ClearParticipants()
+    {
+        _participants.Clear();
+    }
+
     public void ForceReset()
     {
         _rtvCommandUnlockTime = TimeSpan.Zero;

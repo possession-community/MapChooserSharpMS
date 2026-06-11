@@ -1,36 +1,67 @@
 using System;
 using MapChooserSharpMS.Modules.EventManager;
-using MapChooserSharpMS.Modules.MapVote.Handlers;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
+using MapChooserSharpMS.Modules.MapVote.Managers;
+using MapChooserSharpMS.Modules.MapVote.Services;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using MapChooserSharpMS.Shared.Events.MapCycle;
+using MapChooserSharpMS.Shared.Events.MapCycle.Params;
 using MapChooserSharpMS.Shared.Events.MapVote;
+using MapChooserSharpMS.Shared.Events.RockTheVote;
+using MapChooserSharpMS.Shared.Events.RockTheVote.Params;
+using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.MapVote.Managers;
 using MapChooserSharpMS.Shared.MapVote.Services;
+using MapChooserSharpMS.Shared.Nomination.Managers;
+using MapChooserSharpMS.Shared.Nomination.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NativeVoteManagerMS.Shared;
 using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.MapVote;
 
-internal sealed class McsMapVoteController : PluginModuleBase, IMcsInternalVoteController
+internal sealed class McsMapVoteController
+    : PluginModuleBase,
+      IMcsInternalVoteController,
+      IRockTheVoteEventListener,
+      IMapCycleEventListener
 {
     public override string PluginModuleName => "McsMapVoteController";
     public override string ModuleChatPrefix => "Prefix.Vote";
     protected override bool UseTranslationKeyInModuleChatPrefix => true;
 
+    public int ListenerVersion => 1;
+    public int ListenerPriority => 100;
+
     private IInternalEventManager _eventManager = null!;
-    private MapVoteConVars _conVars = null!;
     private INativeVoteManager _nativeVoteManager = null!;
 
-    // Writer for the main-vote slot of the plugin-owned state manager.
-    // Received via ctor already narrowed to <see cref="IMcsInternalMainVoteState"/>
-    // — this controller cannot touch the extend-vote slot even by accident.
     private readonly IMcsInternalMainVoteState _voteState;
+    private readonly MapVoteConVars _conVars;
+    private readonly VoteControllingManager _voteManager = new();
 
-    public IVoteControllingManager MapVoteManager => throw new NotImplementedException();
-    public IMapVoteControllingService MapVoteControllingService => throw new NotImplementedException();
-    public IClientVoteHandlingService ClientVoteHandlingService => throw new NotImplementedException();
+    private MapVoteControllingService _controllingService = null!;
+    private ClientVoteHandlingService _clientVoteService = null!;
+
+    public IVoteControllingManager MapVoteManager => _voteManager;
+    public IMapVoteControllingService MapVoteControllingService => _controllingService;
+    public IClientVoteHandlingService ClientVoteHandlingService => _clientVoteService;
     public MapVoteConVars ConVars => _conVars;
+
+    private Func<float>? _customWinnerThresholdProvider;
+
+    public Func<float>? CustomWinnerThresholdProvider
+    {
+        get => _customWinnerThresholdProvider;
+        set
+        {
+            _customWinnerThresholdProvider = value;
+            if (_controllingService is not null)
+                _controllingService.CustomWinnerThresholdProvider = value;
+        }
+    }
 
     internal INativeVoteManager NativeVoteManager => _nativeVoteManager;
 
@@ -47,11 +78,6 @@ internal sealed class McsMapVoteController : PluginModuleBase, IMcsInternalVoteC
     public override void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<IMcsInternalVoteController>(this);
-
-        // Only the read-only view is DI-registered — consumers have no way to
-        // mutate vote state through this handle. Reader pulls from the
-        // plugin-owned concrete (which also satisfies the writer interfaces);
-        // modules that write receive narrow writer interfaces via their ctor.
         services.AddSingleton<IMcsReadOnlyVoteState>(((MapChooserSharpMs)Plugin).VoteState);
     }
 
@@ -65,13 +91,45 @@ internal sealed class McsMapVoteController : PluginModuleBase, IMcsInternalVoteC
         _nativeVoteManager = SharedSystem.GetSharpModuleManager()
             .GetRequiredSharpModuleInterface<INativeVoteManager>(INativeVoteManager.ModSharpModuleIdentity)
             .Instance!;
-    }
 
-    internal McsInitialMapVoteHandler CreateInitialVoteHandler() => new(Logger);
-    internal McsRunoffMapVoteHandler CreateRunoffVoteHandler() => new(Logger);
+        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+        var nominationValidateService = ServiceProvider.GetRequiredService<INominationValidateService>();
+        var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        var nominationManager = ServiceProvider.GetRequiredService<INominationManager>();
+
+        var randomMapPicker = new RandomMapPickingService(nominationValidateService, configProvider, mapConfigProvider);
+
+        _controllingService = new MapVoteControllingService(
+            Plugin, this, Logger,
+            _voteManager, _voteState, _eventManager,
+            _nativeVoteManager, _conVars, configProvider,
+            randomMapPicker, nominationManager, mapConfigProvider);
+
+        _controllingService.CustomWinnerThresholdProvider = _customWinnerThresholdProvider;
+
+        _clientVoteService = new ClientVoteHandlingService(_voteManager);
+
+        _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
+        _eventManager.RegisterListener<IMapCycleEventListener>(this);
+    }
 
     protected override void OnUnloadModule()
     {
+        _eventManager.RemoveListener<IRockTheVoteEventListener>(this);
+        _eventManager.RemoveListener<IMapCycleEventListener>(this);
+        _controllingService?.ForceResetVote();
+    }
+
+    public void OnRtvConfirmed(IRtvConfirmedParams @params)
+    {
+        Logger.LogInformation("RTV confirmed (forced={IsForced}), initiating vote", @params.IsForced);
+        _controllingService.InitiateVote(isActivatedByRtv: true);
+    }
+
+    public void OnVoteStartThresholdReached(IVoteStartThresholdReachedEventParams @params)
+    {
+        Logger.LogInformation("Vote start threshold reached (type={LimitType}), initiating vote", @params.LimitType);
+        _controllingService.InitiateVote(isActivatedByRtv: false);
     }
 
     public void InstallEventListener(IMapVoteEventListener listener)

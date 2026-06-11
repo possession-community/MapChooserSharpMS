@@ -30,11 +30,9 @@
     <Folder Include="Modules\MapCycle\Managers\" />
   </ItemGroup>
 
-  <!-- Kept excluded: McsMapNominationCommands is CSS-legacy (pending ModSharp rewrite, see file header NOTE).
-       RandomMapPickingService has unresolved references in this snapshot. -->
+  <!-- Legacy CSS-API commands file — replaced by ModSharp commands in Modules/Nomination/Commands/. -->
   <ItemGroup>
     <Compile Remove="Modules\Nomination\McsMapNominationCommands.cs" />
-    <Compile Remove="Modules\MapVote\Services\RandomMapPickingService.cs" />
   </ItemGroup>
   
 </Project>
