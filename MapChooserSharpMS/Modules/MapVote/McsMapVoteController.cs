@@ -26,7 +26,8 @@ internal sealed class McsMapVoteController
     : PluginModuleBase,
       IMcsInternalVoteController,
       IRockTheVoteEventListener,
-      IMapCycleEventListener
+      IMapCycleEventListener,
+      Sharp.Shared.Listeners.IGameListener
 {
     public override string PluginModuleName => "McsMapVoteController";
     public override string ModuleChatPrefix => "Prefix.Vote";
@@ -84,6 +85,17 @@ internal sealed class McsMapVoteController
     protected override void OnInitialize()
     {
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
+        SharedSystem.GetModSharp().InstallGameListener(this);
+    }
+
+    /// <summary>
+    /// The state manager outlives map changes — without this reset, a
+    /// NextMapConfirmed left by the previous map's vote would permanently
+    /// block extends/nominations on every following map.
+    /// </summary>
+    public void OnGameActivate()
+    {
+        _voteState.Reset();
     }
 
     protected override void OnAllModulesLoaded()
@@ -96,6 +108,7 @@ internal sealed class McsMapVoteController
         var nominationValidateService = ServiceProvider.GetRequiredService<INominationValidateService>();
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         var nominationManager = ServiceProvider.GetRequiredService<INominationManager>();
+        var mapExtendService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.Interfaces.IMcsInternalMapExtendService>();
 
         var randomMapPicker = new RandomMapPickingService(nominationValidateService, configProvider, mapConfigProvider);
 
@@ -103,7 +116,8 @@ internal sealed class McsMapVoteController
             Plugin, this, Logger,
             _voteManager, _voteState, _eventManager,
             _nativeVoteManager, _conVars, configProvider,
-            randomMapPicker, nominationManager, mapConfigProvider);
+            randomMapPicker, nominationManager, mapConfigProvider,
+            mapExtendService);
 
         _controllingService.CustomWinnerThresholdProvider = _customWinnerThresholdProvider;
 
@@ -115,6 +129,7 @@ internal sealed class McsMapVoteController
 
     protected override void OnUnloadModule()
     {
+        SharedSystem.GetModSharp().RemoveGameListener(this);
         _eventManager.RemoveListener<IRockTheVoteEventListener>(this);
         _eventManager.RemoveListener<IMapCycleEventListener>(this);
         _controllingService?.ForceResetVote();

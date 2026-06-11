@@ -29,6 +29,12 @@ public interface IMapCycleEventListener : IEventListenerBase
     /// </summary>
     /// <param name="params"></param>
     void OnExtendVoteCancelled(IExtendVoteCancelledEventParams @params) {}
+
+    /// <summary>
+    /// Fired when extend vote concluded (passed or failed)
+    /// </summary>
+    /// <param name="params"></param>
+    void OnExtendVoteFinished(IExtendVoteFinishedEventParams @params) {}
     
     
     /// <summary>

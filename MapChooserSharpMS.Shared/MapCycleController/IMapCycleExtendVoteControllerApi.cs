@@ -1,3 +1,0 @@
-namespace MapChooserSharpMS.Shared.MapCycleController;
-
-public interface IMapCycleExtendVoteControllerApi;

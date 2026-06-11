@@ -1,11 +1,16 @@
 using System;
 using System.Threading.Tasks;
+using MapChooserSharpMS.Modules.EventManager;
+using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
+using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.WorkshopManagement;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared;
 using Sharp.Shared.Enums;
+using TnmsPluginFoundation;
+using TnmsPluginFoundation.Models.Plugin;
 using TnmsPluginFoundation.Utils.Other;
 
 namespace MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
@@ -15,6 +20,10 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly ISharedSystem _sharedSystem;
     private readonly IMcsMapConfigProvider _mapConfigProvider;
     private readonly ILogger _logger;
+    private readonly TnmsPlugin _plugin;
+    private readonly PluginModuleBase _moduleBase;
+    private readonly IInternalEventManager _eventManager;
+    private readonly Func<bool> _isTimeLimitReached;
 
     private IMapConfig? _currentMap;
     private IMapConfig? _nextMap;
@@ -23,11 +32,19 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     public McsMapTransitionManager(
         ISharedSystem sharedSystem,
         IMcsMapConfigProvider mapConfigProvider,
-        ILogger logger)
+        ILogger logger,
+        TnmsPlugin plugin,
+        PluginModuleBase moduleBase,
+        IInternalEventManager eventManager,
+        Func<bool> isTimeLimitReached)
     {
         _sharedSystem = sharedSystem;
         _mapConfigProvider = mapConfigProvider;
         _logger = logger;
+        _plugin = plugin;
+        _moduleBase = moduleBase;
+        _eventManager = eventManager;
+        _isTimeLimitReached = isTimeLimitReached;
     }
 
     public IMapConfig? NextMap => _nextMap;
@@ -40,8 +57,22 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     public bool TrySetNextMap(IMapConfig mapConfig)
     {
+        var oldNextMap = _nextMap;
         _nextMap = mapConfig;
         _isNextMapConfirmed = true;
+
+        // A next map confirmed after the limit already ran out (vote finished
+        // late, admin set it manually, external API) must still transition —
+        // LimitReached has already fired and will not re-fire.
+        if (_isTimeLimitReached())
+            ChangeMapOnNextRoundEnd = true;
+
+        if (!ReferenceEquals(oldNextMap, mapConfig))
+        {
+            var confirmedParams = new NextMapConfirmedParams(_plugin, _moduleBase, mapConfig, oldNextMap);
+            _eventManager.Fire<IMapCycleEventListener>(e => e.OnNextMapConfirmed(confirmedParams));
+        }
+
         return true;
     }
 
@@ -84,8 +115,13 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         if (_nextMap is null)
             return false;
 
+        var previousNextMap = _nextMap;
         _nextMap = null;
         _isNextMapConfirmed = false;
+
+        var removedParams = new NextMapRemovedParams(_plugin, _moduleBase, previousNextMap);
+        _eventManager.Fire<IMapCycleEventListener>(e => e.OnNextMapRemoved(removedParams));
+
         return true;
     }
 
@@ -145,6 +181,9 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
         if (_nextMap is null)
             return;
+
+        var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap);
+        _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
 
         TransitionToNextMap(0f);
     }

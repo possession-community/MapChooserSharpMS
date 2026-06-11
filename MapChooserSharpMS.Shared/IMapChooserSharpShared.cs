@@ -1,6 +1,6 @@
 ﻿using MapChooserSharpMS.Shared.Events;
 using MapChooserSharpMS.Shared.MapConfig;
-using MapChooserSharpMS.Shared.MapCycleController;
+using MapChooserSharpMS.Shared.MapCycle;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.RockTheVote;
@@ -20,18 +20,15 @@ public interface IMapChooserSharpShared
     
     /// <summary>
     /// MapCycleController API, You can manipulate map cycle system
+    /// (time limit, map transition, cooldown services)
     /// </summary>
-    IMapCycleControllerApi MapCycleController { get; }
-    
+    IMapCycleController MapCycleController { get; }
+
     /// <summary>
     /// MapCycleExtendController API, You can manipulate map extend system
+    /// (direct extends and extend votes)
     /// </summary>
-    IMapCycleExtendControllerApi MapCycleExtendController { get; }
-    
-    /// <summary>
-    /// McsMapCycleExtendVoteController API, You can manipulate vote map extend system
-    /// </summary>
-    IMapCycleExtendVoteControllerApi MapCycleExtendVoteController { get; }
+    IMapCycleExtendController MapCycleExtendController { get; }
     
     /// <summary>
     /// Nomination API, You can manipulate nomination system

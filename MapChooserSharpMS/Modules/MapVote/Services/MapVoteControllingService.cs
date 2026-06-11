@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapVote;
+using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.Handlers;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.Managers;
@@ -38,6 +39,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private readonly RandomMapPickingService _randomMapPicker;
     private readonly INominationManager _nominationManager;
     private readonly IMcsMapConfigProvider _mapConfigProvider;
+    private readonly IMcsInternalMapExtendService _mapExtendService;
 
     internal Func<float>? CustomWinnerThresholdProvider { get; set; }
 
@@ -53,7 +55,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         IMcsPluginConfigProvider configProvider,
         RandomMapPickingService randomMapPicker,
         INominationManager nominationManager,
-        IMcsMapConfigProvider mapConfigProvider)
+        IMcsMapConfigProvider mapConfigProvider,
+        IMcsInternalMapExtendService mapExtendService)
     {
         _plugin = plugin;
         _moduleBase = moduleBase;
@@ -67,6 +70,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _randomMapPicker = randomMapPicker;
         _nominationManager = nominationManager;
         _mapConfigProvider = mapConfigProvider;
+        _mapExtendService = mapExtendService;
     }
 
     public McsMapVoteState InitiateVote(bool isActivatedByRtv = false)
@@ -282,10 +286,15 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         else if (winner.MapName == MapVoteConstants.ExtendMapInternalName)
         {
             _logger.LogInformation("Vote result: Extend current map");
-            // Extend params require TimeLimitType and duration — these are supplied by MapCycle.
-            // Fire a placeholder extend event; the MapCycle module handles the actual extension.
-            var extendParams = new MapVoteExtendParams(_plugin, _moduleBase, 0, Shared.MapCycle.Managers.TimeLimit.TimeLimitType.Time);
-            _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapExtended(extendParams));
+            // The extend service applies the extension and fires OnMapExtended
+            // with the real amount/type, consuming the vote-extend budget.
+            var extendResult = _mapExtendService.TryExtend(McsExtendTrigger.MapVote);
+            if (extendResult != Shared.MapCycle.McsMapExtendResult.Extended)
+            {
+                _logger.LogWarning("Extend option won but extend failed: {Result}", extendResult);
+                var notChangedParams = new MapVoteNotChangedParams(_plugin, _moduleBase);
+                _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapNotChanged(notChangedParams));
+            }
         }
         else if (winner.MapName == MapVoteConstants.DontChangeMapInternalName)
         {
@@ -315,10 +324,11 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         var candidates = new List<IMapVoteOption>();
         var usedMapNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Placeholder option (slot 0)
+        // Placeholder option (slot 0).
+        // The Extend option only appears while the vote-extend budget remains.
         if (isRtvVote)
             candidates.Add(new MapVoteOption(MapVoteConstants.DontChangeMapInternalName, null));
-        else
+        else if (_mapExtendService.ExtendsLeft > 0)
             candidates.Add(new MapVoteOption(MapVoteConstants.ExtendMapInternalName, null));
 
         int slotsForMaps = maxElements - 1;

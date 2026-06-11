@@ -65,12 +65,13 @@ public sealed class MapChooserSharpMs(
         var mapVoteController = provider.GetRequiredService<IMcsInternalVoteController>();
         var rtvController = provider.GetRequiredService<Modules.RockTheVote.Interfaces.IMcsInternalRtvController>();
         var mapConfigProvider = provider.GetRequiredService<Shared.MapConfig.IMcsMapConfigProvider>();
+        var mapCycleController = provider.GetRequiredService<Shared.MapCycle.IMapCycleController>();
+        var mapCycleExtendController = provider.GetRequiredService<Shared.MapCycle.IMapCycleExtendController>();
 
         var sharedApi = new McsSharedApi(
             this,
-            new MapCycleControllerApiStub(),
-            new MapCycleExtendControllerApiStub(),
-            new MapCycleExtendVoteControllerApiStub(),
+            mapCycleController,
+            mapCycleExtendController,
             nominationController,
             mapVoteController,
             rtvController,

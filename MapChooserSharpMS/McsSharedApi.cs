@@ -1,6 +1,6 @@
 using MapChooserSharpMS.Shared;
 using MapChooserSharpMS.Shared.MapConfig;
-using MapChooserSharpMS.Shared.MapCycleController;
+using MapChooserSharpMS.Shared.MapCycle;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.RockTheVote;
@@ -14,9 +14,8 @@ internal sealed class McsSharedApi : IMapChooserSharpShared
 
     internal McsSharedApi(
         MapChooserSharpMs plugin,
-        IMapCycleControllerApi mapCycleController,
-        IMapCycleExtendControllerApi mapCycleExtendController,
-        IMapCycleExtendVoteControllerApi mapCycleExtendVoteController,
+        IMapCycleController mapCycleController,
+        IMapCycleExtendController mapCycleExtendController,
         IMcsNominationController nominationController,
         IMcsMapVoteController mapVoteController,
         IMcsRtvController rtvController,
@@ -25,16 +24,14 @@ internal sealed class McsSharedApi : IMapChooserSharpShared
         _plugin = plugin;
         MapCycleController = mapCycleController;
         MapCycleExtendController = mapCycleExtendController;
-        MapCycleExtendVoteController = mapCycleExtendVoteController;
         McsNominationController = nominationController;
         McsMapVoteController = mapVoteController;
         McsRtvController = rtvController;
         McsMapConfigProvider = mapConfigProvider;
     }
 
-    public IMapCycleControllerApi MapCycleController { get; }
-    public IMapCycleExtendControllerApi MapCycleExtendController { get; }
-    public IMapCycleExtendVoteControllerApi MapCycleExtendVoteController { get; }
+    public IMapCycleController MapCycleController { get; }
+    public IMapCycleExtendController MapCycleExtendController { get; }
     public IMcsNominationController McsNominationController { get; }
     public IMcsMapVoteController McsMapVoteController { get; }
     public IMcsRtvController McsRtvController { get; }

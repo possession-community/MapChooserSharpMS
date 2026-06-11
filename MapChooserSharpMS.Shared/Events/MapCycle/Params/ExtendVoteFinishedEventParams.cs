@@ -1,12 +1,12 @@
 using MapChooserSharpMS.Shared.MapConfig;
-using Sharp.Shared.Objects;
 
 namespace MapChooserSharpMS.Shared.Events.MapCycle.Params;
 
 /// <summary>
-/// Fired when an extend vote was cancelled
+/// Fired when an extend vote concluded (passed or failed).
+/// Not fired on cancellation — see IExtendVoteCancelledEventParams.
 /// </summary>
-public interface IExtendVoteCancelledEventParams: IEventBaseParams
+public interface IExtendVoteFinishedEventParams: IEventBaseParams
 {
     /// <summary>
     /// The map that was being voted to extend (current map).
@@ -15,8 +15,7 @@ public interface IExtendVoteCancelledEventParams: IEventBaseParams
     IMapConfig? CurrentMap { get; }
 
     /// <summary>
-    /// Who cancelled the extend vote. null means console/server
-    /// or an external cancellation.
+    /// True when the vote passed (the map got extended).
     /// </summary>
-    IGameClient? CancelledBy { get; }
+    bool Passed { get; }
 }

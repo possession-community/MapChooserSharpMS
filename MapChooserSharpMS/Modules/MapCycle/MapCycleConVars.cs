@@ -10,6 +10,9 @@ internal sealed class MapCycleConVars
     public readonly IConVar Mode;
     public readonly IConVar VoteStartTimeThresholdSeconds;
     public readonly IConVar VoteStartRoundThreshold;
+    public readonly IConVar ExtUserVoteThreshold;
+    public readonly IConVar VoteExtendSuccessThreshold;
+    public readonly IConVar VoteExtendVoteTime;
 
     public MapCycleConVars(IConVarManager cvm)
     {
@@ -27,6 +30,21 @@ internal sealed class MapCycleConVars
             "mcs_mapcycle_vote_start_round_threshold", 3, 0, 120,
             "Rounds remaining at which the map vote should start (round-based mode)",
             ConVarFlags.None)!;
+
+        ExtUserVoteThreshold = cvm.CreateConVar(
+            "mcs_ext_user_vote_threshold", 0.5F, 0.0F, 1.0F,
+            "Ratio of real players required for !ext to extend the map",
+            ConVarFlags.None)!;
+
+        VoteExtendSuccessThreshold = cvm.CreateConVar(
+            "mcs_vote_extend_success_threshold", 0.5F, 0.0F, 1.0F,
+            "Ratio of yes votes required for an extend vote to pass",
+            ConVarFlags.None)!;
+
+        VoteExtendVoteTime = cvm.CreateConVar(
+            "mcs_vote_extend_vote_time", 15.0F, 10.0F, 60.0F,
+            "How long the extend vote lasts in seconds",
+            ConVarFlags.None)!;
     }
 
     public IEnumerable<IConVar> All()
@@ -34,5 +52,8 @@ internal sealed class MapCycleConVars
         yield return Mode;
         yield return VoteStartTimeThresholdSeconds;
         yield return VoteStartRoundThreshold;
+        yield return ExtUserVoteThreshold;
+        yield return VoteExtendSuccessThreshold;
+        yield return VoteExtendVoteTime;
     }
 }
