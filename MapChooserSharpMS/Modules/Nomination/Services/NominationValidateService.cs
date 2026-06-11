@@ -274,13 +274,13 @@ internal sealed class NominationValidateService
     {
         // Resolution: Any Deny > Any Allow > Default (allowed)
         // Check map-level deny
-        if (TnmsPlugin.AdminManager.ClientHasPermission(client, $"mcs.nominate.map.deny.{mapConfig.MapName}"))
+        if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.map.deny.{mapConfig.MapName}"))
             return true;
 
         // Check group-level deny
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
-            if (TnmsPlugin.AdminManager.ClientHasPermission(client, $"mcs.nominate.group.deny.{groupSetting.GroupName}"))
+            if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.group.deny.{groupSetting.GroupName}"))
                 return true;
         }
 

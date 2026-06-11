@@ -427,9 +427,9 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
             LocalizedString visibleName;
             if (candidate.MapName == MapVoteConstants.ExtendMapInternalName)
-                visibleName = LocalizedString.From(c => _plugin.Localizer["Vote.Option.ExtendMap", c ?? System.Globalization.CultureInfo.CurrentCulture]);
+                visibleName = LocalizedString.From(c => _plugin.Localizer.ForCulture("Vote.Option.ExtendMap", c ?? System.Globalization.CultureInfo.CurrentCulture));
             else if (candidate.MapName == MapVoteConstants.DontChangeMapInternalName)
-                visibleName = LocalizedString.From(c => _plugin.Localizer["Vote.Option.DontChange", c ?? System.Globalization.CultureInfo.CurrentCulture]);
+                visibleName = LocalizedString.From(c => _plugin.Localizer.ForCulture("Vote.Option.DontChange", c ?? System.Globalization.CultureInfo.CurrentCulture));
             else
                 visibleName = LocalizedString.From(_ => candidate.MapConfig?.MapName ?? candidate.MapName);
 
@@ -463,8 +463,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         var voteOptions = new MultiChoiceVoteOptions
         {
-            Title = LocalizedString.From(c => _plugin.Localizer[isRunoff ? "Vote.Title.Runoff" : "Vote.Title.Initial", c ?? System.Globalization.CultureInfo.CurrentCulture]),
-            Description = LocalizedString.From(c => _plugin.Localizer["Vote.Description", c ?? System.Globalization.CultureInfo.CurrentCulture]),
+            Title = LocalizedString.From(c => _plugin.Localizer.ForCulture(isRunoff ? "Vote.Title.Runoff" : "Vote.Title.Initial", c ?? System.Globalization.CultureInfo.CurrentCulture)),
+            Description = LocalizedString.From(c => _plugin.Localizer.ForCulture("Vote.Description", c ?? System.Globalization.CultureInfo.CurrentCulture)),
             VoteDuration = voteDuration,
             VoteHandler = handler,
             VoteContents = voteContents,

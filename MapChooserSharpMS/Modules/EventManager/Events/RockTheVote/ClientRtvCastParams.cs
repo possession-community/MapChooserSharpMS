@@ -15,7 +15,7 @@ internal sealed class ClientRtvCastParams(
 {
     public string ModulePrefix(CultureInfo? culture = null)
     {
-        return plugin.Localizer[moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture];
+        return plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture);
     }
 
     public bool IsRtvTrigger { get; } = isRtvTrigger;

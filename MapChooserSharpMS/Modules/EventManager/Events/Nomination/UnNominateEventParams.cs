@@ -18,7 +18,7 @@ internal sealed class UnNominateEventParams(
 {
     public string ModulePrefix(CultureInfo? culture = null)
     {
-        return plugin.Localizer[moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture];
+        return plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture);
     }
 
     public IGameClient? Client { get; } = client;
