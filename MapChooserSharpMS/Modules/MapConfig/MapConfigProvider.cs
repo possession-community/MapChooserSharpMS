@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using MapChooserSharpMS.Modules.MapConfig.Interfaces;
 using MapChooserSharpMS.Modules.MapConfig.Services;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,22 +47,28 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
     public void ReloadConfigs()
     {
         var mapConfigParseService = new MapConfigParsingService();
+        string configDirectory = ResolveMapConfigDirectory();
 
         IMapConfigParsingResult? parseResult;
 
         try
         {
-            parseResult = mapConfigParseService.ParseConfigs(Plugin.BaseCfgDirectoryPath);
+            parseResult = mapConfigParseService.ParseConfigs(configDirectory);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to parse configs");
+            Logger.LogError(ex, "Failed to parse map configs from {Path}", configDirectory);
             return;
+        }
+
+        foreach (var warning in mapConfigParseService.Warnings)
+        {
+            Logger.LogWarning("{Warning}", warning);
         }
 
         if (parseResult == null)
         {
-            Logger.LogError("Failed to parse configs");
+            Logger.LogError("No map configs found in {Path}", configDirectory);
             return;
         }
 
@@ -76,6 +83,32 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
 
         Logger.LogInformation("Loaded {Maps} maps, {Groups} groups, {Overrides} day-setting overrides",
             mapCount, groupCount, overrideCount);
+    }
+
+    // Map configs are scanned only under the configured map config directory
+    // (default "maps/" relative to the module dir) so the plugin's own
+    // config.toml is never picked up as a map section. Falls back to the
+    // default when the plugin config has not been loaded yet.
+    private string ResolveMapConfigDirectory()
+    {
+        string relativePath = "maps/";
+
+        var configProvider = ServiceProvider.GetService<IMcsPluginConfigProvider>();
+        if (configProvider is not null)
+        {
+            try
+            {
+                relativePath = configProvider.PluginConfig.MapCycleConfig.MapConfigDirectoryPath;
+            }
+            catch (InvalidOperationException)
+            {
+                // Plugin config not loaded yet — use the default path.
+            }
+        }
+
+        return Path.IsPathRooted(relativePath)
+            ? relativePath
+            : Path.Combine(Plugin.BaseCfgDirectoryPath, relativePath);
     }
 
     public IReadOnlyDictionary<string, IReadOnlyCollection<IMapGroupConfigOverrides>> GetGroupSettings()

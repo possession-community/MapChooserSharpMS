@@ -65,6 +65,36 @@ internal sealed class ParsedProperties
 /// </summary>
 internal static class TomlPropertyMapper
 {
+    /// <summary>
+    /// Scalar keys allowed at the top level of a map section.
+    /// Keep in sync with the MapProperty switch below — a section containing
+    /// any key outside this set is rejected as "not a map config".
+    /// </summary>
+    internal static readonly HashSet<string> KnownMapSectionKeys = new(StringComparer.Ordinal)
+    {
+        "MapNameAlias",
+        "MapDescription",
+        "WorkshopId",
+        "GroupSettings",
+        "IsDisabled",
+        "MaxExtends",
+        "MaxExtCommandUses",
+        "MapTime",
+        "ExtendTimePerExtends",
+        "MapRounds",
+        "ExtendRoundsPerExtends",
+        "OnlyNomination",
+        "MaxPlayers",
+        "MinPlayers",
+        "ProhibitAdminNomination",
+        "DaysAllowed",
+        "AllowedTimeRanges",
+        "Cooldown",
+        "CooldownDateTime",
+        "NominationCooldown",
+        "NominationCooldownDateTime",
+    };
+
     public static ParsedProperties ExtractProperties(TomlDocumentNode node)
     {
         var props = new ParsedProperties();

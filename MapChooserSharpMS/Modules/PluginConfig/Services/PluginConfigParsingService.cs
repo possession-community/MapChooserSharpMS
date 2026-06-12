@@ -72,8 +72,8 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         int fallbackExtendRounds = GetInt(cycleNode, "FallbackExtendRoundsPerExtends"u8, 5);
         bool shouldStopSourceTv = GetBool(cycleNode, "ShouldStopSourceTvRecording"u8, false);
         var executionType = GetEnum(cycleNode, "MapConfigExecutionType"u8, McsMapConfigExecutionType.ExactMatch);
-        string mapConfigDir = GetString(cycleNode, "MapConfigDirectoryPath"u8, "MapChooserSharp/maps/");
-        string groupConfigDir = GetString(cycleNode, "GroupConfigDirectoryPath"u8, "MapChooserSharp/groups/");
+        string mapConfigDir = GetString(cycleNode, "MapConfigDirectoryPath"u8, "maps/");
+        string groupConfigDir = GetString(cycleNode, "GroupConfigDirectoryPath"u8, "groups/");
 
         return new McsMapCycleConfig(
             fallbackMaxExtends, fallbackMaxExtCommandUses,

@@ -15,6 +15,12 @@ namespace MapChooserSharpMS.Modules.MapConfig.Services;
 
 internal sealed class MapConfigParsingService : IMapConfigParsingService
 {
+    /// <summary>
+    /// Non-fatal issues encountered during the last ParseConfigs call
+    /// (e.g. sections skipped because they are not valid map configs).
+    /// </summary>
+    public List<string> Warnings { get; } = [];
+
     public IMapConfigParsingResult? ParseConfigs(string configPath)
     {
         var documents = LoadTomlDocuments(configPath);
@@ -40,6 +46,31 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
         foreach (var doc in documents)
         {
             CollectSections(doc.RootNode, "", allSections);
+        }
+
+        // Phase 1.5: Drop top-level sections that are not valid map configs.
+        // The Default/Groups sections live under the MapChooserSharpSettings
+        // prefix and are unaffected; anything else must contain only known
+        // map config keys plus the "extra"/"DaySettings" sub-tables.
+        var rejectedMaps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (fullKey, type, node) in allSections)
+        {
+            if (type != TomlSectionType.MapSetting || fullKey.Contains('.'))
+                continue;
+
+            if (!IsValidMapSection(node, out var offendingKey))
+            {
+                rejectedMaps.Add(fullKey);
+                Warnings.Add($"Section [{fullKey}] is not a valid map config (unrecognized key '{offendingKey}') and will be skipped");
+            }
+        }
+
+        if (rejectedMaps.Count > 0)
+        {
+            allSections.RemoveAll(s =>
+                s.Type is TomlSectionType.MapSetting or TomlSectionType.MapExtra
+                       or TomlSectionType.MapDaySetting or TomlSectionType.MapDaySettingExtra
+                && rejectedMaps.Contains(TomlSectionClassifier.ExtractMapName(s.FullKey)));
         }
 
         // Phase 2: Parse default settings
@@ -532,6 +563,41 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             // Always recurse into non-leaf nodes
             CollectSections(childNode, fullKey, result);
         }
+    }
+
+    /// <summary>
+    /// A top-level section qualifies as a map config only when every scalar
+    /// key is a recognized map config property and every sub-table is either
+    /// "extra" or "DaySettings". Anything else (e.g. the plugin's own
+    /// config.toml sections) is rejected.
+    /// </summary>
+    private static bool IsValidMapSection(TomlDocumentNode node, out string offendingKey)
+    {
+        foreach (var kv in node.GetNodeEnumerator())
+        {
+            var key = kv.Key.GetString();
+
+            bool isLeafValue;
+            try { isLeafValue = kv.Value.HasValueOnly; }
+            catch { isLeafValue = false; }
+
+            if (isLeafValue)
+            {
+                if (!TomlPropertyMapper.KnownMapSectionKeys.Contains(key))
+                {
+                    offendingKey = key;
+                    return false;
+                }
+            }
+            else if (key != "extra" && key != "DaySettings")
+            {
+                offendingKey = key;
+                return false;
+            }
+        }
+
+        offendingKey = string.Empty;
+        return true;
     }
 
     /// <summary>

@@ -108,11 +108,11 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         # - PartialMatch | Executes all configs that matches partially with ignore case (e.g. de_dust2 will executes de_.cfg, dust.cfg, 2.cfg)
         MapConfigExecutionType = "ExactMatch"
 
-        # Relative path from game/csgo/cfg/ directory (e.g. if config directory located in game/csgo/cfg/MapChooserSharp/maps/, then put MapChooserSharp/maps/)
-        MapConfigDirectoryPath = "MapChooserSharp/maps/"
+        # Relative path from the module directory (e.g. if map configs are located in modules/MapChooserSharpMS/maps/, then put maps/)
+        MapConfigDirectoryPath = "maps/"
 
-        # Relative path from game/csgo/cfg/ directory (e.g. if config directory located in game/csgo/cfg/MapChooserSharp/groups/, then put MapChooserSharp/groups/)
-        GroupConfigDirectoryPath = "MapChooserSharp/groups/"
+        # Relative path from the module directory (e.g. if group configs are located in modules/MapChooserSharpMS/groups/, then put groups/)
+        GroupConfigDirectoryPath = "groups/"
 
 
         [MapVote]
