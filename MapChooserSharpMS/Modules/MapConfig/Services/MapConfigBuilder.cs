@@ -82,7 +82,9 @@ internal static class MapConfigBuilder
                 AllowedTimeRanges: props.AllowedTimeRanges ?? []),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
-                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime)),
+                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
+                configNominationCooldown: props.NominationCooldown ?? 0,
+                nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
             ExtraConfiguration: extraConfig);
     }
 
@@ -116,7 +118,9 @@ internal static class MapConfigBuilder
                 AllowedTimeRanges: props.AllowedTimeRanges ?? []),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
-                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime)),
+                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
+                configNominationCooldown: props.NominationCooldown ?? 0,
+                nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
             ExtraConfiguration: extraConfig);
     }
 }

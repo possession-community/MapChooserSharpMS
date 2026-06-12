@@ -48,6 +48,10 @@ internal sealed class ParsedProperties
     public int? Cooldown { get; set; }
     public string? CooldownDateTime { get; set; }
 
+    // Nomination Cooldown
+    public int? NominationCooldown { get; set; }
+    public string? NominationCooldownDateTime { get; set; }
+
     // Override-specific
     public bool? Enabled { get; set; }
     public bool? ForceOverride { get; set; }
@@ -179,6 +183,16 @@ internal static class TomlPropertyMapper
             case "CooldownDateTime":
                 if (valueNode.TryGetString(out var cdDt))
                     props.CooldownDateTime = cdDt;
+                break;
+
+            case "NominationCooldown":
+                if (valueNode.TryGetInt64(out var ncd))
+                    props.NominationCooldown = (int)ncd;
+                break;
+
+            case "NominationCooldownDateTime":
+                if (valueNode.TryGetString(out var ncdDt))
+                    props.NominationCooldownDateTime = ncdDt;
                 break;
 
             // Override properties

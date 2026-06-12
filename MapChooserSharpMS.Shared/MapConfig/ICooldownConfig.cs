@@ -8,22 +8,33 @@ namespace MapChooserSharpMS.Shared.MapConfig;
 public interface ICooldownConfig
 {
     /// <summary>
-    /// Cooldown value specified in map config
+    /// Play-based cooldown count specified in map config.
     /// </summary>
-    public int ConfigCooldown { get; }
+    int ConfigCooldown { get; }
 
     /// <summary>
-    /// 
+    /// Time-based cooldown duration specified in map config.
     /// </summary>
-    public TimeSpan TimedCooldown { get; }
-    
+    TimeSpan TimedCooldown { get; }
+
     /// <summary>
-    /// Current cooldown in memory.
+    /// Current play-based cooldown in memory.
     /// </summary>
-    public int CurrentCooldown { get; }
-    
+    int CurrentCooldown { get; }
+
     /// <summary>
-    /// 
+    /// When this map was last played (UTC).
     /// </summary>
-    public DateTime LastPlayedAt { get; }
+    DateTime LastPlayedAt { get; }
+
+    /// <summary>
+    /// Nomination cooldown count specified in map config.
+    /// 0 = disabled (opt-in).
+    /// </summary>
+    int ConfigNominationCooldown { get; }
+
+    /// <summary>
+    /// Time-based nomination cooldown duration specified in map config.
+    /// </summary>
+    TimeSpan NominationTimedCooldown { get; }
 }

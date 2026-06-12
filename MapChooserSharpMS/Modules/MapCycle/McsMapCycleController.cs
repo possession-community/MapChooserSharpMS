@@ -114,6 +114,7 @@ internal sealed class McsMapCycleController
         services.AddSingleton<IMcsInternalMapTransitionManager>(_ => _mapTransitionManager);
         services.AddSingleton<IMcsInternalMapExtendService>(_ => _extendService);
         services.AddSingleton<McsExtCommandService>(_ => _extCommandService);
+        services.AddSingleton<McsMapCooldownLifecycleService>(_ => _cooldownLifecycleService);
     }
 
     protected override void OnInitialize()

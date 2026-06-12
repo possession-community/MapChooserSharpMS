@@ -109,6 +109,7 @@ internal sealed class McsMapVoteController
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         var nominationManager = ServiceProvider.GetRequiredService<INominationManager>();
         var mapExtendService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.Interfaces.IMcsInternalMapExtendService>();
+        var cooldownLifecycleService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.McsMapCooldownLifecycleService>();
 
         var randomMapPicker = new RandomMapPickingService(nominationValidateService, configProvider, mapConfigProvider);
 
@@ -117,7 +118,7 @@ internal sealed class McsMapVoteController
             _voteManager, _voteState, _eventManager,
             _nativeVoteManager, _conVars, configProvider,
             randomMapPicker, nominationManager, mapConfigProvider,
-            mapExtendService);
+            mapExtendService, cooldownLifecycleService);
 
         _controllingService.CustomWinnerThresholdProvider = _customWinnerThresholdProvider;
 

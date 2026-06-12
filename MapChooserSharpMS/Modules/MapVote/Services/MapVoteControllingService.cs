@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapVote;
+using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.Handlers;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
@@ -40,6 +41,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private readonly INominationManager _nominationManager;
     private readonly IMcsMapConfigProvider _mapConfigProvider;
     private readonly IMcsInternalMapExtendService _mapExtendService;
+    private readonly McsMapCooldownLifecycleService _cooldownLifecycleService;
 
     internal Func<float>? CustomWinnerThresholdProvider { get; set; }
 
@@ -56,7 +58,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         RandomMapPickingService randomMapPicker,
         INominationManager nominationManager,
         IMcsMapConfigProvider mapConfigProvider,
-        IMcsInternalMapExtendService mapExtendService)
+        IMcsInternalMapExtendService mapExtendService,
+        McsMapCooldownLifecycleService cooldownLifecycleService)
     {
         _plugin = plugin;
         _moduleBase = moduleBase;
@@ -71,6 +74,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _nominationManager = nominationManager;
         _mapConfigProvider = mapConfigProvider;
         _mapExtendService = mapExtendService;
+        _cooldownLifecycleService = cooldownLifecycleService;
     }
 
     public McsMapVoteState InitiateVote(bool isActivatedByRtv = false)
@@ -131,6 +135,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         if (!StartNativeVote(session, candidates, participants, false))
             return McsMapVoteState.NoActiveVote;
+
+        ApplyNominationCooldownToConsumedMaps(candidates);
 
         return McsMapVoteState.InitializeAccepted;
     }
@@ -498,5 +504,16 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         session.CurrentState = isRunoff ? McsMapVoteState.RunoffVoting : McsMapVoteState.Voting;
         _voteState.SetState(session.CurrentState);
         return true;
+    }
+
+    private void ApplyNominationCooldownToConsumedMaps(IReadOnlyList<IMapVoteOption> candidates)
+    {
+        foreach (var candidate in candidates)
+        {
+            if (candidate.MapConfig is null)
+                continue;
+
+            _cooldownLifecycleService.ApplyNominationCooldown(candidate.MapConfig);
+        }
     }
 }

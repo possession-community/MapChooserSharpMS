@@ -14,6 +14,7 @@ public enum NominationCheckResult
     OnlySpecificDay,
     OnlySpecificTime,
     MapIsInCooldown,
+    NominationCooldownActive,
     AlreadyNominated,
     NominatedByAdmin,
     SameMap,

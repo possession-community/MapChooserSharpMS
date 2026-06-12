@@ -68,6 +68,9 @@ internal sealed class NominationValidateService
         if (IsMapInCooldown(mapConfig))
             result.Add(NominationCheckResult.MapIsInCooldown);
 
+        if (IsMapInNominationCooldown(mapConfig))
+            result.Add(NominationCheckResult.NominationCooldownActive);
+
         if (!IsLowerThanMaxPlayers(mapConfig))
             result.Add(NominationCheckResult.TooMuchPlayers);
 
@@ -121,6 +124,9 @@ internal sealed class NominationValidateService
 
             if (IsMapInCooldown(mapConfig))
                 result.Add(NominationCheckResult.MapIsInCooldown);
+
+            if (IsMapInNominationCooldown(mapConfig))
+                result.Add(NominationCheckResult.NominationCooldownActive);
         }
 
         if (result.Count == 0)
@@ -232,6 +238,20 @@ internal sealed class NominationValidateService
     public bool IsMapInCooldown(IMapConfig mapConfig)
     {
         return GetCooldownInformations(mapConfig).HasCooldown;
+    }
+
+    public bool IsMapInNominationCooldown(IMapConfig mapConfig)
+    {
+        if (mapConfig.CooldownConfig is not MapConfig.Models.CooldownConfig cc)
+            return false;
+
+        if (cc.CurrentNominationCooldown > 0)
+            return true;
+
+        if (cc.NominationTimedCooldownEndUtc > DateTime.UtcNow)
+            return true;
+
+        return false;
     }
 
     public IReadOnlyList<NominationCheckResult> GetNominationState(IMapConfig mapConfig, IGameClient? client = null)

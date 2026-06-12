@@ -88,6 +88,18 @@ internal sealed class McsMapCooldownLifecycleService
         }
     }
 
+    internal void ApplyNominationCooldown(IMapConfig map)
+    {
+        if (map.CooldownConfig is not CooldownConfig cc)
+            return;
+
+        if (cc.ConfigNominationCooldown > 0)
+            cc.CurrentNominationCooldown = cc.ConfigNominationCooldown;
+
+        if (cc.NominationTimedCooldown > TimeSpan.Zero)
+            cc.NominationTimedCooldownEndUtc = DateTime.UtcNow + cc.NominationTimedCooldown;
+    }
+
     private static void DecrementCooldownConfig(ICooldownConfig config)
     {
         if (config is not CooldownConfig cc)
@@ -95,5 +107,8 @@ internal sealed class McsMapCooldownLifecycleService
 
         if (cc.CurrentCooldown > 0 && cc.CurrentCooldown < int.MaxValue)
             cc.CurrentCooldown--;
+
+        if (cc.CurrentNominationCooldown > 0 && cc.CurrentNominationCooldown < int.MaxValue)
+            cc.CurrentNominationCooldown--;
     }
 }

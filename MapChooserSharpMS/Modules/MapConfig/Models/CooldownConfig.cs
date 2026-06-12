@@ -9,18 +9,22 @@ internal sealed class CooldownConfig : ICooldownConfig
     public TimeSpan TimedCooldown { get; }
     public int CurrentCooldown { get; set; }
     public DateTime LastPlayedAt { get; set; }
-
-    /// <summary>
-    /// Authoritative UTC time until which the timed cooldown is active.
-    /// Set on cooldown apply (<c>UtcNow + TimedCooldown</c>) or by admin
-    /// override (<c>UtcNow + custom duration</c>).
-    /// <c>DateTime.MinValue</c> means no timed cooldown.
-    /// </summary>
     internal DateTime TimedCooldownEndUtc { get; set; } = DateTime.MinValue;
 
-    public CooldownConfig(int configCooldown, TimeSpan timedCooldown)
+    public int ConfigNominationCooldown { get; }
+    public TimeSpan NominationTimedCooldown { get; }
+    internal int CurrentNominationCooldown { get; set; }
+    internal DateTime NominationTimedCooldownEndUtc { get; set; } = DateTime.MinValue;
+
+    public CooldownConfig(
+        int configCooldown,
+        TimeSpan timedCooldown,
+        int configNominationCooldown = 0,
+        TimeSpan nominationTimedCooldown = default)
     {
         ConfigCooldown = configCooldown;
         TimedCooldown = timedCooldown;
+        ConfigNominationCooldown = configNominationCooldown;
+        NominationTimedCooldown = nominationTimedCooldown;
     }
 }
