@@ -327,6 +327,18 @@ internal sealed class McsMapCycleController
             {
                 int maxRounds = cvm.FindConVar("mp_maxrounds")?.GetInt32() ?? 0;
                 int roundThreshold = _conVars.VoteStartRoundThreshold.GetInt32();
+
+                // mp_maxrounds=0 would initialize an already-reached limit:
+                // instant vote at map start and a permanent "last round"
+                // state. Give it headroom past the vote threshold instead.
+                if (maxRounds <= 0)
+                {
+                    maxRounds = roundThreshold + 1;
+                    Logger.LogWarning(
+                        "[MapCycle] Round mode but mp_maxrounds is 0 — forcing internal round limit to {Rounds}",
+                        maxRounds);
+                }
+
                 InitializeRoundBasedLimit(maxRounds, roundThreshold);
                 _mode = MapCycleMode.Round;
                 Logger.LogInformation(
@@ -339,6 +351,17 @@ internal sealed class McsMapCycleController
                 float timeLimitMinutes = cvm.FindConVar("mp_timelimit")?.GetFloat() ?? 0f;
                 var timeLimit = TimeSpan.FromMinutes(timeLimitMinutes);
                 var voteThreshold = TimeSpan.FromSeconds(_conVars.VoteStartTimeThresholdSeconds.GetInt32());
+
+                // Same guard for time mode: mp_timelimit=0 means "already
+                // reached". Leave enough room for the vote to start normally.
+                if (timeLimit <= TimeSpan.Zero)
+                {
+                    timeLimit = voteThreshold + TimeSpan.FromSeconds(60);
+                    Logger.LogWarning(
+                        "[MapCycle] Time mode but mp_timelimit is 0 — forcing internal time limit to {Limit}",
+                        timeLimit);
+                }
+
                 InitializeTimeBasedLimit(timeLimit, voteThreshold);
                 _mode = MapCycleMode.Time;
                 Logger.LogInformation(

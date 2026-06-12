@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
@@ -23,15 +23,22 @@ using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.RockTheVote.Services;
 
+// serviceProviderAccessor: the controller's ServiceProvider is REPLACED on
+// every RebuildServiceProvider, and this service is constructed during
+// OnInitialize — before later modules (e.g. MapCycle) have registered their
+// services. Capturing the provider instance here would permanently miss
+// those registrations, so always go through the accessor.
 internal sealed class RtvService(
     TnmsPlugin plugin,
     IMcsInternalRtvController controller,
     InternalRtvManager rtvManager,
     IInternalEventManager eventManager,
-    IServiceProvider serviceProvider,
+    Func<IServiceProvider> serviceProviderAccessor,
     RtvConVars conVars
     ) : IRtvService
 {
+    private IServiceProvider ServiceProvider => serviceProviderAccessor();
+
     public RtvExecutionResult AddClientToRtv(IGameClient client)
     {
         if (rtvManager.RtvStatus == RtvStatus.AnotherVoteOngoing)
@@ -50,7 +57,7 @@ internal sealed class RtvService(
             return RtvExecutionResult.CommandInCooldown;
         
         
-        IClientRtvCastParams @params = ActivatorUtilities.CreateInstance<ClientRtvCastParams>(serviceProvider, plugin, controller, client, false);
+        IClientRtvCastParams @params = ActivatorUtilities.CreateInstance<ClientRtvCastParams>(ServiceProvider, plugin, controller, client, false);
         bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params));
         if (cancelled)
             return RtvExecutionResult.DisallowedByExternalConsumer;
@@ -91,11 +98,11 @@ internal sealed class RtvService(
         
         if (enforcer != null)
         {
-            @params = ActivatorUtilities.CreateInstance<ClientRtvUnCastParams>(serviceProvider, plugin, controller, client, true, enforcer);
+            @params = ActivatorUtilities.CreateInstance<ClientRtvUnCastParams>(ServiceProvider, plugin, controller, client, true, enforcer);
         }
         else
         {
-            @params = ActivatorUtilities.CreateInstance<ClientRtvUnCastParams>(serviceProvider, plugin, controller, client, false);
+            @params = ActivatorUtilities.CreateInstance<ClientRtvUnCastParams>(ServiceProvider, plugin, controller, client, false);
         }
         
         bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvUnCast(@params));
@@ -171,7 +178,7 @@ internal sealed class RtvService(
     }
 
     private IMcsInternalMapTransitionManager TransitionManager =>
-        serviceProvider.GetRequiredService<IMcsInternalMapTransitionManager>();
+        ServiceProvider.GetRequiredService<IMcsInternalMapTransitionManager>();
 
     /// <summary>
     /// RTV succeeded while the next map is already confirmed — skip the map
@@ -186,11 +193,11 @@ internal sealed class RtvService(
 
         rtvManager.ForceSetRtvStatus(RtvStatus.TriggeredWaitingForMapTransition);
 
-        string mapDisplayName = serviceProvider
+        string mapDisplayName = ServiceProvider
             .GetRequiredService<IMapConfigToolingService>()
             .ResolveMapDisplayName(nextMap);
 
-        var behaviour = serviceProvider
+        var behaviour = ServiceProvider
             .GetRequiredService<IMcsPluginConfigProvider>()
             .PluginConfig.GeneralConfig.RtvMapChangeBehaviour;
 

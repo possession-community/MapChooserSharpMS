@@ -57,7 +57,10 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _rtvManager = new InternalRtvManager(Plugin, _conVars);
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         _configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
-        _rtvService = new RtvService(Plugin, this, _rtvManager, _eventManager, ServiceProvider, _conVars);
+        // Redirect, not a snapshot: OnInitialize runs before later modules
+        // (MapCycle etc.) register their services, and ServiceProvider is
+        // replaced on every rebuild. The accessor always yields the current one.
+        _rtvService = new RtvService(Plugin, this, _rtvManager, _eventManager, () => ServiceProvider, _conVars);
     }
 
     protected override void OnAllModulesLoaded()
