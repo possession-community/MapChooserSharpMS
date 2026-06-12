@@ -112,12 +112,20 @@ internal sealed class McsMapVoteController
 
         var randomMapPicker = new RandomMapPickingService(nominationValidateService, configProvider, mapConfigProvider);
 
+        McsMapVoteSoundPlayer? soundPlayer = null;
+        var soundConfig = configProvider.PluginConfig.VoteConfig.VoteSoundConfig;
+        if (!string.IsNullOrEmpty(soundConfig.VSndEvtsSoundFilePath))
+            soundPlayer = new McsMapVoteSoundPlayer(Plugin, SharedSystem.GetSoundManager(), soundConfig);
+
+        var countdownUi = ServiceProvider.GetRequiredService<Ui.Countdown.McsCountdownUiController>();
+
         _controllingService = new MapVoteControllingService(
             Plugin, this, Logger,
             _voteManager, _voteState, _eventManager,
             _nativeVoteManager, _conVars, configProvider,
             randomMapPicker, nominationManager, mapConfigProvider,
-            mapExtendService, cooldownLifecycleService);
+            mapExtendService, cooldownLifecycleService,
+            soundPlayer, countdownUi);
 
         _controllingService.CustomWinnerThresholdProvider = _customWinnerThresholdProvider;
 

@@ -43,6 +43,12 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private readonly IMcsMapConfigProvider _mapConfigProvider;
     private readonly IMcsInternalMapExtendService _mapExtendService;
     private readonly McsMapCooldownLifecycleService _cooldownLifecycleService;
+    private readonly McsMapVoteSoundPlayer? _soundPlayer;
+    private readonly Ui.Countdown.McsCountdownUiController? _countdownUi;
+
+    private Guid _countdownTimerId = Guid.Empty;
+    private float _voteDuration;
+    private DateTime _voteStartTime;
 
     internal Func<float>? CustomWinnerThresholdProvider { get; set; }
 
@@ -60,7 +66,9 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         INominationManager nominationManager,
         IMcsMapConfigProvider mapConfigProvider,
         IMcsInternalMapExtendService mapExtendService,
-        McsMapCooldownLifecycleService cooldownLifecycleService)
+        McsMapCooldownLifecycleService cooldownLifecycleService,
+        McsMapVoteSoundPlayer? soundPlayer,
+        Ui.Countdown.McsCountdownUiController? countdownUi)
     {
         _plugin = plugin;
         _moduleBase = moduleBase;
@@ -76,6 +84,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _mapConfigProvider = mapConfigProvider;
         _mapExtendService = mapExtendService;
         _cooldownLifecycleService = cooldownLifecycleService;
+        _soundPlayer = soundPlayer;
+        _countdownUi = countdownUi;
     }
 
     public McsMapVoteState InitiateVote(bool isActivatedByRtv = false)
@@ -135,8 +145,18 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         session.ParticipantCount = participants.Count;
         _voteState.SetState(McsMapVoteState.InitializeAccepted);
 
-        if (!StartNativeVote(session, candidates, participants, false))
-            return McsMapVoteState.NoActiveVote;
+        int countdownSeconds = _conVars.VoteCountdownTime.GetInt32();
+        if (countdownSeconds > 0)
+        {
+            _soundPlayer?.SetRunoff(false);
+            _soundPlayer?.PlayVoteCountdownStartSoundToAll();
+            StartPreVoteCountdown(session, candidates, participants, countdownSeconds);
+        }
+        else
+        {
+            if (!StartNativeVote(session, candidates, participants, false))
+                return McsMapVoteState.NoActiveVote;
+        }
 
         return McsMapVoteState.InitializeAccepted;
     }
@@ -146,6 +166,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         var session = _voteManager.CurrentSession;
         if (session is null)
             return McsMapVoteState.NoActiveVote;
+
+        StopCountdownTimer();
 
         session.CurrentState = McsMapVoteState.Cancelling;
         _voteState.SetState(McsMapVoteState.Cancelling);
@@ -170,6 +192,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         if (session is null)
             return false;
 
+        StopCountdownTimer();
         _voteState.Reset();
         _voteManager.ClearSession();
 
@@ -183,6 +206,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
     internal void HandleExternalCancel(MapVoteInformation session)
     {
+        StopCountdownTimer();
         var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
 
@@ -279,6 +303,9 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
     private void HandleWinner(MapVoteInformation session, MapVoteOption? winner)
     {
+        StopCountdownTimer();
+        _soundPlayer?.PlayVoteFinishedSoundToAll();
+
         session.SetWinner(winner);
 
         int totalVotes = session.TotalVoteCount;
@@ -536,6 +563,10 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         session.CurrentState = isRunoff ? McsMapVoteState.RunoffVoting : McsMapVoteState.Voting;
         _voteState.SetState(session.CurrentState);
+
+        _soundPlayer?.SetRunoff(isRunoff);
+        _soundPlayer?.PlayVoteStartSoundToAll();
+
         return true;
     }
 
@@ -545,6 +576,56 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         {
             _cooldownLifecycleService.ApplyNominationCooldown(entry.Value.MapConfig);
         }
+    }
+
+    private void StartPreVoteCountdown(
+        MapVoteInformation session,
+        IReadOnlyList<IMapVoteOption> candidates,
+        List<IGameClient> participants,
+        int totalSeconds)
+    {
+        _voteDuration = totalSeconds;
+        _voteStartTime = DateTime.UtcNow;
+
+        _countdownTimerId = _plugin.SharedSystem.GetModSharp().PushTimer(() =>
+        {
+            if (!ReferenceEquals(_voteManager.CurrentSession, session))
+            {
+                StopCountdownTimer();
+                return;
+            }
+
+            int elapsed = (int)(DateTime.UtcNow - _voteStartTime).TotalSeconds;
+            int remaining = totalSeconds - elapsed;
+
+            if (remaining <= 0)
+            {
+                StopCountdownTimer();
+                _countdownUi?.CloseCountdownUiAll();
+
+                if (!StartNativeVote(session, candidates, participants, false))
+                {
+                    session.CurrentState = McsMapVoteState.NoActiveVote;
+                    _voteState.Reset();
+                    _voteManager.ClearSession();
+                }
+                return;
+            }
+
+            _countdownUi?.ShowCountdownToAll(remaining, Ui.Countdown.McsCountdownType.VoteStart);
+            _soundPlayer?.PlayVoteCountdownSoundToAll(remaining);
+
+        }, 1.0, Sharp.Shared.Enums.GameTimerFlags.Repeatable | Sharp.Shared.Enums.GameTimerFlags.StopOnMapEnd);
+    }
+
+    private void StopCountdownTimer()
+    {
+        if (_countdownTimerId != Guid.Empty)
+        {
+            _plugin.SharedSystem.GetModSharp().StopTimer(_countdownTimerId);
+            _countdownTimerId = Guid.Empty;
+        }
+        _countdownUi?.CloseCountdownUiAll();
     }
 
     private void BroadcastToAll(string key, params object[] args)
