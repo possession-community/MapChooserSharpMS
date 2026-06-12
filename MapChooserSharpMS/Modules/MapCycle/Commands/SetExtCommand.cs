@@ -3,12 +3,13 @@ using MapChooserSharpMS.Shared.MapCycle;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
 using Sharp.Shared.Types;
+using MapChooserSharpMS.Modules.Commands;
 using TnmsPluginFoundation.Models.Command;
 using TnmsPluginFoundation.Models.Command.Validators;
 
 namespace MapChooserSharpMS.Modules.MapCycle.Commands;
 
-internal sealed class SetExtCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
+internal sealed class SetExtCommand(IServiceProvider provider) : McsCommandBase(provider)
 {
     public override string CommandName => "setext";
     public override string CommandDescription => "Admin: set the remaining !ext uses";

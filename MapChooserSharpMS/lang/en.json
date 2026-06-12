@@ -6,6 +6,9 @@
     "Prefix.MapCycle": "{green}[MapCycle]{default}",
     "Prefix.ChatListener": "{green}[MCS]{default}",
 
+    "Common.Validation.NotEnoughPermissions": "{darkred}You do not have permission to use this command.",
+    "Common.Validation.ValueOutOfRange": "Value out of range {0}",
+
     "Rtv.Notification.AlreadyVoted": "You have already voted for RTV!",
     "Rtv.Notification.InCooldown": "RTV is in cooldown",
     "Rtv.Notification.Disabled": "RTV is currently disabled",
@@ -65,14 +68,19 @@
     "MapCycle.Command.Notification.RoundsLeft": "Rounds left: {lime}{0}{default}",
     "MapCycle.Command.Notification.NoTimeLimit": "No time/round limit is active",
 
+    "MapCycle.Extend.Usage": "Usage: !extend <minutes/rounds>",
     "MapCycle.Extend.Notification.Extended": "Map has been extended",
     "MapCycle.Extend.Notification.NoExtendsLeft": "No extends remaining",
     "MapCycle.Extend.Notification.NoExtCommandUsesLeft": "No !ext uses remaining",
     "MapCycle.Extend.Notification.TimeLimitNotActive": "No active time/round limit to extend",
     "MapCycle.Extend.Notification.ExtendedTime": "Map extended by {lime}{0}{default} minute(s)",
     "MapCycle.Extend.Notification.ExtendedRounds": "Map extended by {lime}{0}{default} round(s)",
+    "MapCycle.Extend.Notification.ShortenedTime": "Map shortened by {lightred}{0}{default} minute(s)",
+    "MapCycle.Extend.Notification.ShortenedRounds": "Map shortened by {lightred}{0}{default} round(s)",
 
     "MapCycle.ExtendVote.Title": "Extend current map?",
+    "MapCycle.ExtendVote.Usage": "Usage: !ve <minutes>",
+    "MapCycle.ExtendVote.DetailsString": "Extend by {0} minutes",
     "MapCycle.ExtendVote.Notification.Started": "Extend vote started",
     "MapCycle.ExtendVote.Notification.AnotherVoteInProgress": "Another vote is in progress",
     "MapCycle.ExtendVote.Notification.ExtendVoteAlreadyInProgress": "An extend vote is already in progress",

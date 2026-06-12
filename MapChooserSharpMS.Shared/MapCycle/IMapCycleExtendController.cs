@@ -35,7 +35,7 @@ public interface IMapCycleExtendController
     /// depending on the active map cycle mode). <br/>
     /// This is the admin/API entry point — it does NOT consume either extend budget.
     /// </summary>
-    McsMapExtendResult TryExtendCurrentMap();
+    McsMapExtendResult TryExtendCurrentMap(int? overrideAmount = null);
 
     /// <summary>
     /// Directly sets the remaining !ext command uses for the current map.
@@ -63,7 +63,8 @@ public interface IMapCycleExtendController
     /// consumed.
     /// </summary>
     /// <param name="initiator">Vote initiator. null means console/server.</param>
-    McsExtendVoteStartResult StartExtendVote(IGameClient? initiator = null);
+    /// <param name="overrideAmount">Override extend amount (minutes or rounds). null uses config default.</param>
+    McsExtendVoteStartResult StartExtendVote(IGameClient? initiator = null, int? overrideAmount = null);
 
     /// <summary>
     /// Cancels the in-progress extend vote.

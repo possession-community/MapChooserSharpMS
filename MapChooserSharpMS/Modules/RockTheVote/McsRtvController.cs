@@ -49,6 +49,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
     public override void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<IMcsInternalRtvController>(this);
+        services.AddSingleton<IRtvService>(_ => _rtvService);
     }
 
     protected override void OnInitialize()

@@ -56,7 +56,7 @@ internal interface IMcsInternalMapExtendService
     /// <see cref="MapChooserSharpMS.Shared.Events.MapVote.IMapVoteEventListener.OnMapExtended"/>
     /// with the real amount/type on success.
     /// </summary>
-    McsMapExtendResult TryExtend(McsExtendTrigger trigger);
+    McsMapExtendResult TryExtend(McsExtendTrigger trigger, int? overrideAmount = null);
 
     /// <summary>
     /// Directly sets the !ext command uses budget.

@@ -82,7 +82,7 @@ internal sealed class McsMapExtendService : IMcsInternalMapExtendService
         _extendRoundsPerExtends = 0;
     }
 
-    public McsMapExtendResult TryExtend(McsExtendTrigger trigger)
+    public McsMapExtendResult TryExtend(McsExtendTrigger trigger, int? overrideAmount = null)
     {
         switch (trigger)
         {
@@ -98,12 +98,12 @@ internal sealed class McsMapExtendService : IMcsInternalMapExtendService
         switch (manager)
         {
             case ITimeBasedTimeLimitManager timeBased:
-                amount = _extendTimePerExtends;
+                amount = overrideAmount ?? _extendTimePerExtends;
                 timeBased.Extend(TimeSpan.FromMinutes(amount));
                 break;
 
             case IRoundTimeLimitManager roundBased:
-                amount = _extendRoundsPerExtends;
+                amount = overrideAmount ?? _extendRoundsPerExtends;
                 roundBased.Extend(amount);
                 break;
 
@@ -139,9 +139,22 @@ internal sealed class McsMapExtendService : IMcsInternalMapExtendService
 
     private void BroadcastExtended(int amount, TimeLimitType type)
     {
-        string key = type == TimeLimitType.Time
-            ? "MapCycle.Extend.Notification.ExtendedTime"
-            : "MapCycle.Extend.Notification.ExtendedRounds";
+        bool shortened = amount < 0;
+        int displayAmount = System.Math.Abs(amount);
+
+        string key;
+        if (shortened)
+        {
+            key = type == TimeLimitType.Time
+                ? "MapCycle.Extend.Notification.ShortenedTime"
+                : "MapCycle.Extend.Notification.ShortenedRounds";
+        }
+        else
+        {
+            key = type == TimeLimitType.Time
+                ? "MapCycle.Extend.Notification.ExtendedTime"
+                : "MapCycle.Extend.Notification.ExtendedRounds";
+        }
 
         var clients = _plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
         foreach (var client in clients)
@@ -150,7 +163,7 @@ internal sealed class McsMapExtendService : IMcsInternalMapExtendService
                 continue;
 
             client.GetPlayerController()?.PrintToChat(
-                _plugin.LocalizeStringForPlayer(client, key, amount));
+                $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, key, displayAmount)}");
         }
     }
 }

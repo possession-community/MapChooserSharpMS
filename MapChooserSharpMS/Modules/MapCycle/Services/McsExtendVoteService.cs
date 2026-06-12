@@ -44,6 +44,7 @@ internal sealed class McsExtendVoteService
     // generation they were created with, so callbacks from an already-finished
     // session are ignored.
     private int _generation;
+    private int? _pendingOverrideAmount;
 
     public bool IsExtendVoteInProgress { get; private set; }
 
@@ -69,7 +70,7 @@ internal sealed class McsExtendVoteService
         _currentMapProvider = currentMapProvider;
     }
 
-    public McsExtendVoteStartResult StartExtendVote(IGameClient? initiator)
+    public McsExtendVoteStartResult StartExtendVote(IGameClient? initiator, int? overrideAmount = null)
     {
         if (NativeVoteManager is null)
         {
@@ -94,9 +95,12 @@ internal sealed class McsExtendVoteService
         float threshold = _conVars.VoteExtendSuccessThreshold.GetFloat();
 
         var handler = new ExtendVoteNativeHandler(this, _generation);
+        int displayAmount = overrideAmount ?? 0;
         var options = new YesNoVoteOptions
         {
-            Title = _plugin.LocalizeString("MapCycle.ExtendVote.Title"),
+            Title = "#SFUI_vote_passed_nextlevel_extend",
+            Description = LocalizedString.From(_ =>
+                _plugin.LocalizeString("MapCycle.ExtendVote.DetailsString", displayAmount)),
             VoteDuration = duration,
             VoteHandler = handler,
             VoteInitiator = initiator?.Slot ?? 99,
@@ -112,6 +116,7 @@ internal sealed class McsExtendVoteService
         }
 
         IsExtendVoteInProgress = true;
+        _pendingOverrideAmount = overrideAmount;
         _extendVoteState.SetState(McsMapVoteState.Voting);
 
         var startedParams = new ExtendVoteStartedParams(
@@ -156,11 +161,12 @@ internal sealed class McsExtendVoteService
         if (IsStale(generation))
             return;
 
+        var overrideAmount = _pendingOverrideAmount;
         FinishVoteSession();
 
         // !ve is admin-only — the pass goes through the admin path and does
         // not consume any extend budget.
-        var result = _extendService.TryExtend(McsExtendTrigger.AdminOrApi);
+        var result = _extendService.TryExtend(McsExtendTrigger.AdminOrApi, overrideAmount);
         if (result != McsMapExtendResult.Extended)
             _logger.LogWarning("[MapCycle] Extend vote passed but extend failed: {Result}", result);
 
@@ -194,6 +200,7 @@ internal sealed class McsExtendVoteService
     private void FinishVoteSession()
     {
         IsExtendVoteInProgress = false;
+        _pendingOverrideAmount = null;
         _generation++;
         _extendVoteState.Reset();
     }

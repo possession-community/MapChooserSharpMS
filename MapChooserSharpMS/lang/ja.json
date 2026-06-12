@@ -6,6 +6,9 @@
     "Prefix.MapCycle": "{green}[MapCycle]{default}",
     "Prefix.ChatListener": "{green}[MCS]{default}",
 
+    "Common.Validation.NotEnoughPermissions": "{darkred}このコマンドを使用する権限がありません。",
+    "Common.Validation.ValueOutOfRange": "値が範囲外です {0}",
+
     "Rtv.Notification.AlreadyVoted": "既にRTVに投票しています!",
     "Rtv.Notification.InCooldown": "RTVはクールダウン中です",
     "Rtv.Notification.Disabled": "RTVは現在無効化されています",
@@ -65,14 +68,19 @@
     "MapCycle.Command.Notification.RoundsLeft": "残りラウンド: {lime}{0}{default}",
     "MapCycle.Command.Notification.NoTimeLimit": "時間/ラウンド制限は有効ではありません",
 
+    "MapCycle.Extend.Usage": "使い方: !extend <分/ラウンド>",
     "MapCycle.Extend.Notification.Extended": "マップが延長されました",
     "MapCycle.Extend.Notification.NoExtendsLeft": "延長回数の上限に達しました",
     "MapCycle.Extend.Notification.NoExtCommandUsesLeft": "!ext の使用回数の上限に達しました",
     "MapCycle.Extend.Notification.TimeLimitNotActive": "延長可能な時間/ラウンド制限がありません",
     "MapCycle.Extend.Notification.ExtendedTime": "マップが {lime}{0}{default} 分延長されました",
     "MapCycle.Extend.Notification.ExtendedRounds": "マップが {lime}{0}{default} ラウンド延長されました",
+    "MapCycle.Extend.Notification.ShortenedTime": "マップが {lightred}{0}{default} 分短縮されました",
+    "MapCycle.Extend.Notification.ShortenedRounds": "マップが {lightred}{0}{default} ラウンド短縮されました",
 
     "MapCycle.ExtendVote.Title": "現在のマップを延長しますか?",
+    "MapCycle.ExtendVote.Usage": "使い方: !ve <分>",
+    "MapCycle.ExtendVote.DetailsString": "{0}分延長",
     "MapCycle.ExtendVote.Notification.Started": "延長投票が開始されました",
     "MapCycle.ExtendVote.Notification.AnotherVoteInProgress": "他の投票が進行中です",
     "MapCycle.ExtendVote.Notification.ExtendVoteAlreadyInProgress": "延長投票が既に進行中です",

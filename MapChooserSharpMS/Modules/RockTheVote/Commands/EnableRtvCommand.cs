@@ -3,12 +3,13 @@ using MapChooserSharpMS.Shared.RockTheVote.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
 using Sharp.Shared.Types;
+using MapChooserSharpMS.Modules.Commands;
 using TnmsPluginFoundation.Models.Command;
 using TnmsPluginFoundation.Models.Command.Validators;
 
 namespace MapChooserSharpMS.Modules.RockTheVote.Commands;
 
-internal sealed class EnableRtvCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
+internal sealed class EnableRtvCommand(IServiceProvider provider) : McsCommandBase(provider)
 {
     public override string CommandName => "enablertv";
     public override string CommandDescription => "Admin: enable the RTV command";

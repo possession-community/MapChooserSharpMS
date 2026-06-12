@@ -78,8 +78,8 @@ internal sealed class McsMapCycleController
 
     public bool IsExtendVoteInProgress => _extendVoteService.IsExtendVoteInProgress;
 
-    public McsMapExtendResult TryExtendCurrentMap()
-        => _extendService.TryExtend(McsExtendTrigger.AdminOrApi);
+    public McsMapExtendResult TryExtendCurrentMap(int? overrideAmount = null)
+        => _extendService.TryExtend(McsExtendTrigger.AdminOrApi, overrideAmount);
 
     public void SetExtCommandUsesLeft(int count)
         => _extendService.SetExtCommandUsesLeft(count);
@@ -90,8 +90,8 @@ internal sealed class McsMapCycleController
 
     public void DisableExt() => _extCommandService.IsEnabled = false;
 
-    public McsExtendVoteStartResult StartExtendVote(IGameClient? initiator = null)
-        => _extendVoteService.StartExtendVote(initiator);
+    public McsExtendVoteStartResult StartExtendVote(IGameClient? initiator = null, int? overrideAmount = null)
+        => _extendVoteService.StartExtendVote(initiator, overrideAmount);
 
     public bool CancelExtendVote(IGameClient? canceller = null)
         => _extendVoteService.CancelExtendVote(canceller);

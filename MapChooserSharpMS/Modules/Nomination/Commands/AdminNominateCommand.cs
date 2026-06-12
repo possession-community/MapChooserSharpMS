@@ -6,13 +6,14 @@ using MapChooserSharpMS.Shared.MapVote;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
 using Sharp.Shared.Types;
+using MapChooserSharpMS.Modules.Commands;
 using TnmsPluginFoundation.Models.Command;
 using TnmsPluginFoundation.Models.Command.Validators;
 using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class AdminNominateCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
+internal sealed class AdminNominateCommand(IServiceProvider provider) : McsCommandBase(provider)
 {
     public override string CommandName => "nominate_addmap";
     public override string CommandDescription => "Admin: force-add a map to nomination";

@@ -6,13 +6,14 @@ using MapChooserSharpMS.Shared.MapVote;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
 using Sharp.Shared.Types;
+using MapChooserSharpMS.Modules.Commands;
 using TnmsPluginFoundation.Models.Command;
 using TnmsPluginFoundation.Models.Command.Validators;
 using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class RemoveNominationCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
+internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCommandBase(provider)
 {
     public override string CommandName => "nominate_removemap";
     public override string CommandDescription => "Admin: remove a map from nomination";
