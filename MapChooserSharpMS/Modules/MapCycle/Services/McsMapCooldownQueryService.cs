@@ -36,11 +36,8 @@ internal sealed class McsMapCooldownQueryService : IMapCooldownQueryService
 
     internal static DateTime GetTimedCooldownEnd(ICooldownConfig config)
     {
-        if (config is CooldownConfig cc && cc.TimedCooldownEndUtc > DateTime.MinValue)
+        if (config is CooldownConfig cc)
             return cc.TimedCooldownEndUtc;
-
-        if (config.LastPlayedAt > DateTime.MinValue && config.TimedCooldown > TimeSpan.Zero)
-            return config.LastPlayedAt + config.TimedCooldown;
 
         return DateTime.MinValue;
     }

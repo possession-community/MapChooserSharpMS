@@ -645,6 +645,8 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             AllowedTimeRanges = source.AllowedTimeRanges is not null ? new List<ITimeRange>(source.AllowedTimeRanges) : null,
             Cooldown = source.Cooldown,
             CooldownDateTime = source.CooldownDateTime,
+            NominationCooldown = source.NominationCooldown,
+            NominationCooldownDateTime = source.NominationCooldownDateTime,
             Enabled = source.Enabled,
             ForceOverride = source.ForceOverride,
             OverridePriority = source.OverridePriority,

@@ -292,11 +292,8 @@ internal sealed class NominationValidateService
 
     private static DateTime GetTimedCooldownEnd(ICooldownConfig config)
     {
-        if (config is MapConfig.Models.CooldownConfig cc && cc.TimedCooldownEndUtc > DateTime.MinValue)
+        if (config is MapConfig.Models.CooldownConfig cc)
             return cc.TimedCooldownEndUtc;
-
-        if (config.LastPlayedAt > DateTime.MinValue && config.TimedCooldown > TimeSpan.Zero)
-            return config.LastPlayedAt + config.TimedCooldown;
 
         return DateTime.MinValue;
     }

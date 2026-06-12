@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Modules.MapConfig.Models;
@@ -43,14 +44,17 @@ internal sealed class McsMapCooldownLifecycleService
 
             _eventManager.Fire<IMapCycleEventListener>(e => e.OnMapCooldownApply(eventParams));
 
-            if (!eventParams.IsCancelled)
+            if (eventParams.IsCancelled)
             {
-                mapCc.CurrentCooldown = eventParams.Cooldown;
-                mapCc.LastPlayedAt = DateTime.UtcNow;
-
-                if (eventParams.TimedCooldownDuration > TimeSpan.Zero)
-                    mapCc.TimedCooldownEndUtc = DateTime.UtcNow + eventParams.TimedCooldownDuration;
+                _logger.LogInformation("[Cooldown] Cooldown apply cancelled by listener for: {Map}", playedMap.MapName);
+                return;
             }
+
+            mapCc.CurrentCooldown = eventParams.Cooldown;
+            mapCc.LastPlayedAt = DateTime.UtcNow;
+
+            if (eventParams.TimedCooldownDuration > TimeSpan.Zero)
+                mapCc.TimedCooldownEndUtc = DateTime.UtcNow + eventParams.TimedCooldownDuration;
         }
 
         foreach (var group in playedMap.GroupSettings)
@@ -58,11 +62,7 @@ internal sealed class McsMapCooldownLifecycleService
             if (group.CooldownConfig is not CooldownConfig groupCc)
                 continue;
 
-            int groupCooldown = group.MapCooldownOverride > 0
-                ? group.MapCooldownOverride
-                : groupCc.ConfigCooldown;
-
-            groupCc.CurrentCooldown = groupCooldown;
+            groupCc.CurrentCooldown = groupCc.ConfigCooldown;
             groupCc.LastPlayedAt = DateTime.UtcNow;
 
             if (groupCc.TimedCooldown > TimeSpan.Zero)
@@ -74,15 +74,19 @@ internal sealed class McsMapCooldownLifecycleService
 
     internal void DecrementAllCooldowns()
     {
+        var decremented = new HashSet<ICooldownConfig>(ReferenceEqualityComparer.Instance);
+
         foreach (var entry in _mapConfigProvider.GetMapConfigs())
         {
             foreach (var mapEntry in entry.Value)
             {
-                DecrementCooldownConfig(mapEntry.MapConfig.CooldownConfig);
+                if (decremented.Add(mapEntry.MapConfig.CooldownConfig))
+                    DecrementCooldownConfig(mapEntry.MapConfig.CooldownConfig);
 
                 foreach (var group in mapEntry.MapConfig.GroupSettings)
                 {
-                    DecrementCooldownConfig(group.CooldownConfig);
+                    if (decremented.Add(group.CooldownConfig))
+                        DecrementCooldownConfig(group.CooldownConfig);
                 }
             }
         }

@@ -40,6 +40,8 @@ internal static class MapConfigBuilder
             AllowedTimeRanges = overrideProps.AllowedTimeRanges ?? baseProps.AllowedTimeRanges,
             Cooldown = overrideProps.Cooldown ?? baseProps.Cooldown,
             CooldownDateTime = overrideProps.CooldownDateTime ?? baseProps.CooldownDateTime,
+            NominationCooldown = overrideProps.NominationCooldown ?? baseProps.NominationCooldown,
+            NominationCooldownDateTime = overrideProps.NominationCooldownDateTime ?? baseProps.NominationCooldownDateTime,
             Enabled = overrideProps.Enabled ?? baseProps.Enabled,
             ForceOverride = overrideProps.ForceOverride ?? baseProps.ForceOverride,
             OverridePriority = overrideProps.OverridePriority ?? baseProps.OverridePriority,
