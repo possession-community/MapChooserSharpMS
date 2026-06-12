@@ -40,7 +40,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
     public IRtvService RtvService => _rtvService;
     public RtvConVars ConVars => _conVars;
 
-    internal McsRtvController(IServiceProvider serviceProvider, bool hotReload): base(serviceProvider, hotReload)
+    public McsRtvController(IServiceProvider serviceProvider, bool hotReload): base(serviceProvider, hotReload)
     {
         _conVars = new RtvConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);

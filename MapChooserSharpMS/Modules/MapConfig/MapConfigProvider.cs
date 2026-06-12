@@ -38,18 +38,17 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
     }
 
 
-    protected override void OnAllModulesLoaded()
+    protected override void OnInitialize()
     {
         ReloadConfigs();
     }
 
-
     public void ReloadConfigs()
     {
-        var mapConfigParseService = ServiceProvider.GetRequiredService<IMapConfigParsingService>();
+        var mapConfigParseService = new MapConfigParsingService();
 
         IMapConfigParsingResult? parseResult;
-        
+
         try
         {
             parseResult = mapConfigParseService.ParseConfigs(Plugin.BaseCfgDirectoryPath);
@@ -65,10 +64,18 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
             Logger.LogError("Failed to parse configs");
             return;
         }
-        
-        _mapGroupSettings = parseResult.MapGroupSettings ;
+
+        _mapGroupSettings = parseResult.MapGroupSettings;
         _mapConfigsNameMapping = parseResult.MapConfigsNameMapping;
-        _mapConfigsWorkshopIdMapping =  parseResult.MapConfigsWorkshopIdMapping;
+        _mapConfigsWorkshopIdMapping = parseResult.MapConfigsWorkshopIdMapping;
+
+        int mapCount = _mapConfigsNameMapping.Count;
+        int groupCount = _mapGroupSettings.Count;
+        int overrideCount = _mapConfigsNameMapping.Values.Sum(v => Math.Max(0, v.Count - 1))
+                          + _mapGroupSettings.Values.Sum(v => Math.Max(0, v.Count - 1));
+
+        Logger.LogInformation("Loaded {Maps} maps, {Groups} groups, {Overrides} day-setting overrides",
+            mapCount, groupCount, overrideCount);
     }
 
     public IReadOnlyDictionary<string, IReadOnlyCollection<IMapGroupConfigOverrides>> GetGroupSettings()

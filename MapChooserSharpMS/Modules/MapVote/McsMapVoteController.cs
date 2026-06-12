@@ -39,7 +39,7 @@ internal sealed class McsMapVoteController
     private IInternalEventManager _eventManager = null!;
     private INativeVoteManager _nativeVoteManager = null!;
 
-    private readonly IMcsInternalMainVoteState _voteState;
+    private IMcsInternalMainVoteState _voteState = null!;
     private readonly MapVoteConVars _conVars;
     private readonly VoteControllingManager _voteManager = new();
 
@@ -66,12 +66,10 @@ internal sealed class McsMapVoteController
 
     internal INativeVoteManager NativeVoteManager => _nativeVoteManager;
 
-    internal McsMapVoteController(
+    public McsMapVoteController(
         IServiceProvider serviceProvider,
-        bool hotReload,
-        IMcsInternalMainVoteState voteState) : base(serviceProvider, hotReload)
+        bool hotReload) : base(serviceProvider, hotReload)
     {
-        _voteState = voteState;
         _conVars = new MapVoteConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);
     }
@@ -84,6 +82,7 @@ internal sealed class McsMapVoteController
 
     protected override void OnInitialize()
     {
+        _voteState = ServiceProvider.GetRequiredService<IMcsInternalMainVoteState>();
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         SharedSystem.GetModSharp().InstallGameListener(this);
     }

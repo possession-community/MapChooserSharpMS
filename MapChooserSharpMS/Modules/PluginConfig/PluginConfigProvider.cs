@@ -26,16 +26,22 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         services.AddTransient<IPluginConfigParsingService, PluginConfigParsingService>();
     }
 
-    protected override void OnAllModulesLoaded()
+    protected override void OnInitialize()
     {
         ReloadConfig();
     }
 
     public void ReloadConfig()
     {
-        var parsingService = ServiceProvider.GetRequiredService<IPluginConfigParsingService>();
+        var parsingService = new Services.PluginConfigParsingService();
 
         var configFilePath = Path.Combine(Plugin.BaseCfgDirectoryPath, "config.toml");
+
+        if (!File.Exists(configFilePath))
+        {
+            Logger.LogWarning("Config file not found at {Path}, using defaults", configFilePath);
+            File.WriteAllText(configFilePath, "# MapChooserSharpMS config — see documentation for options\n");
+        }
 
         try
         {

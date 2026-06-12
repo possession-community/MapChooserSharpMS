@@ -46,7 +46,7 @@ internal sealed class McsMapCycleController
     // Writer for the extend-vote slot of the plugin-owned state manager.
     // Received via ctor already narrowed to <see cref="IMcsInternalExtendVoteState"/>
     // — this controller cannot touch the main-vote slot even by accident.
-    private readonly IMcsInternalExtendVoteState _voteState;
+    private IMcsInternalExtendVoteState _voteState = null!;
 
     private IInternalTimeLimitManager? _internalTimeLimitManager;
     private TimeLimitTransitionTracker? _transitionTracker;
@@ -103,12 +103,10 @@ internal sealed class McsMapCycleController
     public int ListenerVersion => 1;
     public int ListenerPriority => 0;
 
-    internal McsMapCycleController(
+    public McsMapCycleController(
         IServiceProvider serviceProvider,
-        bool hotReload,
-        IMcsInternalExtendVoteState voteState) : base(serviceProvider, hotReload)
+        bool hotReload) : base(serviceProvider, hotReload)
     {
-        _voteState = voteState;
         _conVars = new MapCycleConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);
     }
@@ -128,6 +126,7 @@ internal sealed class McsMapCycleController
 
     protected override void OnInitialize()
     {
+        _voteState = ServiceProvider.GetRequiredService<IMcsInternalExtendVoteState>();
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         _mapTransitionManager = new McsMapTransitionManager(
             SharedSystem,

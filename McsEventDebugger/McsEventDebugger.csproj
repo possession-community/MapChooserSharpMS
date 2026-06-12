@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\config.props" />
+
+    <PropertyGroup>
+        <AssemblyName>McsEventDebugger</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ModSharp.Sharp.Shared" Version="2.1.123" ExcludeAssets="runtime" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\MapChooserSharpMS.Shared\MapChooserSharpMS.Shared.csproj" />
+    </ItemGroup>
+
+</Project>

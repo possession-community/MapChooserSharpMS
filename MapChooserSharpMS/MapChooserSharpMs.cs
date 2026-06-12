@@ -7,6 +7,7 @@ using MapChooserSharpMS.Shared;
 using MapChooserSharpMS.Shared.Ui.Menu;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Sharp.Shared;
 using TnmsPluginFoundation;
 
@@ -40,26 +41,33 @@ public sealed class MapChooserSharpMs(
 
     protected override void TnmsOnPluginLoad(bool hotReload)
     {
-        // Core infrastructure
+        Logger.LogInformation("MapChooserSharpMS loading (hotReload={HotReload})", hotReload);
+
+        Logger.LogInformation("Registering module: PluginConfigProvider");
         RegisterModule<Modules.PluginConfig.PluginConfigProvider>();
+        Logger.LogInformation("Registering module: MapConfigProvider");
         RegisterModule<Modules.MapConfig.MapConfigProvider>();
+        Logger.LogInformation("Registering module: EventManager");
         RegisterModule<Modules.EventManager.EventManager>();
 
-        // Nomination (before MapVote — MapVote resolves INominationManager)
+        Logger.LogInformation("Registering module: McsNominationController");
         RegisterModule<Modules.Nomination.McsNominationController>();
 
-        // Voting system
+        Logger.LogInformation("Registering module: McsMapVoteController");
         RegisterModule<McsMapVoteController>();
+        Logger.LogInformation("Registering module: McsCountdownUiController");
         RegisterModule<Modules.Ui.Countdown.McsCountdownUiController>();
 
-        // Rock The Vote
+        Logger.LogInformation("Registering module: McsRtvController");
         RegisterModule<Modules.RockTheVote.McsRtvController>();
 
-        // Map Cycle
+        Logger.LogInformation("Registering module: McsMapCycleController");
         RegisterModule<McsMapCycleController>();
 
-        // Chat triggers (plain text "rtv", "timeleft", etc.)
+        Logger.LogInformation("Registering module: McsChatListenerController");
         RegisterModule<Modules.ChatListener.McsChatListenerController>();
+
+        Logger.LogInformation("All modules registered");
     }
 
     protected override void LateRegisterPluginServices(IServiceCollection collection, IServiceProvider provider)
@@ -83,5 +91,10 @@ public sealed class MapChooserSharpMs(
         SharedSystem.GetSharpModuleManager()
             .RegisterSharpModuleInterface<IMapChooserSharpShared>(
                 this, IMapChooserSharpShared.ModSharpModuleIdentity, sharedApi);
+    }
+
+    protected override void TnmsOnPluginUnload(bool hotReload)
+    {
+        Logger.LogInformation("MapChooserSharpMS unloading (hotReload={HotReload})", hotReload);
     }
 }

@@ -1,0 +1,196 @@
+using System;
+using System.Collections.Generic;
+using MapChooserSharpMS.Shared;
+using MapChooserSharpMS.Shared.Events.MapCycle;
+using MapChooserSharpMS.Shared.Events.MapCycle.Params;
+using MapChooserSharpMS.Shared.Events.MapVote;
+using MapChooserSharpMS.Shared.Events.MapVote.Params;
+using MapChooserSharpMS.Shared.Events.Nomination;
+using MapChooserSharpMS.Shared.Events.Nomination.Params;
+using MapChooserSharpMS.Shared.Events.RockTheVote;
+using MapChooserSharpMS.Shared.Events.RockTheVote.Params;
+using MapChooserSharpMS.Shared.MapConfig;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Sharp.Shared;
+
+namespace McsEventDebugger;
+
+public class McsEventDebugger : IModSharpModule,
+    IMapCycleEventListener,
+    IMapVoteEventListener,
+    IRockTheVoteEventListener,
+    INominationEventListener
+{
+    public string DisplayName => "MCS Event Debugger";
+    public string DisplayAuthor => "faketuna";
+
+    public int ListenerVersion => 1;
+    public int ListenerPriority => int.MaxValue;
+
+    private readonly ISharedSystem _sharedSystem;
+    private readonly ILogger _logger;
+
+    public McsEventDebugger(
+        ISharedSystem sharedSystem,
+        string dllPath,
+        string sharpPath,
+        Version? version,
+        IConfiguration coreConfiguration,
+        bool hotReload)
+    {
+        _sharedSystem = sharedSystem;
+        _logger = sharedSystem.GetLoggerFactory().CreateLogger(DisplayName);
+    }
+
+    public bool Init() => true;
+    public void PostInit() { }
+
+    public void OnAllModulesLoaded()
+    {
+        var mcs = _sharedSystem.GetSharpModuleManager()
+            .GetRequiredSharpModuleInterface<IMapChooserSharpShared>(IMapChooserSharpShared.ModSharpModuleIdentity).Instance!;
+
+        mcs.MapCycleController.InstallEventListener(this);
+        mcs.McsMapVoteController.InstallEventListener(this);
+        mcs.McsRtvController.InstallEventListener(this);
+        mcs.McsNominationController.InstallEventListener(this);
+
+        _logger.LogInformation("All MCS event listeners installed");
+    }
+
+    public void Shutdown() { }
+
+    // ── MapCycle ──
+
+    public bool OnExtCommandExecute(IExtCommandExecuteEventParams p)
+    {
+        _logger.LogInformation("[MapCycle] OnExtCommandExecute: Client={Client}, Required={Req}, Current={Cur}",
+            p.Client?.Name, p.CurrentRequiredVotes, p.CurrentExtVotes);
+        return false;
+    }
+
+    public void OnExtendVoteStarted(IExtendVoteStartedEventParams p)
+        => _logger.LogInformation("[MapCycle] OnExtendVoteStarted: Map={Map}, Initiator={Init}, Duration={Dur}",
+            p.CurrentMap?.MapName, p.Initiator?.Name, p.VoteDuration);
+
+    public void OnExtendVoteCancelled(IExtendVoteCancelledEventParams p)
+        => _logger.LogInformation("[MapCycle] OnExtendVoteCancelled: Map={Map}, By={By}",
+            p.CurrentMap?.MapName, p.CancelledBy?.Name);
+
+    public void OnExtendVoteFinished(IExtendVoteFinishedEventParams p)
+        => _logger.LogInformation("[MapCycle] OnExtendVoteFinished: Map={Map}, Passed={Passed}",
+            p.CurrentMap?.MapName, p.Passed);
+
+    public void OnNextMapConfirmed(INextMapConfirmedEventParams p)
+        => _logger.LogInformation("[MapCycle] OnNextMapConfirmed: Next={Next}, Old={Old}",
+            p.NextMap?.MapName, p.OldNextMap?.MapName);
+
+    public void OnNextMapRemoved(INextMapRemovedEventParams p)
+        => _logger.LogInformation("[MapCycle] OnNextMapRemoved: Removed={Map}",
+            p.PreviousNextMap?.MapName);
+
+    public void OnMcsIntermission(IMcsIntermissionParams p)
+        => _logger.LogInformation("[MapCycle] OnMcsIntermission: NextMap={Map}", p.NextMap?.MapName);
+
+    public void OnMapCooldownApply(IMapCooldownApplyEventParams p)
+        => _logger.LogInformation("[MapCycle] OnMapCooldownApply: Map={Map}, CD={CD}, Timed={Timed}, Cancelled={Cancel}",
+            p.AppliesTo?.MapName, p.Cooldown, p.TimedCooldownDuration, p.IsCancelled);
+
+    public void OnTimeLimitReached(ITimeLimitReachedEventParams p)
+        => _logger.LogInformation("[MapCycle] OnTimeLimitReached: Type={Type}", p.LimitType);
+
+    public void OnVoteStartThresholdReached(IVoteStartThresholdReachedEventParams p)
+        => _logger.LogInformation("[MapCycle] OnVoteStartThresholdReached: Type={Type}", p.LimitType);
+
+    // ── MapVote ──
+
+    public bool OnMapVoteStart(IMapVoteStartParams p)
+    {
+        _logger.LogInformation("[MapVote] OnMapVoteStart: Maps={Maps}, Participants={Parts}",
+            p.MapsToVote?.Count, p.VoteParticipants?.Count);
+        return false;
+    }
+
+    public List<IMapConfig> OnRandomMapPick(IMapVoteRandomMapPickParams p)
+    {
+        _logger.LogInformation("[MapVote] OnRandomMapPick: MinSlots={Min}, Available={Avail}",
+            p.MinimumMapCounts, p.MapConfigs?.Count);
+        return [];
+    }
+
+    public void OnMapVoteFinished(IMapVoteFinishedEventParams p)
+        => _logger.LogInformation("[MapVote] OnMapVoteFinished: IsRtv={IsRtv}, Winner={Winner}",
+            p.IsRtvVote, p.VoteInformation?.Winner?.MapName);
+
+    public void OnMapVoteCancelled(IMapVoteCancelledParams p)
+        => _logger.LogInformation("[MapVote] OnMapVoteCancelled");
+
+    public void OnMapExtended(IMapVoteExtendParams p)
+        => _logger.LogInformation("[MapVote] OnMapExtended: Amount={Amount}, Type={Type}",
+            p.ExtendTime, p.TimeLimitType);
+
+    public void OnMapNotChanged(IMapVoteNotChangedParams p)
+        => _logger.LogInformation("[MapVote] OnMapNotChanged");
+
+    public void OnMapConfirmed(IMapVoteMapConfirmedEventParams p)
+        => _logger.LogInformation("[MapVote] OnMapConfirmed: Map={Map}, IsRtv={IsRtv}",
+            p.ConfirmedMap?.MapName, p.IsRtvVote);
+
+    // ── RTV ──
+
+    public bool OnClientRtvCast(IClientRtvCastParams p)
+    {
+        _logger.LogInformation("[RTV] OnClientRtvCast: Client={Client}", p.Client?.Name);
+        return false;
+    }
+
+    public bool OnClientRtvUnCast(IClientRtvUnCastParams p)
+    {
+        _logger.LogInformation("[RTV] OnClientRtvUnCast: Client={Client}", p.Client?.Name);
+        return false;
+    }
+
+    public bool OnForceRtv(IForceRtvParam p)
+    {
+        _logger.LogInformation("[RTV] OnForceRtv: Client={Client}", p.Client?.Name);
+        return false;
+    }
+
+    public void OnRtvConfirmed(IRtvConfirmedParams p)
+        => _logger.LogInformation("[RTV] OnRtvConfirmed: IsForced={IsForced}", p.IsForced);
+
+    // ── Nomination ──
+
+    public bool OnNominationCheckPassed(INominationCheckPassedEventParams p)
+    {
+        _logger.LogInformation("[Nomination] OnNominationCheckPassed");
+        return false;
+    }
+
+    public bool OnNomination(INominationParams p)
+    {
+        _logger.LogInformation("[Nomination] OnNomination: Map={Map}, Client={Client}",
+            p.NominationData?.MapConfig?.MapName, p.Client?.Name);
+        return false;
+    }
+
+    public bool OnAdminNomination(IAdminNominationParams p)
+    {
+        _logger.LogInformation("[Nomination] OnAdminNomination: Map={Map}, Client={Client}",
+            p.NominationData?.MapConfig?.MapName, p.Client?.Name);
+        return false;
+    }
+
+    public void OnNominationChanged(INominationChangeParams p)
+        => _logger.LogInformation("[Nomination] OnNominationChanged: Map={Map}, Client={Client}",
+            p.NominationData?.MapConfig?.MapName, p.Client?.Name);
+
+    public void OnNominationRemoved(INominationRemovedParams p)
+        => _logger.LogInformation("[Nomination] OnNominationRemoved: Map={Map}",
+            p.NominationData?.MapConfig?.MapName);
+
+    public void OnUnNominate(IUnNominateParams p)
+        => _logger.LogInformation("[Nomination] OnUnNominate: Map={Map}, Slot={Slot}, Reason={Reason}",
+            p.NominationData?.MapConfig?.MapName, p.Slot, p.Reason);
+}
