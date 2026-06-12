@@ -65,3 +65,7 @@ Planned/decided usage in MapChooserSharpMS:
   so map-keyed cooldowns may need a different surface; decide with the user).
 - **Menus** → `IMenu`/`IMenuInstance` (world-HUD paged menus) is a candidate
   backend for `IMcsMenuCompat` alongside the FPM compat plugin.
+
+## Git commit rules
+
+- **Do NOT add `Co-Authored-By` trailers to commit messages.** This project does not use them.
