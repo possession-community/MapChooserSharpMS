@@ -27,11 +27,14 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly IInternalEventManager _eventManager;
     private readonly Func<bool> _isTimeLimitReached;
     private readonly Func<TimeLimitType?> _timeLimitTypeProvider;
+    private readonly MapCycleConVars _conVars;
 
     private IMapConfig? _currentMap;
     private IMapConfig? _nextMap;
     private bool _isNextMapConfirmed;
     private bool _transitionStarted;
+    private Guid _retryTimerId;
+    private int _changeAttemptsUsed;
 
     private string? _forcedLimitConVarName;
     private float _forcedLimitOriginalValue;
@@ -45,7 +48,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         PluginModuleBase moduleBase,
         IInternalEventManager eventManager,
         Func<bool> isTimeLimitReached,
-        Func<TimeLimitType?> timeLimitTypeProvider)
+        Func<TimeLimitType?> timeLimitTypeProvider,
+        MapCycleConVars conVars)
     {
         _sharedSystem = sharedSystem;
         _mapConfigProvider = mapConfigProvider;
@@ -55,6 +59,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _eventManager = eventManager;
         _isTimeLimitReached = isTimeLimitReached;
         _timeLimitTypeProvider = timeLimitTypeProvider;
+        _conVars = conVars;
     }
 
     public IMapConfig? NextMap => _nextMap;
@@ -145,13 +150,9 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
         void ChangeNow()
         {
-            if (target.WorkshopId > 0)
-            {
-                MapUtil.ChangeToWorkshopMap(target.WorkshopId);
-                return;
-            }
-
-            MapUtil.ChangeMap(target.MapName);
+            _changeAttemptsUsed = 1;
+            IssueMapChange(target);
+            ArmTransitionRetryWatchdog(target);
         }
 
         if (seconds <= 0f)
@@ -161,6 +162,70 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         }
 
         _sharedSystem.GetModSharp().PushTimer(ChangeNow, seconds, GameTimerFlags.None);
+    }
+
+    private static void IssueMapChange(IMapConfig target)
+    {
+        if (target.WorkshopId > 0)
+        {
+            MapUtil.ChangeToWorkshopMap(target.WorkshopId);
+            return;
+        }
+
+        MapUtil.ChangeMap(target.MapName);
+    }
+
+    /// <summary>
+    /// Watches an issued map change: if the map still has not changed after
+    /// the configured interval, the change is re-issued up to the configured
+    /// attempt count; once exhausted, the server changes to the fallback map
+    /// instead of stalling on a map it cannot load (e.g. broken workshop
+    /// download). The timer dies with the map, so a successful change
+    /// disarms it automatically.
+    /// </summary>
+    private void ArmTransitionRetryWatchdog(IMapConfig target)
+    {
+        StopRetryWatchdog(resetAttempts: false);
+
+        float interval = _conVars.TransitionRetryInterval.GetFloat();
+        _retryTimerId = _sharedSystem.GetModSharp().PushTimer(() =>
+        {
+            int maxAttempts = _conVars.TransitionRetryAttempts.GetInt32();
+
+            if (_changeAttemptsUsed < maxAttempts)
+            {
+                _changeAttemptsUsed++;
+                _logger.LogWarning(
+                    "[MapTransition] Map change to {Map} did not happen — retrying ({Attempt}/{Max})",
+                    target.MapName, _changeAttemptsUsed, maxAttempts);
+                BroadcastToAll("MapCycle.Broadcast.MapTransitionRetry",
+                    ResolveDisplayName(target), _changeAttemptsUsed, maxAttempts);
+                IssueMapChange(target);
+                return;
+            }
+
+            StopRetryWatchdog(resetAttempts: true);
+
+            string fallbackMap = _conVars.TransitionFallbackMap.GetString();
+            _logger.LogError(
+                "[MapTransition] Map change to {Map} failed after {Max} attempts — falling back to {Fallback}",
+                target.MapName, maxAttempts, fallbackMap);
+            BroadcastToAll("MapCycle.Broadcast.MapTransitionFallbackMap",
+                ResolveDisplayName(target), fallbackMap);
+            MapUtil.ChangeMap(fallbackMap);
+        }, interval, GameTimerFlags.Repeatable | GameTimerFlags.StopOnMapEnd);
+    }
+
+    private void StopRetryWatchdog(bool resetAttempts)
+    {
+        if (_retryTimerId != Guid.Empty)
+        {
+            _sharedSystem.GetModSharp().StopTimer(_retryTimerId);
+            _retryTimerId = Guid.Empty;
+        }
+
+        if (resetAttempts)
+            _changeAttemptsUsed = 0;
     }
 
     public void SetCurrentMap(string mapName)
@@ -268,6 +333,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _isNextMapConfirmed = false;
         _transitionStarted = false;
         ChangeMapOnNextRoundEnd = false;
+        StopRetryWatchdog(resetAttempts: true);
 
         if (_forcedLimitConVarName is not null)
         {

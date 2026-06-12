@@ -135,7 +135,8 @@ internal sealed class McsMapCycleController
             this,
             _eventManager,
             () => _internalTimeLimitManager?.IsLimitReached == true,
-            () => _internalTimeLimitManager?.TimeLimitType);
+            () => _internalTimeLimitManager?.TimeLimitType,
+            _conVars);
 
         var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         var readOnlyVoteState = ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();

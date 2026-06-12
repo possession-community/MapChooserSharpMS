@@ -13,6 +13,9 @@ internal sealed class MapCycleConVars
     public readonly IConVar ExtUserVoteThreshold;
     public readonly IConVar VoteExtendSuccessThreshold;
     public readonly IConVar VoteExtendVoteTime;
+    public readonly IConVar TransitionRetryAttempts;
+    public readonly IConVar TransitionRetryInterval;
+    public readonly IConVar TransitionFallbackMap;
 
     public MapCycleConVars(IConVarManager cvm)
     {
@@ -45,6 +48,21 @@ internal sealed class MapCycleConVars
             "mcs_vote_extend_vote_time", 15.0F, 10.0F, 60.0F,
             "How long the extend vote lasts in seconds",
             ConVarFlags.None)!;
+
+        TransitionRetryAttempts = cvm.CreateConVar(
+            "mcs_map_transition_retry_attempts", 3, 1, 10,
+            "How many times to retry the map change when the map did not change",
+            ConVarFlags.None)!;
+
+        TransitionRetryInterval = cvm.CreateConVar(
+            "mcs_map_transition_retry_interval", 30.0F, 5.0F, 300.0F,
+            "Seconds to wait between map change retries",
+            ConVarFlags.None)!;
+
+        TransitionFallbackMap = cvm.CreateConVar(
+            "mcs_map_transition_fallback_map", "de_dust2",
+            "Map to change to when all map change retries failed",
+            ConVarFlags.None)!;
     }
 
     public IEnumerable<IConVar> All()
@@ -55,5 +73,8 @@ internal sealed class MapCycleConVars
         yield return ExtUserVoteThreshold;
         yield return VoteExtendSuccessThreshold;
         yield return VoteExtendVoteTime;
+        yield return TransitionRetryAttempts;
+        yield return TransitionRetryInterval;
+        yield return TransitionFallbackMap;
     }
 }

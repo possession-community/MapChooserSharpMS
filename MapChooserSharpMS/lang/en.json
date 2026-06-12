@@ -50,6 +50,8 @@
     "Rtv.Broadcast.VoteTriggered": "RTV has passed! Starting map vote...",
     "Rtv.Broadcast.ChangeToNextMapImmediately": "Rock The Vote is spoken! Changing to {lime}{0}{default} in {lime}{1}{default} seconds!",
     "MapCycle.Broadcast.ForceEndMatchFallback": "Map change is taking longer than expected — changing to {lime}{0}{default} now...",
+    "MapCycle.Broadcast.MapTransitionRetry": "Map change to {lime}{0}{default} has not completed — retrying ({1}/{2})...",
+    "MapCycle.Broadcast.MapTransitionFallbackMap": "Failed to change to {lime}{0}{default} — falling back to {lime}{1}{default}",
     "Rtv.Broadcast.ChangeToNextMapCs2EndMatchScreen": "Rock The Vote is spoken! Changing to {lime}{0}{default}!",
     "Rtv.Broadcast.Admin.ForceRtv": "Admin {0} forcefully triggered the RTV",
     "Rtv.Broadcast.Admin.EnabledRtv": "Admin {0} {green}enabled{default} RTV",
