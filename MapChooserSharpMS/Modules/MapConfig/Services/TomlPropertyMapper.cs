@@ -280,7 +280,7 @@ internal static class TomlPropertyMapper
 
     /// <summary>
     /// Parses the CooldownDateTime string into a TimeSpan.
-    /// Supports "d" (day) and "m" (month, treated as 30 days) suffixes.
+    /// Supported suffixes: "h" (hours), "d" (days), "w" (weeks), "m" (months = 30 days).
     /// </summary>
     internal static TimeSpan ParseCooldownDateTime(string? value)
     {
@@ -299,7 +299,9 @@ internal static class TomlPropertyMapper
 
         return suffix switch
         {
+            'h' => TimeSpan.FromHours(number),
             'd' => TimeSpan.FromDays(number),
+            'w' => TimeSpan.FromDays(number * 7),
             'm' => TimeSpan.FromDays(number * 30),
             _ => TimeSpan.Zero,
         };
