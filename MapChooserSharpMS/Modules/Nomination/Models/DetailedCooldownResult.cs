@@ -18,7 +18,7 @@ public class DetailedCooldownResult
         LongestTimedCooldown = groupTimedCooldowns.Values.Append(timedCooldown).Max();
         TimedCooldown = timedCooldown;
         GroupTimedCooldowns = groupTimedCooldowns;
-        HasCooldown = HighestCooldownCount > 0 || LongestTimedCooldown.Second > 0;
+        HasCooldown = HighestCooldownCount > 0 || LongestTimedCooldown > DateTime.UtcNow;
     }
 
     public bool HasCooldown { get; }

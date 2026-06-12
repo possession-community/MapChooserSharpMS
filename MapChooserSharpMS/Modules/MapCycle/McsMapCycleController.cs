@@ -54,6 +54,9 @@ internal sealed class McsMapCycleController
     private McsMapExtendService _extendService = null!;
     private McsExtCommandService _extCommandService = null!;
     private McsExtendVoteService _extendVoteService = null!;
+    private McsMapCooldownQueryService _cooldownQueryService = null!;
+    private McsMapCooldownCommandService _cooldownCommandService = null!;
+    private McsMapCooldownLifecycleService _cooldownLifecycleService = null!;
 
     private MapCycleMode _mode = MapCycleMode.None;
     private Guid _tickTimerId = Guid.Empty;
@@ -64,9 +67,8 @@ internal sealed class McsMapCycleController
 
     public IMapTransitionManager MapTransitionManager => _mapTransitionManager;
 
-    // TODO Implement MapCooldown services
-    public IMapCooldownQueryService MapCooldownQueryService => throw new NotImplementedException();
-    public IMapCooldownCommandService MapCooldownCommandService => throw new NotImplementedException();
+    public IMapCooldownQueryService MapCooldownQueryService => _cooldownQueryService;
+    public IMapCooldownCommandService MapCooldownCommandService => _cooldownCommandService;
 
     #region IMapCycleExtendController
 
@@ -141,6 +143,12 @@ internal sealed class McsMapCycleController
             Plugin, this, Logger, _eventManager, _extendService,
             _voteState, readOnlyVoteState, _conVars,
             () => _mapTransitionManager.CurrentMap);
+
+        var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        _cooldownQueryService = new McsMapCooldownQueryService();
+        _cooldownCommandService = new McsMapCooldownCommandService(Logger);
+        _cooldownLifecycleService = new McsMapCooldownLifecycleService(
+            Logger, Plugin, this, mapConfigProvider, _eventManager);
 
         SharedSystem.GetModSharp().InstallGameListener(this);
         SharedSystem.GetClientManager().InstallClientListener(this);
@@ -267,6 +275,7 @@ internal sealed class McsMapCycleController
         _mapTransitionManager.SetCurrentMap(currentMapName);
         _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap);
         _extCommandService.ClearParticipants();
+        _cooldownLifecycleService.DecrementAllCooldowns();
 
         var mode = ParseMode(_conVars.Mode.GetString());
         var cvm = SharedSystem.GetConVarManager();
@@ -335,11 +344,12 @@ internal sealed class McsMapCycleController
             _tickTimerId = Guid.Empty;
         }
 
+        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap is { } playedMap)
+            _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);
+
         _internalTimeLimitManager = null;
         _transitionTracker = null;
         _mode = MapCycleMode.None;
-        // Defensive: only clear when the managers are already constructed.
-        // OnUnload may run before OnInitialize on certain failure paths.
         _mapTransitionManager?.ClearState();
         _extendService?.ClearState();
         _extCommandService?.ClearParticipants();

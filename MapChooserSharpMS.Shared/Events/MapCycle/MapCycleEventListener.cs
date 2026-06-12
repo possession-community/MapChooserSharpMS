@@ -55,9 +55,11 @@ public interface IMapCycleEventListener : IEventListenerBase
     /// </summary>
     void OnMcsIntermission(IMcsIntermissionParams @params) {}
     
-    // TODO() make to non void. make cancellable and make new cooldown obtainable in MCS
     /// <summary>
-    /// Fired when MCS about to apply map cooldown
+    /// Fired when MCS is about to apply map cooldown. The params are editable —
+    /// listeners can modify <see cref="IMapCooldownApplyEventParams.Cooldown"/>,
+    /// <see cref="IMapCooldownApplyEventParams.TimedCooldownDuration"/>,
+    /// or set <see cref="IMapCooldownApplyEventParams.IsCancelled"/> to suppress.
     /// </summary>
     void OnMapCooldownApply(IMapCooldownApplyEventParams eventParams) {}
 

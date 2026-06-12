@@ -257,17 +257,28 @@ internal sealed class NominationValidateService
     public IDetailedCooldownResult GetCooldownInformations(IMapConfig mapConfig)
     {
         int curMapCooldown = mapConfig.CooldownConfig.CurrentCooldown;
-        var curMapTimedCooldown = mapConfig.CooldownConfig.LastPlayedAt + mapConfig.CooldownConfig.TimedCooldown;
+        var curMapTimedCooldown = GetTimedCooldownEnd(mapConfig.CooldownConfig);
         Dictionary<string, int> groupCooldown = new Dictionary<string, int>();
         Dictionary<string, DateTime> groupTimedCooldown = new ();
 
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
             groupCooldown[groupSetting.GroupName] = groupSetting.CooldownConfig.CurrentCooldown;
-            groupTimedCooldown[groupSetting.GroupName] = groupSetting.CooldownConfig.LastPlayedAt + groupSetting.CooldownConfig.TimedCooldown;
+            groupTimedCooldown[groupSetting.GroupName] = GetTimedCooldownEnd(groupSetting.CooldownConfig);
         }
 
         return new DetailedCooldownResult(mapConfig, curMapCooldown, groupCooldown, curMapTimedCooldown, groupTimedCooldown);
+    }
+
+    private static DateTime GetTimedCooldownEnd(ICooldownConfig config)
+    {
+        if (config is MapConfig.Models.CooldownConfig cc && cc.TimedCooldownEndUtc > DateTime.MinValue)
+            return cc.TimedCooldownEndUtc;
+
+        if (config.LastPlayedAt > DateTime.MinValue && config.TimedCooldown > TimeSpan.Zero)
+            return config.LastPlayedAt + config.TimedCooldown;
+
+        return DateTime.MinValue;
     }
 
     public bool IsPlayerDeniedByPermission(IMapConfig mapConfig, IGameClient client)
