@@ -116,14 +116,6 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
 
 
         [MapVote]
-        # What menu type should be use?
-        #
-        # Currently supports:
-        # - Default
-        #
-        # See GitHub readme for more and updated information.
-        MenuType = "Default"
-
         # How many maps should be appeared in map vote?
         MaxVoteElements = 5
 
@@ -202,15 +194,5 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         RunoffVoteCountdownSound8 = ""
         RunoffVoteCountdownSound9 = ""
         RunoffVoteCountdownSound10 = ""
-
-
-        [Nomination]
-        # What menu type should be use?
-        #
-        # Currently supports:
-        # - Default
-        #
-        # See GitHub readme for more and updated information.
-        MenuType = "Default"
         """;
 }
