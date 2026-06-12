@@ -133,6 +133,8 @@ internal sealed class McsMapVoteController
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         _eventManager.RegisterListener<IMapCycleEventListener>(this);
+
+        AddCommandsUnderNamespace("MapChooserSharpMS.Modules.MapVote.Commands");
     }
 
     protected override void OnUnloadModule()
@@ -141,6 +143,26 @@ internal sealed class McsMapVoteController
         _eventManager.RemoveListener<IRockTheVoteEventListener>(this);
         _eventManager.RemoveListener<IMapCycleEventListener>(this);
         _controllingService?.ForceResetVote();
+    }
+
+    /// <summary>
+    /// Admin/API <c>TrySetNextMap</c> outside a vote must block further votes
+    /// and nominations the same way a vote-confirmed map does. The vote path
+    /// sets this state itself, so re-setting the same value here is harmless.
+    /// </summary>
+    public void OnNextMapConfirmed(INextMapConfirmedEventParams @params)
+    {
+        _voteState.SetState(McsMapVoteState.NextMapConfirmed);
+    }
+
+    /// <summary>
+    /// Removing the next map (admin !removenextmap / API) lifts the
+    /// NextMapConfirmed block so votes and nominations work again.
+    /// </summary>
+    public void OnNextMapRemoved(INextMapRemovedEventParams @params)
+    {
+        if ((_voteState as IMcsReadOnlyVoteState)?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
+            _voteState.Reset();
     }
 
     public void OnRtvConfirmed(IRtvConfirmedParams @params)

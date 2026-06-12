@@ -122,6 +122,7 @@ internal sealed class McsMapCycleController
         services.AddSingleton<IMcsInternalMapExtendService>(_ => _extendService);
         services.AddSingleton<McsExtCommandService>(_ => _extCommandService);
         services.AddSingleton<McsMapCooldownLifecycleService>(_ => _cooldownLifecycleService);
+        services.AddSingleton<McsMapCooldownCommandService>(_ => _cooldownCommandService);
     }
 
     protected override void OnInitialize()
@@ -156,7 +157,7 @@ internal sealed class McsMapCycleController
 
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _cooldownQueryService = new McsMapCooldownQueryService();
-        _cooldownCommandService = new McsMapCooldownCommandService(Logger);
+        _cooldownCommandService = new McsMapCooldownCommandService(Logger, mapConfigProvider);
         _cooldownLifecycleService = new McsMapCooldownLifecycleService(
             Logger, Plugin, this, mapConfigProvider, _eventManager);
 
