@@ -21,6 +21,8 @@
     "Rtv.Notification.Admin.Enable.Failure": "Failed to enable RTV",
     "Rtv.Notification.Admin.Disable.Success": "RTV has been {red}disabled{default}",
     "Rtv.Notification.Admin.Disable.Failure": "Failed to disable RTV",
+    "Rtv.Broadcast.VoteTriggered": "RTV has passed! Starting map vote...",
+    "Rtv.Broadcast.Admin.ForceRtv": "{0} has forced an RTV vote.",
 
     "Nomination.Notification.Failure.Disabled": "This map is disabled",
     "Nomination.Notification.Failure.MapDisabled": "This map is disabled",
@@ -61,6 +63,12 @@
     "MapVote.Broadcast.Countdown": "Vote starting in {lime}{0}{default} seconds",
     "MapVote.Broadcast.CenterHtml": "Vote starting in {0} seconds",
     "MapVote.Broadcast.Voting.VoteEndCountdown": "{0} seconds remaining to vote",
+    "MapVote.Broadcast.VoteFinished": "Vote finished! ({0} votes cast)",
+    "MapVote.Broadcast.VoteResult.NextMapConfirmed": "Next map: {lime}{0}",
+    "MapVote.Broadcast.VoteResult.Extend": "Current map has been {lime}extended{default}!",
+    "MapVote.Broadcast.VoteResult.NotChanging": "Map will {lightred}not be changed{default}.",
+    "MapVote.Broadcast.VoteResult.NoVotes": "No votes were cast. A map was chosen randomly.",
+    "MapVote.Broadcast.StartingRunoffVote": "No clear winner! Starting a {yellow}runoff vote{default}...",
 
     "MapCycle.Command.Notification.NextMap": "Next map: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "Current map: {lime}{0}{default}",

@@ -57,7 +57,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _rtvManager = new InternalRtvManager(Plugin, _conVars);
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         _configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
-        _rtvService = new RtvService(Plugin, this, _rtvManager, _eventManager, ServiceProvider);
+        _rtvService = new RtvService(Plugin, this, _rtvManager, _eventManager, ServiceProvider, _conVars);
     }
 
     protected override void OnAllModulesLoaded()

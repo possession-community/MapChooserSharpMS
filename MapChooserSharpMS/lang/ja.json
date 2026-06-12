@@ -21,6 +21,8 @@
     "Rtv.Notification.Admin.Enable.Failure": "RTVの有効化に失敗しました",
     "Rtv.Notification.Admin.Disable.Success": "RTVが{red}無効化{default}されました",
     "Rtv.Notification.Admin.Disable.Failure": "RTVの無効化に失敗しました",
+    "Rtv.Broadcast.VoteTriggered": "RTVが可決されました！マップ投票を開始します...",
+    "Rtv.Broadcast.Admin.ForceRtv": "{0} がRTV投票を強制しました。",
 
     "Nomination.Notification.Failure.Disabled": "このマップは無効化されています",
     "Nomination.Notification.Failure.MapDisabled": "このマップは無効化されています",
@@ -61,6 +63,12 @@
     "MapVote.Broadcast.Countdown": "投票が {lime}{0}{default} 秒で始まります",
     "MapVote.Broadcast.CenterHtml": "投票が {0} 秒で始まります",
     "MapVote.Broadcast.Voting.VoteEndCountdown": "投票可能時間はあと {0} 秒",
+    "MapVote.Broadcast.VoteFinished": "投票が終了しました！ ({0} 票)",
+    "MapVote.Broadcast.VoteResult.NextMapConfirmed": "次のマップ: {lime}{0}",
+    "MapVote.Broadcast.VoteResult.Extend": "現在のマップが{lime}延長{default}されました！",
+    "MapVote.Broadcast.VoteResult.NotChanging": "マップは{lightred}変更されません{default}。",
+    "MapVote.Broadcast.VoteResult.NoVotes": "投票がありませんでした。ランダムにマップが選択されました。",
+    "MapVote.Broadcast.StartingRunoffVote": "決定的な勝者がいません！{yellow}決選投票{default}を開始します...",
 
     "MapCycle.Command.Notification.NextMap": "次のマップ: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "現在のマップ: {lime}{0}{default}",

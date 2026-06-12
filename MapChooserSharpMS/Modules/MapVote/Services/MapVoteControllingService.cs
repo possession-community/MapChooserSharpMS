@@ -22,6 +22,7 @@ using Sharp.Shared.Enums;
 using Sharp.Shared.Objects;
 using Sharp.Shared.Units;
 using TnmsPluginFoundation;
+using TnmsPluginFoundation.Extensions.Client;
 using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.MapVote.Services;
@@ -246,6 +247,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             if (runoffCandidates.Count >= 2)
             {
                 _logger.LogInformation("No decisive winner, starting runoff with {Count} candidates", runoffCandidates.Count);
+                BroadcastToAll("MapVote.Broadcast.StartingRunoffVote");
                 StartRunoffVote(session, runoffCandidates);
                 return;
             }
@@ -277,6 +279,25 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private void HandleWinner(MapVoteInformation session, MapVoteOption? winner)
     {
         session.SetWinner(winner);
+
+        BroadcastToAll("MapVote.Broadcast.VoteFinished", session.TotalVoteCount);
+
+        if (winner is null)
+        {
+            BroadcastToAll("MapVote.Broadcast.VoteResult.NoVotes");
+        }
+        else if (winner.MapName == MapVoteConstants.ExtendMapInternalName)
+        {
+            BroadcastToAll("MapVote.Broadcast.VoteResult.Extend");
+        }
+        else if (winner.MapName == MapVoteConstants.DontChangeMapInternalName)
+        {
+            BroadcastToAll("MapVote.Broadcast.VoteResult.NotChanging");
+        }
+        else if (winner.MapConfig is not null)
+        {
+            BroadcastToAll("MapVote.Broadcast.VoteResult.NextMapConfirmed", winner.MapName);
+        }
 
         var finishedParams = new MapVoteFinishedParams(_plugin, _moduleBase, session, session.IsRtvVote);
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteFinished(finishedParams));
@@ -513,6 +534,19 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         foreach (var entry in _nominationManager.NominatedMaps)
         {
             _cooldownLifecycleService.ApplyNominationCooldown(entry.Value.MapConfig);
+        }
+    }
+
+    private void BroadcastToAll(string key, params object[] args)
+    {
+        var clients = _plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+        foreach (var client in clients)
+        {
+            if (client.IsFakeClient || client.IsHltv)
+                continue;
+
+            client.GetPlayerController()?.PrintToChat(
+                $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, key, args)}");
         }
     }
 }

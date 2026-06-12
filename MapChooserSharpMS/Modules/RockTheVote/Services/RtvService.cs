@@ -22,7 +22,8 @@ internal sealed class RtvService(
     IMcsInternalRtvController controller,
     InternalRtvManager rtvManager,
     IInternalEventManager eventManager,
-    IServiceProvider serviceProvider
+    IServiceProvider serviceProvider,
+    RtvConVars conVars
     ) : IRtvService
 {
     public RtvExecutionResult AddClientToRtv(IGameClient client)
@@ -104,6 +105,8 @@ internal sealed class RtvService(
 
         rtvManager.ForceSetRtvStatus(RtvStatus.TriggeredWaitingForVote);
 
+        BroadcastToAll("Rtv.Broadcast.VoteTriggered");
+
         IRtvConfirmedParams @params = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, null, false);
         eventManager.Fire<IRockTheVoteEventListener>(e => e.OnRtvConfirmed(@params));
     }
@@ -146,12 +149,30 @@ internal sealed class RtvService(
 
         rtvManager.ForceSetRtvStatus(RtvStatus.TriggeredWaitingForVote);
 
+        BroadcastToAll("Rtv.Broadcast.Admin.ForceRtv", client?.Name ?? "Console");
+
         IRtvConfirmedParams confirmedParams = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, client, true);
         eventManager.Fire<IRockTheVoteEventListener>(e => e.OnRtvConfirmed(confirmedParams));
     }
 
+    private void BroadcastToAll(string key, params object[] args)
+    {
+        var clients = plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+        foreach (var c in clients)
+        {
+            if (c.IsFakeClient || c.IsHltv)
+                continue;
+
+            c.GetPlayerController()?.PrintToChat(
+                $" {plugin.GetPluginPrefix(c)} {plugin.LocalizeStringForPlayer(c, key, args)}");
+        }
+    }
+
     private void BroadcastProgress(IGameClient caster)
     {
+        if (conVars.BroadcastPlayerCast.GetInt32() == 0)
+            return;
+
         int current = rtvManager.RtvCounts;
         int required = rtvManager.RequiredCounts;
         var clients = plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
@@ -161,9 +182,7 @@ internal sealed class RtvService(
                 continue;
 
             c.GetPlayerController()?.PrintToChat(
-                plugin.LocalizeStringForPlayer(
-                    c, "Rtv.Notification.Progress",
-                    caster.Name, current, required));
+                $" {plugin.GetPluginPrefix(c)} {plugin.LocalizeStringForPlayer(c, "Rtv.Notification.Progress", caster.Name, current, required)}");
         }
     }
 }
