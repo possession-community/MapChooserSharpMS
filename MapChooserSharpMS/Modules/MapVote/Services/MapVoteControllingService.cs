@@ -136,8 +136,6 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         if (!StartNativeVote(session, candidates, participants, false))
             return McsMapVoteState.NoActiveVote;
 
-        ApplyNominationCooldownToConsumedMaps(candidates);
-
         return McsMapVoteState.InitializeAccepted;
     }
 
@@ -314,11 +312,15 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             var confirmedParams = new MapVoteMapConfirmedParams(_plugin, _moduleBase, winner.MapConfig, session.IsRtvVote);
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapConfirmed(confirmedParams));
 
+            ApplyNominationCooldownToNominatedMaps();
+
             session.CurrentState = McsMapVoteState.NextMapConfirmed;
             _voteState.SetState(McsMapVoteState.NextMapConfirmed);
             _voteManager.ClearSession();
             return;
         }
+
+        ApplyNominationCooldownToNominatedMaps();
 
         session.CurrentState = McsMapVoteState.NoActiveVote;
         _voteState.Reset();
@@ -506,14 +508,11 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         return true;
     }
 
-    private void ApplyNominationCooldownToConsumedMaps(IReadOnlyList<IMapVoteOption> candidates)
+    private void ApplyNominationCooldownToNominatedMaps()
     {
-        foreach (var candidate in candidates)
+        foreach (var entry in _nominationManager.NominatedMaps)
         {
-            if (candidate.MapConfig is null)
-                continue;
-
-            _cooldownLifecycleService.ApplyNominationCooldown(candidate.MapConfig);
+            _cooldownLifecycleService.ApplyNominationCooldown(entry.Value.MapConfig);
         }
     }
 }
