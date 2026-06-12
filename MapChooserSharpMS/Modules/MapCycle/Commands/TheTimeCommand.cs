@@ -10,7 +10,9 @@ namespace MapChooserSharpMS.Modules.MapCycle.Commands;
 /// </summary>
 internal sealed class TheTimeCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
 {
-    public override string CommandName => "thetime";
+    internal const string ChatTrigger = "thetime";
+
+    public override string CommandName => ChatTrigger;
     public override string CommandDescription => "Show the current server time";
     public override TnmsCommandRegistrationType CommandRegistrationType =>
         TnmsCommandRegistrationType.Client | TnmsCommandRegistrationType.Server;

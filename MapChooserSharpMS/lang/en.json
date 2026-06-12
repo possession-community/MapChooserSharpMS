@@ -136,10 +136,6 @@
     "MapConfig.Command.Admin.Reload.Success": "Config reload task is successfully completed",
     "MapConfig.Command.Admin.Reload.Failure": "Config reload task failed: {0}",
 
-    "MapVote.Command.Notification.NoActiveVote": "There is no active vote!",
-    "MapVote.Command.Admin.CancelVote.NextMapAlreadyConfirmed": "Next map is already confirmed!",
-    "MapVote.Broadcast.Admin.CancelVote": "Admin {lime}{0}{default} cancelled the map vote!",
-
     "MapCycle.Extend.Usage": "Usage: !extend <minutes/rounds>",
     "MapCycle.Extend.Notification.Extended": "Map has been extended",
     "MapCycle.Extend.Notification.NoExtendsLeft": "No extends remaining",

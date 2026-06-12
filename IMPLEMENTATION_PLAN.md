@@ -49,24 +49,17 @@
 
 ---
 
-## Phase 3: 残りコマンド (2026-06-12 再洗い出し済)
+## Phase 3: 残りコマンド — ✅ ほぼ完了 (2026-06-12, commit 66cf96f)
 
-旧 MCS の登録コマンド全 27 個と突合した未実装分:
+実装済: setnextmap / removenextmap / setmapcooldown / setgroupcooldown (name-keyed,
+in-memory) / reloadmapcfgs / mapinfo (groups 行 + can-nominate 付き) / extends /
+cancelvote / thetime (issue #13)。
+MapVote 状態同期も追加: OnNextMapConfirmed/Removed を MapVote controller が listen。
+revote は **NVM 側にあるため対象外** (ユーザー確認済 2026-06-12)。
 
-- **Admin MapCycle 操作** (`Modules/MapCycle/Commands/`):
-  - `SetNextMapCommand` ("setnextmap <map>"): `TransitionManager.TrySetNextMap`。
-  - `RemoveNextMapCommand` ("removenextmap"): `TryRemoveNextMap`。
-  - `SetMapCooldownCommand` ("setmapcooldown <map> <n>") /
-    `SetGroupCooldownCommand` ("setgroupcooldown <group> <n>"): cooldown services 配線。
-  - `ReloadMapCfgsCommand` ("reloadmapcfgs"): MapConfig 再読込。
-- **情報系**:
-  - `MapInfoCommand` ("mapinfo"): map config 情報表示 + `OnMapInfoCommandExecuted` 発火
-    (外部プラグインが行を足せる — FireCollect で追加行を集める設計を検討)。
-  - `ExtendsLeftCommand` ("extends"): 残り延長回数表示。
-- **MapVote 操作**:
-  - `RevoteCommand` ("revote"): 投票中の票打ち直し (NVM 側の再表示 API 要確認)。
-  - `CancelVoteCommand` ("cancelvote"): admin が進行中投票をキャンセル
-    (`CancelVote(client)` は実装済、コマンド未配線) + `Admin.CancelVote` ブロードキャスト。
+残り:
+- `OnMapInfoCommandExecuted` イベント発火 (外部プラグインが mapinfo に行を足せる —
+  FireCollect 設計検討。イベント params 新設が要るので別途)
 - **掃除**: `Modules/Nomination/McsMapNominationCommands.cs` (Compile Remove 中の legacy) を削除、
   csproj の `<Compile Remove>` も撤去。
 

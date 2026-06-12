@@ -133,8 +133,6 @@ internal sealed class McsMapVoteController
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         _eventManager.RegisterListener<IMapCycleEventListener>(this);
-
-        AddCommandsUnderNamespace("MapChooserSharpMS.Modules.MapVote.Commands");
     }
 
     protected override void OnUnloadModule()

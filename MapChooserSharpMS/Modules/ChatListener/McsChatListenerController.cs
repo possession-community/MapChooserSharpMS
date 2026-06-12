@@ -33,6 +33,7 @@ internal sealed class McsChatListenerController : PluginModuleBase, IClientListe
         RegisterTrigger(MapCycle.Commands.NextMapCommand.ChatTrigger);
         RegisterTrigger(MapCycle.Commands.TimeLeftCommand.ChatTrigger);
         RegisterTrigger(MapCycle.Commands.CurrentMapCommand.ChatTrigger);
+        RegisterTrigger(MapCycle.Commands.TheTimeCommand.ChatTrigger);
     }
 
     protected override void OnUnloadModule()
