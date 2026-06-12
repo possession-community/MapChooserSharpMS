@@ -116,8 +116,10 @@ internal sealed class McsExtCommandService
         if (!IsEnabled)
             return McsExtCommandResult.NotAvailable;
 
+        // Block only while a vote is actually running (Extend is on the
+        // ballot there) — result states like NextMapConfirmed don't block
+        // !ext, same independence as the extend vote.
         if (_voteState.IsVotingPeriod()
-            || _voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed
             || !_extendService.CanExtendNow)
         {
             return McsExtCommandResult.NotAvailable;
