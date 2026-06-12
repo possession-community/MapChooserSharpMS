@@ -22,7 +22,11 @@ public sealed class FpmMcsMenuCompat(IMenuManager menuManager) : IMcsMenuCompat
         foreach (var item in menu.Items)
         {
             var onSelect = item.OnSelect;
-            builder.Item(item.DisplayText, _ => onSelect?.Invoke(target));
+            builder.Item(item.DisplayText, controller =>
+            {
+                controller.Exit();
+                onSelect?.Invoke(target);
+            });
         }
 
         var built = builder.Build();
