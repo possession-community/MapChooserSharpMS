@@ -132,6 +132,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         }
 
         session.CurrentState = McsMapVoteState.InitializeAccepted;
+        session.ParticipantCount = participants.Count;
         _voteState.SetState(McsMapVoteState.InitializeAccepted);
 
         if (!StartNativeVote(session, candidates, participants, false))
@@ -247,7 +248,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             if (runoffCandidates.Count >= 2)
             {
                 _logger.LogInformation("No decisive winner, starting runoff with {Count} candidates", runoffCandidates.Count);
-                BroadcastToAll("MapVote.Broadcast.StartingRunoffVote");
+                BroadcastToAll("MapVote.Broadcast.StartingRunoffVote", (int)(winnerThreshold * 100));
                 StartRunoffVote(session, runoffCandidates);
                 return;
             }
@@ -280,23 +281,32 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     {
         session.SetWinner(winner);
 
-        BroadcastToAll("MapVote.Broadcast.VoteFinished", session.TotalVoteCount);
+        int totalVotes = session.TotalVoteCount;
+        int participants = session.ParticipantCount;
+        int pct = participants > 0 ? (int)(totalVotes * 100.0 / participants) : 0;
+        BroadcastToAll("MapVote.Broadcast.VoteFinished", participants, totalVotes, pct);
 
         if (winner is null)
         {
-            BroadcastToAll("MapVote.Broadcast.VoteResult.NoVotes");
+            var randomPick = session.VoteOptions
+                .OfType<MapVoteOption>()
+                .FirstOrDefault(o => o.MapConfig is not null);
+            BroadcastToAll("MapVote.Broadcast.VoteResult.NoVotes", randomPick?.MapName ?? "?");
         }
         else if (winner.MapName == MapVoteConstants.ExtendMapInternalName)
         {
-            BroadcastToAll("MapVote.Broadcast.VoteResult.Extend");
+            int winnerPct = totalVotes > 0 ? (int)(winner.VoteCount * 100.0 / totalVotes) : 0;
+            BroadcastToAll("MapVote.Broadcast.VoteResult.Extend", winnerPct, totalVotes);
         }
         else if (winner.MapName == MapVoteConstants.DontChangeMapInternalName)
         {
-            BroadcastToAll("MapVote.Broadcast.VoteResult.NotChanging");
+            int winnerPct = totalVotes > 0 ? (int)(winner.VoteCount * 100.0 / totalVotes) : 0;
+            BroadcastToAll("MapVote.Broadcast.VoteResult.NotChanging", winnerPct, totalVotes);
         }
         else if (winner.MapConfig is not null)
         {
-            BroadcastToAll("MapVote.Broadcast.VoteResult.NextMapConfirmed", winner.MapName);
+            int winnerPct = totalVotes > 0 ? (int)(winner.VoteCount * 100.0 / totalVotes) : 0;
+            BroadcastToAll("MapVote.Broadcast.VoteResult.NextMapConfirmed", winner.MapName, winnerPct, totalVotes);
         }
 
         var finishedParams = new MapVoteFinishedParams(_plugin, _moduleBase, session, session.IsRtvVote);

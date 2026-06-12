@@ -19,6 +19,8 @@ internal sealed class MapVoteInformation : IInternalMapVoteInformation
 
     public bool IsRtvVote { get; init; }
 
+    public int ParticipantCount { get; set; }
+
     public void SetVoteOptions(IReadOnlyList<IMapVoteOption> options)
     {
         _options.Clear();
