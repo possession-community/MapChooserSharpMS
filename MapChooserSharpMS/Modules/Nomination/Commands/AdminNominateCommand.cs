@@ -59,7 +59,9 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
 
         if (_mapConfigProvider.TryGetMapConfig(mapName, out var exactMatch))
         {
-            _controller.NominationService.TryAdminNominateMap(client, exactMatch);
+            var result = _controller.NominationService.TryAdminNominateMap(client, exactMatch);
+            if (result.Count > 0)
+                _controller.NotifyNominationFailure(client, exactMatch, result);
             return;
         }
 
@@ -85,7 +87,9 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
             return;
         }
 
-        _controller.NominationService.TryAdminNominateMap(client, matched[0]);
+        var nominateResult = _controller.NominationService.TryAdminNominateMap(client, matched[0]);
+        if (nominateResult.Count > 0)
+            _controller.NotifyNominationFailure(client, matched[0], nominateResult);
     }
 
 }

@@ -59,7 +59,7 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
         {
             var result = _controller.NominationService.TryNominateMap(client, exactMatch);
             if (result.Count > 0)
-                NotifyNominationFailure(client, exactMatch, result);
+                _controller.NotifyNominationFailure(client, exactMatch, result);
             return;
         }
 
@@ -87,21 +87,7 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
 
         var nominateResult = _controller.NominationService.TryNominateMap(client, matched[0]);
         if (nominateResult.Count > 0)
-            NotifyNominationFailure(client, matched[0], nominateResult);
-    }
-
-    private void NotifyNominationFailure(IGameClient client, IMapConfig mapConfig, IReadOnlyList<NominationCheckResult> results)
-    {
-        // Delegate to the controller's existing ProcessNominationCheckResult logic
-        // by calling NominationService — the controller already has chat notification
-        // wired in ProcessNominationCheckResult. The service returned failures,
-        // which the command layer should display. For now, show the first failure.
-        string mapDisplay = _mapConfigProvider.ToolingService.ResolveMapDisplayName(mapConfig);
-        foreach (var r in results)
-        {
-            client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, $"Nomination.Notification.Failure.{r}", mapDisplay));
-        }
+            _controller.NotifyNominationFailure(client, matched[0], nominateResult);
     }
 
 }

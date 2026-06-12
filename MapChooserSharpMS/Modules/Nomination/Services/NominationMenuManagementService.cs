@@ -18,19 +18,22 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     private readonly INominationManager _nominationManager;
     private readonly IMapNominationService _nominationService;
     private readonly IMapConfigToolingService _toolingService;
+    private readonly Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> _failureNotifier;
 
     internal NominationMenuManagementService(
         Func<IMcsMenuCompat?> menuCompatProvider,
         IMcsMapConfigProvider mapConfigProvider,
         INominationManager nominationManager,
         IMapNominationService nominationService,
-        IMapConfigToolingService toolingService)
+        IMapConfigToolingService toolingService,
+        Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> failureNotifier)
     {
         _menuCompatProvider = menuCompatProvider;
         _mapConfigProvider = mapConfigProvider;
         _nominationManager = nominationManager;
         _nominationService = nominationService;
         _toolingService = toolingService;
+        _failureNotifier = failureNotifier;
     }
 
     public void ShowNominationMenu(IGameClient client, List<IMapConfig> configs)
@@ -108,10 +111,12 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
             DisplayText = _toolingService.ResolveMapDisplayName(config),
             OnSelect = c =>
             {
-                if (isAdmin)
-                    _nominationService.TryAdminNominateMap(c, config);
-                else
-                    _nominationService.TryNominateMap(c, config);
+                var results = isAdmin
+                    ? _nominationService.TryAdminNominateMap(c, config)
+                    : _nominationService.TryNominateMap(c, config);
+
+                if (results.Count > 0)
+                    _failureNotifier(c, config, results);
             },
         };
     }
