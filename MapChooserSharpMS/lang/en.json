@@ -78,6 +78,7 @@
     "Nomination.Command.Notification.NotMapsFound": "No map(s) found matching {lime}{0}{default}",
     "Nomination.Command.Notification.MultipleResult": "{lime}{0}{default} maps found matching {lime}{1}{default}",
     "Nomination.Command.Notification.Usage": "Usage: !nominate <MapName>",
+    "NominationAddMap.Command.Notification.Usage": "Usage: !nominate_addmap <MapName>",
     "NominationRemoveMap.Command.Notification.Usage": "Usage: !nominate_removemap <MapName>",
     "NominationList.Command.Notification.ThereIsNoNomination": "No maps nominated yet!",
     "NominationList.Command.Notification.ListHeader": "Nomination List",

@@ -27,9 +27,7 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
     private IMapTransitionManager _transitionManager = null!;
 
     protected override ICommandValidator? GetValidator()
-        => new CompositeValidator()
-            .Add(new PermissionValidator("mcs.admin.command.nomination.addmap"))
-            .Add(new ArgumentCountValidator(1));
+        => new PermissionValidator("mcs.admin.command.nomination.addmap");
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
@@ -45,6 +43,15 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
                 : LocalizeString(client, "Word.VotePending");
             PrintMessageToServerOrPlayerChat(client,
                 LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
+            return;
+        }
+
+        if (commandInfo.ArgCount < 2)
+        {
+            PrintMessageToServerOrPlayerChat(client,
+                LocalizeWithPluginPrefix(client, "NominationAddMap.Command.Notification.Usage"));
+            if (client is not null)
+                _controller.NominationMenuManagementService.ShowAdminNominationMenu(client);
             return;
         }
 
@@ -73,6 +80,8 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
         {
             PrintMessageToServerOrPlayerChat(client,
                 LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, mapName));
+            if (client is not null)
+                _controller.NominationMenuManagementService.ShowAdminNominationMenu(client, matched);
             return;
         }
 

@@ -78,6 +78,7 @@
     "Nomination.Command.Notification.NotMapsFound": "{lime}{0}{default} にマッチするマップは見つかりませんでした",
     "Nomination.Command.Notification.MultipleResult": "{lime}{1}{default} にマッチする {lime}{0}{default} 個のマップが見つかりました",
     "Nomination.Command.Notification.Usage": "使い方: !nominate <マップ名>",
+    "NominationAddMap.Command.Notification.Usage": "使い方: !nominate_addmap <マップ名>",
     "NominationRemoveMap.Command.Notification.Usage": "使い方: !nominate_removemap <マップ名>",
     "NominationList.Command.Notification.ThereIsNoNomination": "まだどのマップもノミネートされていません!",
     "NominationList.Command.Notification.ListHeader": "ノミネーションリスト",

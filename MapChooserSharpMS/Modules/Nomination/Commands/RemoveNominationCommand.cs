@@ -65,8 +65,6 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCo
         {
             PrintMessageToServerOrPlayerChat(client,
                 LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
-            if (client is not null)
-                _controller.NominationMenuManagementService.ShowRemoveNominationMenu(client);
             return;
         }
 
