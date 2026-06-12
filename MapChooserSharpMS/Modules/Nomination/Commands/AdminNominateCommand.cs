@@ -26,7 +26,7 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : TnmsAbst
     protected override ICommandValidator? GetValidator()
         => new CompositeValidator()
             .Add(new PermissionValidator("mcs.admin.command.nomination.addmap"))
-            .Add(new ArgumentCountValidator(2));
+            .Add(new ArgumentCountValidator(1));
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
@@ -72,6 +72,4 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : TnmsAbst
         _controller.NominationService.TryAdminNominateMap(client, matched[0]);
     }
 
-    private T GetRequiredService<T>() where T : notnull
-        => (T)ServiceProvider.GetService(typeof(T))!;
 }

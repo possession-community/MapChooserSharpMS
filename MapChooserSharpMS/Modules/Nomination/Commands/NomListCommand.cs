@@ -54,6 +54,4 @@ internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCo
         }
     }
 
-    private T GetRequiredService<T>() where T : notnull
-        => (T)ServiceProvider.GetService(typeof(T))!;
 }

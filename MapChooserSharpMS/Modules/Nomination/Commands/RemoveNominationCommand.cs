@@ -74,6 +74,4 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : TnmsA
         _controller.NominationService.TryRemoveNomination(matched[0].Value.MapConfig, client, forceRemoval: true);
     }
 
-    private T GetRequiredService<T>() where T : notnull
-        => (T)ServiceProvider.GetService(typeof(T))!;
 }

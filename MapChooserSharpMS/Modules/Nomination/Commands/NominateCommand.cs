@@ -99,6 +99,4 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
         }
     }
 
-    private T GetRequiredService<T>() where T : notnull
-        => (T)ServiceProvider.GetService(typeof(T))!;
 }
