@@ -25,7 +25,7 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : TnmsAbst
 
     protected override ICommandValidator? GetValidator()
         => new CompositeValidator()
-            .Add(new PermissionValidator("mcs.admin.nominate"))
+            .Add(new PermissionValidator("mcs.admin.command.nomination.addmap"))
             .Add(new ArgumentCountValidator(2));
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)

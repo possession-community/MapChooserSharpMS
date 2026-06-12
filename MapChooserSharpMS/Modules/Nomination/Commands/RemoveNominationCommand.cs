@@ -23,7 +23,7 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : TnmsA
     private IMcsReadOnlyVoteState _voteState = null!;
 
     protected override ICommandValidator? GetValidator()
-        => new PermissionValidator("mcs.admin.nominate");
+        => new PermissionValidator("mcs.admin.command.nomination.removemap");
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {

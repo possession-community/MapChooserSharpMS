@@ -305,7 +305,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         else if (winner.MapConfig is not null)
         {
             _logger.LogInformation("Vote result: Next map confirmed as {MapName}", winner.MapName);
-            var confirmedParams = new MapVoteMapConfirmedParams(_plugin, _moduleBase, winner.MapConfig);
+            var confirmedParams = new MapVoteMapConfirmedParams(_plugin, _moduleBase, winner.MapConfig, session.IsRtvVote);
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapConfirmed(confirmedParams));
 
             session.CurrentState = McsMapVoteState.NextMapConfirmed;

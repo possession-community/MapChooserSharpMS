@@ -181,9 +181,27 @@ internal sealed class McsMapCycleController
 
     public void OnMapConfirmed(IMapVoteMapConfirmedEventParams @params)
     {
-        // TrySetNextMap also raises ChangeMapOnNextRoundEnd when the limit
-        // has already run out.
         _mapTransitionManager.TrySetNextMap(@params.ConfirmedMap);
+
+        if (!@params.IsRtvVote)
+            return;
+
+        var cvm = SharedSystem.GetConVarManager();
+        bool immediate = cvm.FindConVar("mcs_vote_change_map_immediately_rtv_vote_success")?.GetInt32() != 0;
+
+        if (immediate)
+        {
+            float delay = cvm.FindConVar("mcs_rtv_map_change_timing")?.GetFloat() ?? 3.0f;
+            var intermissionParams = new EventManager.Events.MapCycle.McsIntermissionParams(
+                Plugin, this, @params.ConfirmedMap);
+            _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
+            _mapTransitionManager.ChangeMapOnNextRoundEnd = false;
+            _mapTransitionManager.TransitionToNextMap(delay);
+        }
+        else
+        {
+            _mapTransitionManager.ChangeMapOnNextRoundEnd = true;
+        }
     }
 
     #endregion

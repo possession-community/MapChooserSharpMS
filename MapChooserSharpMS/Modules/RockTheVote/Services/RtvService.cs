@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.RockTheVote;
 using MapChooserSharpMS.Modules.RockTheVote.Interfaces;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
 using Sharp.Shared.Units;
 using TnmsPluginFoundation;
+using TnmsPluginFoundation.Extensions.Client;
 using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.RockTheVote.Services;
@@ -45,12 +47,18 @@ internal sealed class RtvService(
         bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params));
         if (cancelled)
             return RtvExecutionResult.DisallowedByExternalConsumer;
-        
-        
-        int slot = client.Slot;
 
         if (!rtvManager.AddParticipants(client))
             return RtvExecutionResult.AlreadyVoted;
+
+        if (rtvManager.RtvCounts >= rtvManager.RequiredCounts)
+        {
+            InitiateRtvVote();
+        }
+        else
+        {
+            BroadcastProgress(client);
+        }
 
         return RtvExecutionResult.Success;
     }
@@ -140,5 +148,22 @@ internal sealed class RtvService(
 
         IRtvConfirmedParams confirmedParams = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, client, true);
         eventManager.Fire<IRockTheVoteEventListener>(e => e.OnRtvConfirmed(confirmedParams));
+    }
+
+    private void BroadcastProgress(IGameClient caster)
+    {
+        int current = rtvManager.RtvCounts;
+        int required = rtvManager.RequiredCounts;
+        var clients = plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+        foreach (var c in clients)
+        {
+            if (c.IsFakeClient || c.IsHltv)
+                continue;
+
+            c.GetPlayerController()?.PrintToChat(
+                plugin.LocalizeStringForPlayer(
+                    c, "Rtv.Notification.Progress",
+                    caster.Name, current, required));
+        }
     }
 }

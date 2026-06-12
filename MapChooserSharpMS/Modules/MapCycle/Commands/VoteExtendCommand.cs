@@ -20,7 +20,7 @@ internal sealed class VoteExtendCommand(IServiceProvider provider) : TnmsAbstrac
     private IMapCycleExtendController _extendController = null!;
 
     protected override ICommandValidator? GetValidator()
-        => new PermissionValidator("mcs.admin.voteextend");
+        => new PermissionValidator("mcs.admin.command.mapcycle.voteextend");
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {

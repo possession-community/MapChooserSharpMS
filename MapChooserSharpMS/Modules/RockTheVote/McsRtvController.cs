@@ -65,6 +65,8 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _eventManager.RegisterListener<IMapCycleEventListener>(this);
         SharedSystem.GetModSharp().InstallGameListener(this);
         SharedSystem.GetClientManager().InstallClientListener(this);
+
+        AddCommandsUnderNamespace("MapChooserSharpMS.Modules.RockTheVote.Commands");
     }
 
     protected override void OnUnloadModule()
