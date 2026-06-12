@@ -31,9 +31,5 @@
     <Folder Include="Modules\MapCycle\Managers\" />
   </ItemGroup>
 
-  <!-- Legacy CSS-API commands file — replaced by ModSharp commands in Modules/Nomination/Commands/. -->
-  <ItemGroup>
-    <Compile Remove="Modules\Nomination\McsMapNominationCommands.cs" />
-  </ItemGroup>
   
 </Project>

@@ -59,6 +59,11 @@ internal interface IMcsInternalMapExtendService
     McsMapExtendResult TryExtend(McsExtendTrigger trigger);
 
     /// <summary>
+    /// Directly sets the !ext command uses budget.
+    /// </summary>
+    void SetExtCommandUsesLeft(int count);
+
+    /// <summary>
     /// Loads budgets and per-extend amounts for the new map. Falls back to
     /// plugin config values when <paramref name="mapConfig"/> is null.
     /// </summary>

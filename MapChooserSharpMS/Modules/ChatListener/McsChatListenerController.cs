@@ -30,6 +30,9 @@ internal sealed class McsChatListenerController : PluginModuleBase, IClientListe
         SharedSystem.GetClientManager().InstallClientListener(this);
 
         RegisterTrigger(RockTheVote.Commands.RtvCommand.ChatTrigger);
+        RegisterTrigger(MapCycle.Commands.NextMapCommand.ChatTrigger);
+        RegisterTrigger(MapCycle.Commands.TimeLeftCommand.ChatTrigger);
+        RegisterTrigger(MapCycle.Commands.CurrentMapCommand.ChatTrigger);
     }
 
     protected override void OnUnloadModule()

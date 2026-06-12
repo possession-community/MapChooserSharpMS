@@ -69,6 +69,11 @@ internal sealed class McsMapExtendService : IMcsInternalMapExtendService
         _extendRoundsPerExtends = mapConfig.ExtendRoundsPerExtends;
     }
 
+    public void SetExtCommandUsesLeft(int count)
+    {
+        ExtCommandUsesLeft = count;
+    }
+
     public void ClearState()
     {
         ExtendsLeft = 0;

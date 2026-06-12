@@ -38,6 +38,26 @@ public interface IMapCycleExtendController
     McsMapExtendResult TryExtendCurrentMap();
 
     /// <summary>
+    /// Directly sets the remaining !ext command uses for the current map.
+    /// </summary>
+    void SetExtCommandUsesLeft(int count);
+
+    /// <summary>
+    /// Whether the !ext command is currently accepting participants.
+    /// </summary>
+    bool IsExtEnabled { get; }
+
+    /// <summary>
+    /// Enables the !ext command.
+    /// </summary>
+    void EnableExt();
+
+    /// <summary>
+    /// Disables the !ext command. Existing participants are not cleared.
+    /// </summary>
+    void DisableExt();
+
+    /// <summary>
     /// Starts a native yes/no extend vote (admin-only entry point). On pass,
     /// the map is extended through the admin path — no extend budget is
     /// consumed.

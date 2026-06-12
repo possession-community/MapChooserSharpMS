@@ -89,6 +89,8 @@ internal sealed class McsExtCommandService
         _conVars = conVars;
     }
 
+    internal bool IsEnabled { get; set; } = true;
+
     public int CurrentExtVotes => _participants.Count;
 
     /// <summary>
@@ -111,6 +113,9 @@ internal sealed class McsExtCommandService
 
     public McsExtCommandResult AddParticipant(IGameClient client, StringCommand command)
     {
+        if (!IsEnabled)
+            return McsExtCommandResult.NotAvailable;
+
         if (_voteState.IsVotingPeriod()
             || _voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed
             || !_extendService.CanExtendNow)

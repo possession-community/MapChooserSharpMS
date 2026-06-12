@@ -81,6 +81,15 @@ internal sealed class McsMapCycleController
     public McsMapExtendResult TryExtendCurrentMap()
         => _extendService.TryExtend(McsExtendTrigger.AdminOrApi);
 
+    public void SetExtCommandUsesLeft(int count)
+        => _extendService.SetExtCommandUsesLeft(count);
+
+    public bool IsExtEnabled => _extCommandService.IsEnabled;
+
+    public void EnableExt() => _extCommandService.IsEnabled = true;
+
+    public void DisableExt() => _extCommandService.IsEnabled = false;
+
     public McsExtendVoteStartResult StartExtendVote(IGameClient? initiator = null)
         => _extendVoteService.StartExtendVote(initiator);
 
