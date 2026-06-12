@@ -276,7 +276,6 @@ internal sealed class McsMapCycleController
         _mapTransitionManager.SetCurrentMap(currentMapName);
         _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap);
         _extCommandService.ClearParticipants();
-        _cooldownLifecycleService.DecrementAllCooldowns();
 
         var mode = ParseMode(_conVars.Mode.GetString());
         var cvm = SharedSystem.GetConVarManager();
@@ -344,6 +343,8 @@ internal sealed class McsMapCycleController
             SharedSystem.GetModSharp().StopTimer(_tickTimerId);
             _tickTimerId = Guid.Empty;
         }
+
+        _cooldownLifecycleService?.DecrementAllCooldowns();
 
         if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap is { } playedMap)
             _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);

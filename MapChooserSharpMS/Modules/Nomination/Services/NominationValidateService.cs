@@ -336,7 +336,8 @@ internal sealed class NominationValidateService
 
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
-            if (groupsNominatedCount[groupSetting.GroupName] >= PerGroupNominationLimit.GetInt16())
+            if (groupsNominatedCount.TryGetValue(groupSetting.GroupName, out int count)
+                && count >= PerGroupNominationLimit.GetInt16())
                 return true;
         }
 
