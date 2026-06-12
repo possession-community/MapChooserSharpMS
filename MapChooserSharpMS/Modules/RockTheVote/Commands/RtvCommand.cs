@@ -11,7 +11,9 @@ namespace MapChooserSharpMS.Modules.RockTheVote.Commands;
 
 internal sealed class RtvCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
 {
-    public override string CommandName => "rtv";
+    internal const string ChatTrigger = "rtv";
+
+    public override string CommandName => ChatTrigger;
     public override string CommandDescription => "Rock the vote — request a map change";
     public override TnmsCommandRegistrationType CommandRegistrationType => TnmsCommandRegistrationType.Client;
 

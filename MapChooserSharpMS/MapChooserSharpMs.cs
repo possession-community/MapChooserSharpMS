@@ -57,6 +57,9 @@ public sealed class MapChooserSharpMs(
 
         // Map Cycle
         RegisterModule<McsMapCycleController>();
+
+        // Chat triggers (plain text "rtv", "timeleft", etc.)
+        RegisterModule<Modules.ChatListener.McsChatListenerController>();
     }
 
     protected override void LateRegisterPluginServices(IServiceCollection collection, IServiceProvider provider)
