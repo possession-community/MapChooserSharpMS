@@ -83,24 +83,6 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         RtvMapChangeBehaviour = "ImmediatelyWithTime"
 
 
-        [General.Sql]
-        # SQL settings for MapChooserSharpMS
-
-        # What SQL provider should be use?
-        #
-        # Currently Supports:
-        # - Sqlite
-        # - MySQL
-        #
-        # See GitHub readme for more and updated information.
-        Type = "sqlite"
-        DatabaseName = "MapChooserSharp.db"
-        Address = ""
-        Port = ""
-        User = ""
-        Password = ""
-
-
         [MapCycle]
         # Fallback settings for maps with no config
         # These settings are ignored when map has a config.
