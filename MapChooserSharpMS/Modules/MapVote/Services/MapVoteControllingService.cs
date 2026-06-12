@@ -97,6 +97,11 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         if (currentState?.IsVotingPeriod() == true)
             return currentState.CurrentVoteState ?? McsMapVoteState.NoActiveVote;
 
+        // The next map is already decided — never start another vote on top of it.
+        // (RTV success in this state transitions to the next map instead; see RtvService.)
+        if (currentState?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
+            return McsMapVoteState.NextMapConfirmed;
+
         var session = _voteManager.CreateSession(isActivatedByRtv);
         session.CurrentState = McsMapVoteState.Initializing;
         _voteState.SetState(McsMapVoteState.Initializing);

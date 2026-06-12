@@ -68,7 +68,6 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
         {
             client.GetPlayerController()?.PrintToChat(
                 LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
-            _controller.NominationMenuManagementService.ShowNominationMenu(client);
             return;
         }
 

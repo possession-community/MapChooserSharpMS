@@ -106,18 +106,24 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _rtvManager.ClearParticipants();
     }
 
+    // Old MCS reset participants + status on every vote result (ResetRtvStatus),
+    // not only on OnMapVoteFinished — keep that redundancy so a missed event on
+    // one path can never leave stale per-player RTV state behind.
     public void OnMapConfirmed(IMapVoteMapConfirmedEventParams @params)
     {
+        _rtvManager.ClearParticipants();
         ScheduleCooldown(_conVars.CommandUnlockTimeNextMapConfirmed.GetFloat());
     }
 
     public void OnMapExtended(IMapVoteExtendParams @params)
     {
+        _rtvManager.ClearParticipants();
         ScheduleCooldown(_conVars.CommandUnlockTimeMapExtend.GetFloat());
     }
 
     public void OnMapNotChanged(IMapVoteNotChangedParams @params)
     {
+        _rtvManager.ClearParticipants();
         ScheduleCooldown(_conVars.CommandUnlockTimeMapNotChanged.GetFloat());
     }
 
@@ -135,6 +141,24 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
     }
 
     #region IMapCycleEventListener — extend vote coordination
+
+    /// <summary>
+    /// Covers next-map confirmation from non-vote sources (admin/API
+    /// <c>TrySetNextMap</c>) — vote-confirmed maps already reset via
+    /// <see cref="OnMapConfirmed"/>. Skipped while an RTV-triggered vote or
+    /// map transition is in flight so it cannot clobber that state.
+    /// </summary>
+    public void OnNextMapConfirmed(INextMapConfirmedEventParams @params)
+    {
+        if (_rtvManager.RtvStatus is RtvStatus.TriggeredWaitingForVote
+            or RtvStatus.TriggeredWaitingForMapTransition)
+        {
+            return;
+        }
+
+        _rtvManager.ClearParticipants();
+        ScheduleCooldown(_conVars.CommandUnlockTimeNextMapConfirmed.GetFloat());
+    }
 
     public void OnExtendVoteStarted(IExtendVoteStartedEventParams @params)
     {

@@ -78,6 +78,10 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
 
     protected override void OnAllModulesLoaded()
     {
+        _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
+        _mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        _mapConfigToolingService = ServiceProvider.GetRequiredService<IMapConfigToolingService>();
+
         NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this);
         NominationService          = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService);
 
@@ -87,10 +91,6 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
             _internalNominationManager,
             NominationService,
             _mapConfigToolingService);
-
-        _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
-        _mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
-        _mapConfigToolingService = ServiceProvider.GetRequiredService<IMapConfigToolingService>();
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         SharedSystem.GetClientManager().InstallClientListener(this);

@@ -1,11 +1,17 @@
 using System;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
+using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Modules.EventManager.Events.RockTheVote;
+using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
+using MapChooserSharpMS.Modules.PluginConfig.Enums;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Modules.RockTheVote.Interfaces;
 using MapChooserSharpMS.Modules.RockTheVote.Managers;
+using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.Events.RockTheVote;
 using MapChooserSharpMS.Shared.Events.RockTheVote.Params;
+using MapChooserSharpMS.Shared.MapConfig.Services;
 using MapChooserSharpMS.Shared.RockTheVote;
 using MapChooserSharpMS.Shared.RockTheVote.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,7 +60,12 @@ internal sealed class RtvService(
 
         if (rtvManager.RtvCounts >= rtvManager.RequiredCounts)
         {
-            InitiateRtvVote();
+            // When the next map is already decided there is nothing to vote on —
+            // RTV success means "go to the confirmed next map now" (old MCS behaviour).
+            if (TransitionManager.IsNextMapConfirmed)
+                ChangeToNextMap();
+            else
+                InitiateRtvVote();
         }
         else
         {
@@ -145,12 +156,63 @@ internal sealed class RtvService(
         if (cancelled)
             return;
 
+        if (TransitionManager.IsNextMapConfirmed)
+        {
+            ChangeToNextMap();
+            return;
+        }
+
         rtvManager.ForceSetRtvStatus(RtvStatus.TriggeredWaitingForVote);
 
         BroadcastToAll("Rtv.Broadcast.Admin.ForceRtv", client?.Name ?? "Console");
 
         IRtvConfirmedParams confirmedParams = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, client, true);
         eventManager.Fire<IRockTheVoteEventListener>(e => e.OnRtvConfirmed(confirmedParams));
+    }
+
+    private IMcsInternalMapTransitionManager TransitionManager =>
+        serviceProvider.GetRequiredService<IMcsInternalMapTransitionManager>();
+
+    /// <summary>
+    /// RTV succeeded while the next map is already confirmed — skip the map
+    /// vote entirely and transition to the confirmed next map.
+    /// </summary>
+    private void ChangeToNextMap()
+    {
+        var transitionManager = TransitionManager;
+        var nextMap = transitionManager.NextMap;
+        if (nextMap is null)
+            return;
+
+        rtvManager.ForceSetRtvStatus(RtvStatus.TriggeredWaitingForMapTransition);
+
+        string mapDisplayName = serviceProvider
+            .GetRequiredService<IMapConfigToolingService>()
+            .ResolveMapDisplayName(nextMap);
+
+        var behaviour = serviceProvider
+            .GetRequiredService<IMcsPluginConfigProvider>()
+            .PluginConfig.GeneralConfig.RtvMapChangeBehaviour;
+
+        switch (behaviour)
+        {
+            case RtvMapChangeBehaviourType.Cs2EndMatchScreen:
+                // TODO: Faithful Cs2EndMatchScreen needs a "force end match" path
+                // (old MCS wrote mp_timelimit + TerminateRound). The new TimeLimit
+                // design deliberately never writes mp_timelimit, so this falls back
+                // to ImmediatelyWithTime until that design question is settled.
+            case RtvMapChangeBehaviourType.ImmediatelyWithTime:
+            default:
+                float timing = conVars.MapChangeTimingAfterRtvSuccess.GetFloat();
+                BroadcastToAll("Rtv.Broadcast.ChangeToNextMapImmediately", mapDisplayName, timing);
+
+                var intermissionParams = new McsIntermissionParams(plugin, (PluginModuleBase)controller, nextMap);
+                eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
+
+                transitionManager.ChangeMapOnNextRoundEnd = false;
+                transitionManager.TransitionToNextMap(timing);
+                break;
+        }
     }
 
     private void BroadcastToAll(string key, params object[] args)
