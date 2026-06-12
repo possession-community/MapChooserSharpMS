@@ -49,6 +49,7 @@
     "Rtv.Notification.Admin.Disable.Failure": "Failed to disable RTV",
     "Rtv.Broadcast.VoteTriggered": "RTV has passed! Starting map vote...",
     "Rtv.Broadcast.ChangeToNextMapImmediately": "Rock The Vote is spoken! Changing to {lime}{0}{default} in {lime}{1}{default} seconds!",
+    "MapCycle.Broadcast.ForceEndMatchFallback": "Map change is taking longer than expected — changing to {lime}{0}{default} now...",
     "Rtv.Broadcast.ChangeToNextMapCs2EndMatchScreen": "Rock The Vote is spoken! Changing to {lime}{0}{default}!",
     "Rtv.Broadcast.Admin.ForceRtv": "Admin {0} forcefully triggered the RTV",
     "Rtv.Broadcast.Admin.EnabledRtv": "Admin {0} {green}enabled{default} RTV",

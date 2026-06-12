@@ -315,15 +315,21 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         int totalVotes = session.TotalVoteCount;
         int participants = session.ParticipantCount;
-        int pct = participants > 0 ? (int)(totalVotes * 100.0 / participants) : 0;
-        BroadcastToAll("MapVote.Broadcast.VoteFinished", participants, totalVotes, pct);
+
+        // Nobody voted: the winner (if any) was picked at random — announce
+        // that instead of the regular vote stats + confirmed-by-vote lines.
+        bool isRandomPick = totalVotes == 0 && winner is not null;
+
+        if (!isRandomPick)
+        {
+            int pct = participants > 0 ? (int)(totalVotes * 100.0 / participants) : 0;
+            BroadcastToAll("MapVote.Broadcast.VoteFinished", participants, totalVotes, pct);
+        }
 
         if (winner is null)
         {
-            var randomPick = session.VoteOptions
-                .OfType<MapVoteOption>()
-                .FirstOrDefault(o => o.MapConfig is not null);
-            BroadcastToAll("MapVote.Broadcast.VoteResult.NoVotes", randomPick?.MapName ?? "?");
+            // 0 votes AND no pickable candidates — nothing to randomly pick from.
+            BroadcastToAll("MapVote.Broadcast.VoteResult.NotChanging", 0, 0);
         }
         else if (winner.MapName == MapVoteConstants.ExtendMapInternalName)
         {
@@ -337,8 +343,15 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         }
         else if (winner.MapConfig is not null)
         {
-            int winnerPct = totalVotes > 0 ? (int)(winner.VoteCount * 100.0 / totalVotes) : 0;
-            BroadcastToAll("MapVote.Broadcast.VoteResult.NextMapConfirmed", winner.MapName, winnerPct, totalVotes);
+            if (isRandomPick)
+            {
+                BroadcastToAll("MapVote.Broadcast.VoteResult.NoVotes", winner.MapName);
+            }
+            else
+            {
+                int winnerPct = totalVotes > 0 ? (int)(winner.VoteCount * 100.0 / totalVotes) : 0;
+                BroadcastToAll("MapVote.Broadcast.VoteResult.NextMapConfirmed", winner.MapName, winnerPct, totalVotes);
+            }
         }
 
         var finishedParams = new MapVoteFinishedParams(_plugin, _moduleBase, session, session.IsRtvVote);

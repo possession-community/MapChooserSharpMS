@@ -94,6 +94,17 @@ internal sealed class McsMapVoteController
     /// </summary>
     public void OnGameActivate()
     {
+        // A vote session (or its pre-vote countdown) interrupted by a map
+        // transition leaves CurrentSession behind — InitiateVote would then
+        // early-return on the stale session forever. Force-clear both on
+        // map boundaries.
+        _controllingService?.ForceResetVote();
+        _voteState.Reset();
+    }
+
+    public void OnGameDeactivate()
+    {
+        _controllingService?.ForceResetVote();
         _voteState.Reset();
     }
 

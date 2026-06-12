@@ -49,6 +49,7 @@
     "Rtv.Notification.Admin.Disable.Failure": "RTVの無効化に失敗しました",
     "Rtv.Broadcast.VoteTriggered": "RTVが可決されました！マップ投票を開始します...",
     "Rtv.Broadcast.ChangeToNextMapImmediately": "Rock The Voteによって {lime}{1}{default} 秒後に {lime}{0}{default} にマップを変更します!",
+    "MapCycle.Broadcast.ForceEndMatchFallback": "マップ変更に時間がかかっています — {lime}{0}{default} へ移行します...",
     "Rtv.Broadcast.ChangeToNextMapCs2EndMatchScreen": "Rock The Voteによって {lime}{0}{default} にマップを変更します!",
     "Rtv.Broadcast.Admin.ForceRtv": "管理者 {0} が強制的にRTVを使用しました",
     "Rtv.Broadcast.Admin.EnabledRtv": "管理者 {0} がRTVを{green}有効化{default}しました",
