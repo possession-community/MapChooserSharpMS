@@ -16,6 +16,8 @@
 
     "Word.Yes": "はい",
     "Word.No": "いいえ",
+    "Word.VotePending": "投票待ち",
+    "Word.LastRound": "最後のラウンドです！",
     "Word.MapInfo.NominationCheck.Success": "(ノミネート可能です)",
     "Word.MapInfo.NominationCheck.Disabled": "(マップが無効化されています)",
     "Word.MapInfo.NominationCheck.NotEnoughPermissions": "(権限が足りません)",

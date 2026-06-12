@@ -16,6 +16,8 @@
 
     "Word.Yes": "Yes",
     "Word.No": "No",
+    "Word.VotePending": "Pending Vote",
+    "Word.LastRound": "Last round!",
     "Word.MapInfo.NominationCheck.Success": "(You can nominate)",
     "Word.MapInfo.NominationCheck.Disabled": "(Map is disabled)",
     "Word.MapInfo.NominationCheck.NotEnoughPermissions": "(Not enough permissions)",

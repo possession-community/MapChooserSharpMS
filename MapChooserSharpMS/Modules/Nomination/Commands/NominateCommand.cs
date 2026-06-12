@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.Nomination;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
     private IMcsInternalNominationController _controller = null!;
     private IMcsMapConfigProvider _mapConfigProvider = null!;
     private IMcsReadOnlyVoteState _voteState = null!;
+    private IMapTransitionManager _transitionManager = null!;
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
@@ -31,11 +33,15 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
         _controller ??= ServiceProvider.GetRequiredService<IMcsInternalNominationController>();
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _voteState ??= ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
+        _transitionManager ??= ServiceProvider.GetRequiredService<IMapTransitionManager>();
 
         if (_voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
         {
+            string nextMapDisplay = _transitionManager.NextMap is { } nextMap
+                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+                : LocalizeString(client, "Word.VotePending");
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap"));
+                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
             return;
         }
 

@@ -53,9 +53,9 @@
 
 実装済: setnextmap / removenextmap / setmapcooldown / setgroupcooldown (name-keyed,
 in-memory) / reloadmapcfgs / mapinfo (groups 行 + can-nominate 付き) / extends /
-cancelvote / thetime (issue #13)。
+thetime (issue #13, chat trigger 対応)。
 MapVote 状態同期も追加: OnNextMapConfirmed/Removed を MapVote controller が listen。
-revote は **NVM 側にあるため対象外** (ユーザー確認済 2026-06-12)。
+revote / cancelvote は **NVM 側にあるため対象外** (ユーザー確認済 2026-06-12)。
 
 残り:
 - `OnMapInfoCommandExecuted` イベント発火 (外部プラグインが mapinfo に行を足せる —

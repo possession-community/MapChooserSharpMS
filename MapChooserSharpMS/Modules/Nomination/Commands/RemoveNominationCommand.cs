@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
@@ -22,6 +23,8 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCo
 
     private IMcsInternalNominationController _controller = null!;
     private IMcsReadOnlyVoteState _voteState = null!;
+    private IMcsMapConfigProvider _mapConfigProvider = null!;
+    private IMapTransitionManager _transitionManager = null!;
 
     protected override ICommandValidator? GetValidator()
         => new PermissionValidator("mcs.admin.command.nomination.removemap");
@@ -30,11 +33,16 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCo
     {
         _controller ??= ServiceProvider.GetRequiredService<IMcsInternalNominationController>();
         _voteState ??= ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
+        _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        _transitionManager ??= ServiceProvider.GetRequiredService<IMapTransitionManager>();
 
         if (_voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
         {
+            string nextMapDisplay = _transitionManager.NextMap is { } nextMap
+                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+                : LocalizeString(client, "Word.VotePending");
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap"));
+                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
             return;
         }
 

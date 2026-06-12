@@ -1,4 +1,5 @@
 using System;
+using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
@@ -18,13 +19,16 @@ internal sealed class NextMapCommand(IServiceProvider provider) : TnmsAbstractCo
         TnmsCommandRegistrationType.Client | TnmsCommandRegistrationType.Server;
 
     private IMapCycleController _controller = null!;
+    private IMcsMapConfigProvider _mapConfigProvider = null!;
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
         _controller ??= ServiceProvider.GetRequiredService<IMapCycleController>();
+        _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
 
-        var nextMap = _controller.MapTransitionManager.NextMap;
-        string mapDisplay = nextMap?.MapName ?? "Pending vote";
+        string mapDisplay = _controller.MapTransitionManager.NextMap is { } nextMap
+            ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+            : LocalizeString(client, "Word.VotePending");
 
         PrintMessageToServerOrPlayerChat(client,
             LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", mapDisplay));
