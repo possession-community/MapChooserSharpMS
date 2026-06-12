@@ -197,10 +197,15 @@ internal sealed class RtvService(
         switch (behaviour)
         {
             case RtvMapChangeBehaviourType.Cs2EndMatchScreen:
-                // TODO: Faithful Cs2EndMatchScreen needs a "force end match" path
-                // (old MCS wrote mp_timelimit + TerminateRound). The new TimeLimit
-                // design deliberately never writes mp_timelimit, so this falls back
-                // to ImmediatelyWithTime until that design question is settled.
+                BroadcastToAll("Rtv.Broadcast.ChangeToNextMapCs2EndMatchScreen", mapDisplayName);
+
+                // ForceEndMatch drives the game's native end-match flow; the
+                // cs_intermission hook in McsMapCycleController then performs
+                // the actual transition (and fires McsIntermission there).
+                transitionManager.ChangeMapOnNextRoundEnd = false;
+                transitionManager.ForceEndMatch();
+                break;
+
             case RtvMapChangeBehaviourType.ImmediatelyWithTime:
             default:
                 float timing = conVars.MapChangeTimingAfterRtvSuccess.GetFloat();

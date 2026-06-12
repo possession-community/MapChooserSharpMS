@@ -49,25 +49,47 @@
 
 ---
 
-## Phase 3: 残りコマンド
+## Phase 3: 残りコマンド (2026-06-12 再洗い出し済)
 
-- **Admin 延長操作** (`Modules/MapCycle/Commands/`):
-  - `ExtendCommand` ("extend"): admin (`mcs.admin.extend`)。引数なし=config 量で 1 回延長
-    (`TryExtendCurrentMap()`)。引数あり (`!extend <分orラウンド>`) は要検討 —
-    現行 `TryExtendCurrentMap` は量指定不可なので、量指定オーバーロードを
-    `IMapCycleExtendController` に足すか引数なし版だけにするか実装時判断。
-  - `SetExtCommand` ("setext <count>"): admin。`ExtCommandUsesLeft` を直接セット
-    → `IMcsInternalMapExtendService` に setter 追加 (旧 MCS の !setext は ext 残数操作)。
-  - `EnableExtCommand` / `DisableExtCommand` ("enableext"/"disableext"): admin。
-    !ext の有効無効トグル → ext service に enabled フラグ追加。
+旧 MCS の登録コマンド全 27 個と突合した未実装分:
+
+- **Admin MapCycle 操作** (`Modules/MapCycle/Commands/`):
+  - `SetNextMapCommand` ("setnextmap <map>"): `TransitionManager.TrySetNextMap`。
+  - `RemoveNextMapCommand` ("removenextmap"): `TryRemoveNextMap`。
+  - `SetMapCooldownCommand` ("setmapcooldown <map> <n>") /
+    `SetGroupCooldownCommand` ("setgroupcooldown <group> <n>"): cooldown services 配線。
+  - `ReloadMapCfgsCommand` ("reloadmapcfgs"): MapConfig 再読込。
 - **情報系**:
-  - `NextMapCommand` ("nextmap"): `MapTransitionManager.NextMap` 表示 (未確定なら "Pending vote")。
-  - `TimeLeftCommand` ("timeleft"): `GetFormattedTimeLeft` / `GetFormattedRoundsLeft`。
-  - `CurrentMapCommand` ("currentmap")。
   - `MapInfoCommand` ("mapinfo"): map config 情報表示 + `OnMapInfoCommandExecuted` 発火
     (外部プラグインが行を足せる — FireCollect で追加行を集める設計を検討)。
+  - `ExtendsLeftCommand` ("extends"): 残り延長回数表示。
+- **MapVote 操作**:
+  - `RevoteCommand` ("revote"): 投票中の票打ち直し (NVM 側の再表示 API 要確認)。
+  - `CancelVoteCommand` ("cancelvote"): admin が進行中投票をキャンセル
+    (`CancelVote(client)` は実装済、コマンド未配線) + `Admin.CancelVote` ブロードキャスト。
 - **掃除**: `Modules/Nomination/McsMapNominationCommands.cs` (Compile Remove 中の legacy) を削除、
   csproj の `<Compile Remove>` も撤去。
+
+## Phase 3b: MapVote 残機能 (config キーはパース済み・消費側未実装)
+
+- `ShouldPrintVoteToChat` → 投票時の `MapVote.Broadcast.VoteCast` 系チャット表示。
+- `ShouldPrintVoteRemainingTime` → 投票残り時間の表示。
+- `NotEnoughMapsToStartVote` ブロードキャスト (現状 log のみ)。
+- Spectator 除外時の `MapVote.Notification.SpectatorIsExcluded` 通知。
+- NominationList verbose 表示 (誰が nominate したか)。
+- ~~Cs2EndMatchScreen~~ ✅ 実装済 (2026-06-12): `ForceEndMatch()` = one-shot mp_timelimit/
+  mp_maxrounds=1 書込み (map end で復元) + TerminateRound → cs_intermission フックで転換。
+
+## Phase 3c: Workshop 連携 (旧 WorkshopSync + AutoFixMapWorkshopId モジュール移植)
+
+- **WorkshopSync**: `WorkshopCollectionIds` (パース済・未消費) → Steam collection ページを
+  HTTP fetch → 収録マップの map config を自動生成 (自動 config gen)。
+  旧: `Modules/WorkshopSync/McsWorkshopMapSynchronizer.cs` (HTML scrape + Tomlyn 書き出し)。
+  新実装は CsToml 書き出し + ModSharp の async/timer 事情を確認して移植。
+- **AutoFixMapWorkshopId**: `ShouldAutoFixMapName` (パース済・未消費) → マップ開始時に
+  実際のマップ名で config の名前/WorkshopId を補正。
+- **Workshop リモートフェッチ**: `TrySetNextMap(long)` の `FailedToFetchUnknown` 解消
+  (SteamApi.Net ベース、据え置き決定済み)。
 
 ---
 
@@ -89,15 +111,13 @@
 
 ## Phase 5: 小物
 
-- **翻訳ファイル**: `lang/en.json` (+ja) を新設し、コード中の全キーを洗い出して埋める。
-  grep 対象: `LocalizeWithPluginPrefix` / `LocalizeWithModulePrefix` / `LocalizeString` /
-  `Localizer[` / `ForCulture(` / `ModuleChatPrefix` 定義。
-  TnmsPluginFoundation の `Common.Validation.Failure.{Permission,Target}` も忘れず
-  (Target は旧 ExtendedTarget から改名済み)。Wuling localizer は `<moduleDir>/lang/*.json` を
-  ロードし、色タグ ({RED} 等) はロード時変換、{0} 形式 format は素通し。
+- **翻訳キー残り**: `lang/en.json`+`ja.json` は作成済。コード中の全キーと突合して
+  未定義キーを埋める (grep: `LocalizeWithPluginPrefix` / `LocalizeWithModulePrefix` /
+  `LocalizeString` / `ForCulture(` / `ModuleChatPrefix`)。旧 MCS ~210 キーとの差分も確認。
 - **`GetFormattedTimeLeft` 翻訳対応**: "ThresholdReached" 戻り値を翻訳キー化。
 - **`TryGetMapConfig` の day/time 考慮**: naive first-match を DaySettings 対応に。
-- **Workshop リモートフェッチ**: SteamApi.Net ベース (据え置き決定済み、最後でよい)。
+- **ChatListener FakeCommand**: `client.FakeCommand("ms_rtv")` が StringCommand
+  コールバックに届かない件の MS 側ルーティング調査 (未解決 TODO)。
 - **Wuling IMenu compat**: `IMcsMenuCompat` の Wuling `IMenu`/`IMenuInstance` バックエンド
   (McsFPMCompat の代替プラグイン)。別プロジェクト追加になるので独立タスク。
 

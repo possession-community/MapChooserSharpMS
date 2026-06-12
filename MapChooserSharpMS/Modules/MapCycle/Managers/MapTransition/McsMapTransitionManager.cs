@@ -5,6 +5,7 @@ using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Shared.WorkshopManagement;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared;
@@ -24,10 +25,15 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly PluginModuleBase _moduleBase;
     private readonly IInternalEventManager _eventManager;
     private readonly Func<bool> _isTimeLimitReached;
+    private readonly Func<TimeLimitType?> _timeLimitTypeProvider;
 
     private IMapConfig? _currentMap;
     private IMapConfig? _nextMap;
     private bool _isNextMapConfirmed;
+
+    private Sharp.Shared.Objects.IConVar? _forcedLimitConVar;
+    private float _forcedLimitOriginalValue;
+    private bool _forcedLimitIsRoundBased;
 
     public McsMapTransitionManager(
         ISharedSystem sharedSystem,
@@ -36,7 +42,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         TnmsPlugin plugin,
         PluginModuleBase moduleBase,
         IInternalEventManager eventManager,
-        Func<bool> isTimeLimitReached)
+        Func<bool> isTimeLimitReached,
+        Func<TimeLimitType?> timeLimitTypeProvider)
     {
         _sharedSystem = sharedSystem;
         _mapConfigProvider = mapConfigProvider;
@@ -45,6 +52,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _moduleBase = moduleBase;
         _eventManager = eventManager;
         _isTimeLimitReached = isTimeLimitReached;
+        _timeLimitTypeProvider = timeLimitTypeProvider;
     }
 
     public IMapConfig? NextMap => _nextMap;
@@ -166,12 +174,62 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _currentMap = null;
     }
 
+    public void ForceEndMatch()
+    {
+        var limitType = _timeLimitTypeProvider();
+        bool roundBased = limitType == TimeLimitType.Round;
+
+        // One-shot mp_* write — a deliberate, scoped exception to the
+        // "internal TimeLimit only" rule: the game must see its own
+        // game-over condition met to run the native end match screen.
+        // The original value is restored in ClearState() on map end.
+        var conVar = _sharedSystem.GetConVarManager()
+            .FindConVar(roundBased ? "mp_maxrounds" : "mp_timelimit");
+
+        if (conVar is not null)
+        {
+            if (_forcedLimitConVar is null)
+            {
+                _forcedLimitConVar = conVar;
+                _forcedLimitOriginalValue = conVar.GetFloat();
+                _forcedLimitIsRoundBased = roundBased;
+            }
+
+            if (roundBased)
+                conVar.Set(1);
+            else
+                conVar.Set(1.0f);
+        }
+
+        var modSharp = _sharedSystem.GetModSharp();
+        modSharp.InvokeFrameAction(() =>
+        {
+            if (modSharp.GetGameRules().IsWarmupPeriod)
+                modSharp.ServerCommand("mp_warmup_end");
+
+            modSharp.InvokeFrameAction(() =>
+            {
+                modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
+            });
+        });
+    }
+
     public void ClearState()
     {
         _currentMap = null;
         _nextMap = null;
         _isNextMapConfirmed = false;
         ChangeMapOnNextRoundEnd = false;
+
+        if (_forcedLimitConVar is not null)
+        {
+            if (_forcedLimitIsRoundBased)
+                _forcedLimitConVar.Set((int)_forcedLimitOriginalValue);
+            else
+                _forcedLimitConVar.Set(_forcedLimitOriginalValue);
+
+            _forcedLimitConVar = null;
+        }
     }
 
     public void OnRoundEnd()

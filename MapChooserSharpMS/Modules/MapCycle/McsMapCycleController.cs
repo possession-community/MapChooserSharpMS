@@ -135,7 +135,8 @@ internal sealed class McsMapCycleController
             Plugin,
             this,
             _eventManager,
-            () => _internalTimeLimitManager?.IsLimitReached == true);
+            () => _internalTimeLimitManager?.IsLimitReached == true,
+            () => _internalTimeLimitManager?.TimeLimitType);
 
         var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         var readOnlyVoteState = ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
@@ -166,6 +167,7 @@ internal sealed class McsMapCycleController
         em.InstallEventListener(this);
         em.HookEvent("round_start");
         em.HookEvent("round_end");
+        em.HookEvent("cs_intermission");
 
         if (HotReload)
         {
@@ -269,7 +271,37 @@ internal sealed class McsMapCycleController
             case "round_end":
                 _mapTransitionManager.OnRoundEnd();
                 break;
+            case "cs_intermission":
+                OnGameIntermission();
+                break;
         }
+    }
+
+    /// <summary>
+    /// The game entered its native end-match flow (timelimit/maxrounds ran
+    /// out naturally, or <see cref="IMcsInternalMapTransitionManager.ForceEndMatch"/>
+    /// forced it). When a next map is confirmed, take over the transition so
+    /// the game's own mapcycle never picks a different map.
+    /// </summary>
+    private void OnGameIntermission()
+    {
+        var nextMap = _mapTransitionManager.NextMap;
+        if (nextMap is null)
+            return;
+
+        // The round_end transition path is armed and owns this change.
+        if (_mapTransitionManager.ChangeMapOnNextRoundEnd)
+            return;
+
+        float extraTime = SharedSystem.GetConVarManager()
+            .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f;
+        float delay = Math.Max(extraTime - 1.0f, 0f);
+
+        var intermissionParams = new EventManager.Events.MapCycle.McsIntermissionParams(
+            Plugin, this, nextMap);
+        _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
+
+        _mapTransitionManager.TransitionToNextMap(delay);
     }
 
     #endregion
