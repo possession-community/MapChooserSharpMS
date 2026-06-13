@@ -260,7 +260,7 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
                     continue;
                 }
 
-                Logger.LogInformation("Workshop check: {Map} (ID: {Id}) — result={Result}, visibility={Vis}, status={Status}, title={Title}",
+                Logger.LogDebug("Workshop check: {Map} (ID: {Id}) — result={Result}, visibility={Vis}, status={Status}, title={Title}",
                     mapName, workshopId, info.ResultCode, info.Visibility, info.Status, info.Title ?? "(null)");
 
                 switch (info.Status)
