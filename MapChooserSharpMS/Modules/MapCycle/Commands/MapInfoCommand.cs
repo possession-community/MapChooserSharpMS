@@ -31,7 +31,7 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
         _nominationValidateService ??= ServiceProvider.GetRequiredService<INominationValidateService>();
 
         IMapConfig? mapConfig;
-        if (commandInfo.ArgCount < 2)
+        if (commandInfo.ArgCount < 1)
         {
             mapConfig = _controller.MapTransitionManager.CurrentMap;
         }

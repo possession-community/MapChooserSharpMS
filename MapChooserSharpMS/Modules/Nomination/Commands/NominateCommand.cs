@@ -45,10 +45,8 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
             return;
         }
 
-        if (commandInfo.ArgCount < 2)
+        if (commandInfo.ArgCount < 1)
         {
-            client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.Usage"));
             _controller.NominationMenuManagementService.ShowNominationMenu(client);
             return;
         }

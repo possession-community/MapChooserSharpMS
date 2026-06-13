@@ -46,7 +46,7 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
             return;
         }
 
-        if (commandInfo.ArgCount < 2)
+        if (commandInfo.ArgCount < 1)
         {
             PrintMessageToServerOrPlayerChat(client,
                 LocalizeWithPluginPrefix(client, "NominationAddMap.Command.Notification.Usage"));

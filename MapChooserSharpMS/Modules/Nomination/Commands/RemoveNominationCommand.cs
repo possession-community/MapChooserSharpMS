@@ -46,7 +46,7 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCo
             return;
         }
 
-        if (commandInfo.ArgCount < 2)
+        if (commandInfo.ArgCount < 1)
         {
             PrintMessageToServerOrPlayerChat(client,
                 LocalizeWithPluginPrefix(client, "NominationRemoveMap.Command.Notification.Usage"));
