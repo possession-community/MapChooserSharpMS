@@ -8,6 +8,8 @@ internal sealed record MapConfig(
     string MapNameAlias,
     string MapDescription,
     long WorkshopId,
+    string Tag,
+    string I18nTag,
     List<IMapGroupConfig> GroupSettings,
     bool IsDisabled,
     int MaxExtends,

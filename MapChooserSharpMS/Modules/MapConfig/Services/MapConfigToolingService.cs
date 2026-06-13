@@ -11,12 +11,15 @@ internal sealed class MapConfigToolingService : IMapConfigToolingService
             ? mapConfig.MapName
             : mapConfig.MapNameAlias;
 
-        string tag = ResolveGroupTag(mapConfig);
+        string tag = ResolveTag(mapConfig);
         return tag.Length > 0 ? $"[{tag}] {baseName}" : baseName;
     }
 
-    private static string ResolveGroupTag(IMapConfig mapConfig)
+    private static string ResolveTag(IMapConfig mapConfig)
     {
+        if (!string.IsNullOrWhiteSpace(mapConfig.Tag))
+            return mapConfig.Tag;
+
         foreach (var group in mapConfig.GroupSettings)
         {
             if (!string.IsNullOrWhiteSpace(group.ShortGroupName))
