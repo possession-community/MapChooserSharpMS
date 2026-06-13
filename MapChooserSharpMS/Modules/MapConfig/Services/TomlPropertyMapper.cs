@@ -313,8 +313,15 @@ internal static class TomlPropertyMapper
             var array = node.GetArray();
             foreach (var item in array)
             {
-                if (item.TryGetString(out var rangeStr))
-                    result.Add(TimeRange.Parse(rangeStr));
+                try
+                {
+                    if (item.TryGetString(out var rangeStr))
+                        result.Add(TimeRange.Parse(rangeStr));
+                }
+                catch
+                {
+                    // Skip malformed time range entry
+                }
             }
         }
         catch
