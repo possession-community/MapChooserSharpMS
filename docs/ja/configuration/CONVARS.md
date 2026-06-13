@@ -1,0 +1,42 @@
+# ConVars (サーバー変数)
+
+ランタイムで変更可能な設定。`server.cfg` や RCON から設定可能。
+
+## MapVote
+
+| ConVar | デフォルト | 範囲 | 説明 |
+|---|---|---|---|
+| mcs_vote_shuffle_menu | 0 | 0-1 | 投票メニューの選択肢をプレイヤーごとにシャッフルするか |
+| mcs_vote_end_time | 15.0 | 5-120 | 投票の制限時間 (秒) |
+| mcs_vote_countdown_time | 13 | 0-120 | 投票開始前のカウントダウン (秒)。0 で即開始 |
+| mcs_vote_runoff_map_pickup_threshold | 0.3 | 0-1 | Runoff 投票に進むマップの最低得票率 |
+| mcs_vote_winner_pickup_threshold | 0.7 | 0-1 | この得票率以上で即勝者確定 |
+| mcs_vote_exclude_spectators | 0 | 0-1 | 観戦者を投票から除外するか |
+| mcs_vote_change_map_immediately_rtv_vote_success | 0 | 0-1 | RTV 投票成功時に即マップ変更するか |
+
+## MapCycle
+
+| ConVar | デフォルト | 範囲 | 説明 |
+|---|---|---|---|
+| mcs_mapcycle_mode | 0 | 0-2 | マップサイクルモード。0=Time, 1=Round, 2=TimeRound |
+| mcs_mapcycle_vote_start_time_threshold | 180 | 0-3600 | Time モードでの投票開始残り時間 (秒) |
+| mcs_mapcycle_vote_start_round_threshold | 3 | 0-100 | Round モードでの投票開始残りラウンド数 |
+| mcs_ext_user_vote_threshold | 0.6 | 0-1 | !ext の必要投票率 |
+| mcs_vote_extend_success_threshold | 0.6 | 0-1 | !ve (延長投票) の可決閾値 |
+| mcs_vote_extend_vote_time | 30.0 | 5-120 | !ve の投票時間 (秒) |
+| mcs_map_transition_retry_attempts | 3 | 1-10 | マップ変更リトライ回数 |
+| mcs_map_transition_retry_interval | 30.0 | 5-300 | リトライ間隔 (秒) |
+| mcs_map_transition_fallback_map | de_dust2 | - | リトライ失敗時のフォールバックマップ |
+
+## RTV
+
+| ConVar | デフォルト | 範囲 | 説明 |
+|---|---|---|---|
+| mcs_rtv_command_unlock_time_next_map_confirmed | 60.0 | 0-1200 | 次マップ確定後の RTV コマンド解禁までの秒数 |
+| mcs_rtv_command_unlock_time_map_dont_change | 240.0 | 0-1200 | マップ変更なし後の RTV 解禁秒数 |
+| mcs_rtv_command_unlock_time_map_extend | 120.0 | 0-1200 | マップ延長後の RTV 解禁秒数 |
+| mcs_rtv_command_unlock_time_map_start | 300.0 | 0-1200 | マップ開始時の RTV 解禁秒数 |
+| mcs_rtv_vote_start_threshold | 0.5 | 0-1 | RTV 可決に必要な投票率 |
+| mcs_rtv_map_change_timing | 3.0 | 0-60 | RTV 成功後のマップ変更までの秒数。0 で即変更 |
+| mcs_rtv_minimum_requirements | 0 | 0-64 | RTV 開始に必要な最低投票数。0 で無効 |
+| mcs_rtv_broadcast_player_cast | 1 | 0-1 | RTV 投票時に全体通知するか |

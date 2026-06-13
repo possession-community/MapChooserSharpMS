@@ -1,356 +1,78 @@
-﻿# プラグインコンフィグのカスタマイズ
+# プラグインコンフィグ (config.toml)
 
-## 一般設定
+## General
 
 ```toml
-#MapChooserSharp Plugin Configuration
-
 [General]
-# Should use alias map name if available? (This will take effect to all things that prints a map name)
 ShouldUseAliasMapNameIfAvailable = true
-
-# Should print the cooldown? 
-# if true, and commands in cooldown, it will show cooldown message with seconds
-# if false, and commands in cooldown, it will show only cooldown message
 VerboseCooldownPrint = true
-
-# Workshop Collection IDs to automatically fetch maps from
-# Example: WorkshopCollectionIds = [ "3070257939", "1234567890" ]
 WorkshopCollectionIds = []
-
-# Should automatically fix map name in map settings when map starts?
-# This will update the map name in settings to match the actual map name from the server
 ShouldAutoFixMapName = true
-
-# What map transition method to use when map change triggered by RTV?
-# 
-# Available types:
-# - ImmediatelyWithTime
-# - Cs2EndMatchScreen
-# 
+SteamWebApiKey = ""
 RtvMapChangeBehaviour = "ImmediatelyWithTime"
-
 ```
 
-### ShouldUseAliasMapNameIfAvailable
-
-マップコンフィグにAliasMapNameが存在する場合、Nominationメニューや投票メニューにそのエイリアス名を表示するかどうか
-
-### VerboseCooldownPrint
-
-RTVコマンドなどがクールダウンのときに秒数を表示するかどうか
-
-### WorkshopCollectionIds
-
-Steamワークショップのコレクションからマップを自動的に取得するためのコレクションIDの配列です。プラグイン起動時に、指定されたコレクションからマップ情報を取得し、マップ設定を自動的に作成します。同じワークショップIDを持つ既存のマップ設定があるものはスキップされます。
-
-### ShouldAutoFixMapName
-
-マップスタート時に、マップ設定のマップ名を実際のマップ名（Server.MapName）で自動的に修正するかどうかを指定します。これは、主に自動生成されたワークショップマップの設定に置いてタイトルとマップ名が異なる場合に役立ちます。(ワークショップのタイトルは制作者が自由に決めれるため、異なる場合があるのです)
-
-### RtvMapChangeBehaviour
-
-RTVによってマップ変更が入る際に、どのような方法でマップが変更されるかを指定します。
-
-## SQL設定
-
-```toml
-[General.Sql]
-# SQL settings for MapChooserSharp
-
-# What SQL provider should be use?
-#
-# Currently Supports:
-# - Sqlite
-# - MySQL
-# - PostgreSQL
-#
-# See GitHub readme for more and updated information.
-Type = "sqlite"
-DatabaseName = "MapChooserSharp.db"
-Address = ""
-Port = ""
-User = ""
-Password = ""
-```
-
-### Type
-
-データベースタイプをここで指定します。
-
-### DatabaseName
-
-データベース名を指定します。 SQLiteを使用している際は、ここの名前がファイル名になります。
-
-### Address, Port, User, Password
-
-これは将来的にMySQLやPostgreSQLをサポートした際に、データベースに接続するために必要になります。
+| キー | 型 | デフォルト | 説明 |
+|---|---|---|---|
+| ShouldUseAliasMapNameIfAvailable | bool | true | MapNameAlias が存在する場合に表示名として使用するか |
+| VerboseCooldownPrint | bool | true | クールダウン中に残り秒数を表示するか |
+| WorkshopCollectionIds | string[] | [] | 自動同期するワークショップコレクションIDの配列 |
+| ShouldAutoFixMapName | bool | true | マップ開始時にワークショップマップの config ファイル名を実マップ名に自動修正するか |
+| SteamWebApiKey | string | "" | Steam Web API キー。空欄の場合は環境変数 `STEAM_WEB_API_KEY` にフォールバック。[取得はこちら](https://steamcommunity.com/dev/apikey) |
+| RtvMapChangeBehaviour | enum | ImmediatelyWithTime | RTV 可決後のマップ変更方法。`ImmediatelyWithTime` (即時+カウントダウン) / `Cs2EndMatchScreen` (CS2終了画面経由) |
 
 ## MapCycle
 
 ```toml
 [MapCycle]
-# Fallback settings for maps with no config
-# These settings are ignored when map has a config.
-
-# How many extends allowed if map is not in map config.
 FallbackMaxExtends = 3
-
-# How many times allowed to extend a map using !ext command
 FallbackMaxExtCommandUses = 1
-
-# How long to extend when map is extended in time left/ round time based game?
 FallbackExtendTimePerExtends = 15
-
-# How long to extend when map is extended in round based game?
 FallbackExtendRoundsPerExtends = 5
-
-# Should execute tv_stoprecord on before map change? (this is required to prevent crash when you using sourceTV in your server.)
 ShouldStopSourceTvRecording = false
-
-# You can choose map config execution type from below.
-# - ExactMatch | Only executes configs that names are fully matches with ignore case (e.g. de_dust2 will executes only de_dust2.cfg)
-# - StartWithMach | Only executes configs that names are start with map name with ignore case (e.g. de_dust2 will executes de_.cfg, de_dust.cfg, de_dust2.cfg)
-# - PartialMatch | Executes all configs that matches partially with ignore case (e.g. de_dust2 will executes de_.cfg, dust.cfg, 2.cfg)
 MapConfigExecutionType = "ExactMatch"
-
-# Relative path from game/csgo/cfg/ directory (e.g. if config directory located in game/csgo/cfg/MapChooserSharp/maps/, then put MapChooserSharp/maps/)
-MapConfigDirectoryPath = "MapChooserSharp/maps/"
-
-# Relative path from game/csgo/cfg/ directory (e.g. if config directory located in game/csgo/cfg/MapChooserSharp/groups/, then put MapChooserSharp/groups/)
-GroupConfigDirectoryPath = "MapChooserSharp/groups/"
+MapConfigDirectoryPath = "maps/"
+GroupConfigDirectoryPath = "groups/"
 ```
 
-### FallbackMaxExtends
-
-コンフィグに存在しないマップを遊んでいる際のデフォルトの最大延長回数を指定できます。
-
-### FallbackMaxExtCommandUses
-
-コンフィグに存在しないマップを遊んでいる際の`!ext`コマンドによる延長のデフォルトの最大延長回数を指定できます。
-
-### FallbackExtendTimePerExtends
-
-コンフィグに存在しないマップを遊んでいる際のデフォルトの`mp_timelimit`もしくは`mp_roundtime`の延長時間を分単位で指定できます。
-
-### FallbackExtendRoundsPerExtends
-
-コンフィグに存在しないマップを遊んでいる際のデフォルトの`mp_maxrounds`をラウンド単位で指定できます。
-
-### ShouldStopSourceTvRecording
-
-tv_stoprecordコマンドをマップ変更前に実行するかの設定です。 この設定はSourceTVを有効にしているサーバーがマップ変更時のクラッシュを防止するのに役立ちます。
-
-### MapConfigExecutionType
-
-マップコンフィグの実行タイプを選択できます。
-
-### MapConfigDirectoryPath
-
-マップコンフィグを含むディレクトリへのパス (ゲームが読み取れる .cfg ファイルがあるところ) このパスは `game/csgo/cfg/` からの相対パスになります。
-
-### GroupConfigDirectoryPath
-
-グループコンフィグを含むディレクトリへのパス (ゲームが読み取れる .cfg ファイルがあるところ) このパスは `game/csgo/cfg/` からの相対パスになります。
-
+| キー | 型 | デフォルト | 説明 |
+|---|---|---|---|
+| FallbackMaxExtends | int | 3 | config 未定義マップのデフォルト最大延長回数 |
+| FallbackMaxExtCommandUses | int | 1 | config 未定義マップの !ext 最大使用回数 |
+| FallbackExtendTimePerExtends | int | 15 | 延長 1 回あたりの延長時間 (分) |
+| FallbackExtendRoundsPerExtends | int | 5 | 延長 1 回あたりの延長ラウンド数 |
+| ShouldStopSourceTvRecording | bool | false | マップ変更前に tv_stoprecord を実行するか (SourceTV クラッシュ防止) |
+| MapConfigExecutionType | enum | ExactMatch | マップ cfg 実行マッチング方式。`ExactMatch` / `StartWithMatch` / `PartialMatch` |
+| MapConfigDirectoryPath | string | maps/ | マップ config ディレクトリのパス (モジュールディレクトリからの相対パス) |
+| GroupConfigDirectoryPath | string | groups/ | グループ config ディレクトリのパス (モジュールディレクトリからの相対パス) |
 
 ## MapVote
 
 ```toml
 [MapVote]
-# What menu type should be use?
-#
-# Currently supports:
-# - Default
-#
-# See GitHub readme for more information.
-MenuType = "Default"
-
-# How many maps should be appeared in map vote?
-# I would recommend to set 5 when you using Default menu
 MaxVoteElements = 5
-
-# Should print vote text to everyone?
 ShouldPrintVoteToChat = true
-
-# Should print the vote remaining time?
 ShouldPrintVoteRemainingTime = true
-
-
-# What countdown ui type should be use?
-#
-# Currently supports:
-# - None
-# - CenterHud
-# - CenterAlert
-# - CenterHtml
-# - Chat
-#
-# See GitHub readme for more information.
 CountdownUiType = "CenterHtml"
-```
 
-### MenuType
-
-投票に使用するメニュータイプを指定できます。
-
-追加のプラグイン無しで使用できるのは `Default` のみで、追加で以下のプラグインを追加することによって別のメニュータイプを使用することが出来るようになります。
-
-また、無効もしくは不正な値が入力された場合は `Default` にすべてフォールバックされます。
-
-- Cs2ScreenMenuApiの使用には [CS2ScreenMenuAPI](https://github.com/T3Marius/CS2ScreenMenuAPI) が必要です
-- Cs2MenuManagerScreenの使用には [CS2MenuManager](https://github.com/schwarper/CS2MenuManager) が必要です
-
-### MaxVoteElements
-
-1回の投票で出てくるマップ数を指定します。 実際のところは`Extend`と`Don't change`が入るためMaxVoteElements - 1の数がマップ数となります。
-
-### ShouldPrintVoteToChat
-
-プレイヤーの投票時に、チャットに投票先を表示するかを指定できます。
-
-### ShouldPrintVoteRemainingTime
-
-投票中に残り時間を表示するかを指定できます。
-
-### CountdownUiType
-
-投票開始前のカウントダウンをどのように表示するかを指定できます。
-
-
-### MapVote Sound
-
-```toml
 [MapVote.Sound]
-# Sound setting of map vote
-# If you leave value as blank, then no sound will played.
-
-
-# Path to .vsndevts. file extension should be end with `.vsndevts`
-# If you already precached a .vsndevts file in another plugin, then you can leave as blank.
 SoundFile = ""
-
-
-# Initial vote sounds
-
-# This sound will be played when starting initial vote countdown
 InitialVoteCountdownStartSound = ""
-
-# This sound will be played when starting initial vote
 InitialVoteStartSound = ""
-
-# This sound will be played when finishing initial vote (This sound will not be played when runoff vote starts)
 InitialVoteFinishSound = ""
-
-# Vote countdown sound mapped to its seconds
 InitialVoteCountdownSound1 = ""
-InitialVoteCountdownSound2 = ""
-InitialVoteCountdownSound3 = ""
-InitialVoteCountdownSound4 = ""
-InitialVoteCountdownSound5 = ""
-InitialVoteCountdownSound6 = ""
-InitialVoteCountdownSound7 = ""
-InitialVoteCountdownSound8 = ""
-InitialVoteCountdownSound9 = ""
-InitialVoteCountdownSound10 = ""
-
-
-# Runoff vote sounds
-
-# This sound will be played when starting runoff vote countdown
+# ... (1-10)
 RunoffVoteCountdownStartSound = ""
-
-# This sound will be played when starting runoff vote
 RunoffVoteStartSound = ""
-
-# This sound will be played when finishing runoff vote
 RunoffVoteFinishSound = ""
-
-
-# Runoff vote countdown sound mapped to its seconds
 RunoffVoteCountdownSound1 = ""
-RunoffVoteCountdownSound2 = ""
-RunoffVoteCountdownSound3 = ""
-RunoffVoteCountdownSound4 = ""
-RunoffVoteCountdownSound5 = ""
-RunoffVoteCountdownSound6 = ""
-RunoffVoteCountdownSound7 = ""
-RunoffVoteCountdownSound8 = ""
-RunoffVoteCountdownSound9 = ""
-RunoffVoteCountdownSound10 = ""
+# ... (1-10)
 ```
 
-### SoundFile
-
-Precacheのために `.vsndevts`までのファイルパスを指定します。 例: `soundevents/soundevents_mapchooser.vsndevts`
-
-もし他のプラグインなどで既に当該のファイルをprecacheしている場合は空欄で大丈夫です。
-
-### Initial Vote
-
-### InitialVoteCountdownStartSound
-
-最初の投票のカウントダウン開始時に再生される音声を指定できます。
-
-### InitialVoteStartSound
-
-最初の投票の開始時に再生される音声を指定できます。
-
-### InitialVoteFinishSound
-
-投票が可決された際に再生される音声を指定できます。
-
-### InitialVoteCountdownSoundXX
-
-数字に対応した秒数に再生される音声を指定できます。
-
-### Runoff Vote
-
-### RunoffVoteCountdownStartSound
-
-Runoff投票のカウントダウン開始時に再生される音声を指定できます。
-
-### RunoffVoteStartSound
-
-Runoff投票の開始時に再生される音声を指定できます。
-
-### RunoffVoteFinishSound
-
-投票が可決された際に再生される音声を指定できます。
-
-### RunoffVoteCountdownSoundXX
-
-Runoff投票のカウントダウン開始時に再生される音声を指定できます。
-
-
-## Nomination
-
-```toml
-[Nomination]
-# What menu type should be use?
-#
-# Currently supports:
-# - Default
-#
-# See GitHub readme for more information.
-MenuType = "Default"
-```
-
-### MenuType
-ノミネートに使用するメニュータイプを指定できます。
-
-追加のプラグイン無しで使用できるのは `Default` のみで、追加で以下のプラグインを追加することによって別のメニュータイプを使用することが出来るようになります。
-
-また、無効もしくは不正な値が入力された場合は `Default` にすべてフォールバックされます。
-
-## ConfigInformation
-
-```toml
-[ConfigInformation]
-Version = "0.0.1"
-```
-
-
-### Version
-
-コンフィグのバージョンです。 バージョン変更があった際にコンソールに警告をしてくれるので、更新時以外は変更しないでください。
+| キー | 型 | デフォルト | 説明 |
+|---|---|---|---|
+| MaxVoteElements | int | 5 | 投票メニューに表示するマップ数 (Extend/DontChange 含む) |
+| ShouldPrintVoteToChat | bool | true | プレイヤーが投票した際にチャットに表示するか |
+| ShouldPrintVoteRemainingTime | bool | true | 投票中に残り時間をチャットに表示するか |
+| CountdownUiType | enum | CenterHtml | 投票開始前カウントダウンの表示方式。`None` / `CenterHud` / `CenterAlert` / `CenterHtml` / `Chat` |
+| SoundFile | string | "" | .vsndevts ファイルパス (precache 用)。他プラグインで済んでいれば空欄可 |
