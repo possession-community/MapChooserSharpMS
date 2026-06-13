@@ -305,14 +305,14 @@ internal sealed class NominationValidateService
     public bool IsPlayerDeniedByPermission(IMapConfig mapConfig, IGameClient client)
     {
         // Resolution: Any Deny > Any Allow > Default (allowed)
-        // Check map-level deny
-        if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.map.deny.{mapConfig.MapName}"))
+        // Deny checks use exact matching — wildcard holders (e.g. root *)
+        // must not accidentally match deny nodes.
+        if (TnmsPlugin.AdminManager.PlayerHasPermissionExact(client.SteamId, $"mcs.nominate.map.deny.{mapConfig.MapName}"))
             return true;
 
-        // Check group-level deny
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
-            if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.group.deny.{groupSetting.GroupName}"))
+            if (TnmsPlugin.AdminManager.PlayerHasPermissionExact(client.SteamId, $"mcs.nominate.group.deny.{groupSetting.GroupName}"))
                 return true;
         }
 
