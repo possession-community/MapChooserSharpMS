@@ -47,7 +47,8 @@ internal sealed class RtvService(
         if (rtvManager.RtvStatus == RtvStatus.Disabled)
             return RtvExecutionResult.CommandDisabled;
 
-        if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForMapTransition)
+        if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForMapTransition
+            && !(conVars.ImmediateChangeThreshold.GetFloat() > 0f && TransitionManager.IsNextMapConfirmed))
             return RtvExecutionResult.TriggeredWaitingForMapTransition;
         
         if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForVote)
