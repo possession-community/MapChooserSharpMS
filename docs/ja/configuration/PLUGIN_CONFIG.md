@@ -46,6 +46,19 @@ GroupConfigDirectoryPath = "groups/"
 | MapConfigDirectoryPath | string | maps/ | マップ config ディレクトリのパス (モジュールディレクトリからの相対パス) |
 | GroupConfigDirectoryPath | string | groups/ | グループ config ディレクトリのパス (モジュールディレクトリからの相対パス) |
 
+## Nomination
+
+```toml
+[Nomination]
+MenuType = "Default"
+PerGroupNominationLimit = 0
+```
+
+| キー | 型 | デフォルト | 説明 |
+|---|---|---|---|
+| MenuType | enum | Default | ノミネーションメニューの表示方式 |
+| PerGroupNominationLimit | int | 0 | 同一グループからのノミネート数制限。0 = 無制限 |
+
 ## MapVote
 
 ```toml

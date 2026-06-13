@@ -76,5 +76,3 @@
 | ConVar | デフォルト | 範囲 | 説明 |
 |---|---|---|---|
 | mcs_block_chat_during_vote | 0 | 0-1 | 投票中のチャットをブロックするか (AntiCanvas) |
-| mcs_rtv_immediate_change_threshold | 0.0 | 0-1 | 投票完了後の RTV 参加率がこの値以上で即時マップ変更。0 = 無効 (常にラウンド終了) |
-| mcs_rtv_threshold_decay_time | 0.0 | 0-3600 | RTV 閾値を 100% から設定値へ減衰させる秒数。0 = 無効 |
