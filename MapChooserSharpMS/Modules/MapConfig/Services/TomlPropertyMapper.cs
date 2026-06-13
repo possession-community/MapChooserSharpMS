@@ -36,6 +36,7 @@ internal sealed class ParsedProperties
 
     // Random pick (OnlyNomination maps to IsPickable = !OnlyNomination)
     public bool? OnlyNomination { get; set; }
+    public int? MapSelectionWeight { get; set; }
 
     // Nomination
     public int? MaxPlayers { get; set; }
@@ -84,6 +85,7 @@ internal static class TomlPropertyMapper
         "MapRounds",
         "ExtendRoundsPerExtends",
         "OnlyNomination",
+        "MapSelectionWeight",
         "MaxPlayers",
         "MinPlayers",
         "ProhibitAdminNomination",
@@ -180,6 +182,11 @@ internal static class TomlPropertyMapper
             case "OnlyNomination":
                 if (valueNode.TryGetBool(out var onlyNom))
                     props.OnlyNomination = onlyNom;
+                break;
+
+            case "MapSelectionWeight":
+                if (valueNode.TryGetInt64(out var weight))
+                    props.MapSelectionWeight = (int)weight;
                 break;
 
             case "MaxPlayers":

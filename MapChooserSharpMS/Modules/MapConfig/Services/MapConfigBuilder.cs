@@ -73,7 +73,7 @@ internal static class MapConfigBuilder
             MapRounds: props.MapRounds ?? 10,
             ExtendRoundsPerExtends: props.ExtendRoundsPerExtends ?? 5,
             RandomPickConfig: new RandomPickConfig(
-                MapSelectionWeight: 1,
+                MapSelectionWeight: (uint)Math.Max(props.MapSelectionWeight ?? 1, 0),
                 IsPickable: !(props.OnlyNomination ?? false),
                 BypassNominationRestriction: false),
             NominationConfig: new NominationConfig(
@@ -109,7 +109,7 @@ internal static class MapConfigBuilder
             MapRounds: props.MapRounds ?? 10,
             ExtendRoundsPerExtends: props.ExtendRoundsPerExtends ?? 5,
             RandomPickConfig: new RandomPickConfig(
-                MapSelectionWeight: 1,
+                MapSelectionWeight: (uint)Math.Max(props.MapSelectionWeight ?? 1, 0),
                 IsPickable: !(props.OnlyNomination ?? false),
                 BypassNominationRestriction: false),
             NominationConfig: new NominationConfig(
