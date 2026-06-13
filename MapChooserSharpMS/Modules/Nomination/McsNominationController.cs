@@ -56,6 +56,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     private IInternalEventManager _eventManager = null!;
     private IMcsMapConfigProvider _mapConfigProvider = null!;
     private IMapConfigToolingService _mapConfigToolingService = null!;
+    private NominationConVars _conVars = null!;
 
     public IReadOnlyDictionary<string, IMcsNominationData> GetNominatedMaps() => _internalNominationManager.NominatedMaps;
 
@@ -77,6 +78,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     protected override void OnInitialize()
     {
         _internalNominationManager = ActivatorUtilities.CreateInstance<InternalNominationManager>(ServiceProvider);
+        _conVars = new NominationConVars(SharedSystem.GetConVarManager());
     }
 
     protected override void OnAllModulesLoaded()
@@ -201,6 +203,9 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
 
     public void BroadcastNomination(IGameClient nominator, IMapConfig mapConfig, bool isNominationChanged)
     {
+        if (_conVars.BroadcastEnabled.GetInt32() == 0)
+            return;
+
         string mapDisplay = _mapConfigToolingService.ResolveMapDisplayName(mapConfig);
 
         PrintLocalizedChatToAllWithModulePrefix(
