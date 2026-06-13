@@ -32,10 +32,10 @@
 
 | ConVar | デフォルト | 範囲 | 説明 |
 |---|---|---|---|
-| mcs_rtv_command_unlock_time_next_map_confirmed | 60.0 | 0-1200 | 次マップ確定後の RTV コマンド解禁までの秒数 |
-| mcs_rtv_command_unlock_time_map_dont_change | 240.0 | 0-1200 | マップ変更なし後の RTV 解禁秒数 |
-| mcs_rtv_command_unlock_time_map_extend | 120.0 | 0-1200 | マップ延長後の RTV 解禁秒数 |
-| mcs_rtv_command_unlock_time_map_start | 300.0 | 0-1200 | マップ開始時の RTV 解禁秒数 |
+| mcs_rtv_command_unlock_time_next_map_confirmed | 0.0 | 0-1200 | 次マップ確定後の RTV コマンド解禁までの秒数 |
+| mcs_rtv_command_unlock_time_map_dont_change | 0.0 | 0-1200 | マップ変更なし後の RTV 解禁秒数 |
+| mcs_rtv_command_unlock_time_map_extend | 0.0 | 0-1200 | マップ延長後の RTV 解禁秒数 |
+| mcs_rtv_command_unlock_time_map_start | 0.0 | 0-1200 | マップ開始時の RTV 解禁秒数 |
 | mcs_rtv_vote_start_threshold | 0.5 | 0-1 | RTV 可決に必要な投票率 |
 | mcs_rtv_map_change_timing | 3.0 | 0-60 | RTV 成功後のマップ変更までの秒数。0 で即変更 |
 | mcs_rtv_minimum_requirements | 0 | 0-64 | RTV 開始に必要な最低投票数。0 で無効 |
