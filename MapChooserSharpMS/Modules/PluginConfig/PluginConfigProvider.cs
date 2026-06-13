@@ -74,6 +74,11 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         # This will update the map name in settings to match the actual map name from the server
         ShouldAutoFixMapName = true
 
+        # Steam Web API Key for workshop visibility checks
+        # Get yours at https://steamcommunity.com/dev/apikey
+        # If empty, falls back to STEAM_WEB_API_KEY environment variable
+        SteamWebApiKey = ""
+
         # What map transition method to use when map change triggered by RTV?
         #
         # Available types:

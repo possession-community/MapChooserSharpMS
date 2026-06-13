@@ -9,7 +9,8 @@ internal class GeneralConfig(
     string[] workshopCollectionIds,
     bool shouldAutoFixMapName,
     IMcsSqlConfig sqlConfig,
-    RtvMapChangeBehaviourType rtvMapChangeBehaviour)
+    RtvMapChangeBehaviourType rtvMapChangeBehaviour,
+    string steamWebApiKey)
     : IMcsGeneralConfig
 {
     public bool ShouldUseAliasMapNameIfAvailable { get; } = shouldUseAliasMapNameIfAvailable;
@@ -18,4 +19,5 @@ internal class GeneralConfig(
     public bool ShouldAutoFixMapName { get; } = shouldAutoFixMapName;
     public IMcsSqlConfig SqlConfig { get; } = sqlConfig;
     public RtvMapChangeBehaviourType RtvMapChangeBehaviour { get; } = rtvMapChangeBehaviour;
+    public string SteamWebApiKey { get; } = steamWebApiKey;
 }

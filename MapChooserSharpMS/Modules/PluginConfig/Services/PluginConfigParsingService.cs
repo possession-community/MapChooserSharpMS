@@ -42,10 +42,14 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         string[] workshopCollectionIds = GetStringArray(generalNode, "WorkshopCollectionIds"u8);
         bool shouldAutoFix = GetBool(generalNode, "ShouldAutoFixMapName"u8, true);
         var rtvBehaviour = GetEnum(generalNode, "RtvMapChangeBehaviour"u8, RtvMapChangeBehaviourType.ImmediatelyWithTime);
+        string steamWebApiKey = GetString(generalNode, "SteamWebApiKey"u8, "");
+
+        if (string.IsNullOrWhiteSpace(steamWebApiKey))
+            steamWebApiKey = System.Environment.GetEnvironmentVariable("STEAM_WEB_API_KEY") ?? "";
 
         var sqlConfig = ParseSqlConfig(generalNode);
 
-        return new GeneralConfig(shouldUseAlias, verboseCooldown, workshopCollectionIds, shouldAutoFix, sqlConfig, rtvBehaviour);
+        return new GeneralConfig(shouldUseAlias, verboseCooldown, workshopCollectionIds, shouldAutoFix, sqlConfig, rtvBehaviour, steamWebApiKey);
     }
 
     private SqlConfig ParseSqlConfig(TomlDocumentNode generalNode)

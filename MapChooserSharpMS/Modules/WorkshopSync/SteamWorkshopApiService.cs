@@ -12,19 +12,25 @@ namespace MapChooserSharpMS.Modules.WorkshopSync;
 internal enum WorkshopItemStatus
 {
     Public,
-    NotFoundOrPrivate,
+    FriendsOnly,
+    Private,
+    Unlisted,
+    NotFound,
     Error,
 }
 
-internal sealed record WorkshopItemInfo(long PublishedFileId, WorkshopItemStatus Status, string? Title);
+internal sealed record WorkshopItemInfo(long PublishedFileId, WorkshopItemStatus Status, string? Title, int ResultCode, int Visibility);
 
 internal sealed class SteamWorkshopApiService : IDisposable
 {
     private const int BatchSize = 100;
     private const string CollectionEndpoint = "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/";
-    private const string FileDetailsEndpoint = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
+    private const string FileDetailsEndpoint = "https://api.steampowered.com/IPublishedFileService/GetDetails/v1/";
 
     private readonly HttpClient _http = new();
+    internal string ApiKey { get; private set; } = "";
+
+    internal void SetApiKey(string apiKey) => ApiKey = apiKey ?? "";
 
     public void Dispose() => _http.Dispose();
 
@@ -70,15 +76,15 @@ internal sealed class SteamWorkshopApiService : IDisposable
     private async Task<List<WorkshopItemInfo>> GetFileDetailsBatch(
         List<long> ids, CancellationToken ct)
     {
-        var form = new List<KeyValuePair<string, string>>(ids.Count + 1)
-        {
-            new("itemcount", ids.Count.ToString()),
-        };
+        var queryParts = new List<string>();
+        if (!string.IsNullOrEmpty(ApiKey))
+            queryParts.Add($"key={ApiKey}");
         for (int i = 0; i < ids.Count; i++)
-            form.Add(new($"publishedfileids[{i}]", ids[i].ToString()));
+            queryParts.Add($"publishedfileids[{i}]={ids[i]}");
 
-        using var content = new FormUrlEncodedContent(form);
-        using var resp = await _http.PostAsync(FileDetailsEndpoint, content, ct);
+        string url = $"{FileDetailsEndpoint}?{string.Join("&", queryParts)}";
+
+        using var resp = await _http.GetAsync(url, ct);
         resp.EnsureSuccessStatusCode();
         var json = await resp.Content.ReadAsStringAsync(ct);
 
@@ -97,16 +103,24 @@ internal sealed class SteamWorkshopApiService : IDisposable
         {
             if (!byId.TryGetValue(id, out var d))
             {
-                results.Add(new WorkshopItemInfo(id, WorkshopItemStatus.Error, null));
+                results.Add(new WorkshopItemInfo(id, WorkshopItemStatus.NotFound, null, -1, -1));
                 continue;
             }
+
             var status = d.Result switch
             {
-                1 => WorkshopItemStatus.Public,
-                9 => WorkshopItemStatus.NotFoundOrPrivate,
+                1 => d.Visibility switch
+                {
+                    0 => WorkshopItemStatus.Public,
+                    1 => WorkshopItemStatus.FriendsOnly,
+                    2 => WorkshopItemStatus.Private,
+                    3 => WorkshopItemStatus.Unlisted,
+                    _ => WorkshopItemStatus.Public,
+                },
+                9 => WorkshopItemStatus.NotFound,
                 _ => WorkshopItemStatus.Error,
             };
-            results.Add(new WorkshopItemInfo(id, status, d.Title));
+            results.Add(new WorkshopItemInfo(id, status, d.Title, d.Result, d.Visibility));
         }
         return results;
     }
@@ -148,5 +162,6 @@ internal sealed class SteamWorkshopApiService : IDisposable
         [JsonPropertyName("publishedfileid")] public string? PublishedFileId { get; set; }
         [JsonPropertyName("result")] public int Result { get; set; }
         [JsonPropertyName("title")] public string? Title { get; set; }
+        [JsonPropertyName("visibility")] public int Visibility { get; set; }
     }
 }

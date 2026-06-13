@@ -35,6 +35,13 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
         SharedSystem.GetModSharp().InstallGameListener(this);
 
         var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+
+        string apiKey = configProvider.PluginConfig.GeneralConfig.SteamWebApiKey;
+        _apiService.SetApiKey(apiKey);
+
+        if (!string.IsNullOrEmpty(apiKey))
+            Logger.LogInformation("Steam Web API key configured");
+
         var collectionIds = configProvider.PluginConfig.GeneralConfig.WorkshopCollectionIds;
 
         if (collectionIds.Length == 0)
@@ -49,6 +56,9 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
 
     public void OnGameActivate()
     {
+        if (string.IsNullOrEmpty(_apiService.ApiKey))
+            return;
+
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
         Task.Run(() => RunVisibilityCheckAsync(_cts.Token));
@@ -125,7 +135,7 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
 
         foreach (var item in items)
         {
-            if (item.Status != WorkshopItemStatus.Public)
+            if (item.Status is not (WorkshopItemStatus.Public or WorkshopItemStatus.Unlisted or WorkshopItemStatus.FriendsOnly))
                 continue;
 
             if (mapConfigProvider.TryGetMapConfig(item.PublishedFileId, out _))
@@ -245,16 +255,23 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
             {
                 if (!statusById.TryGetValue(workshopId, out var info))
                 {
+                    Logger.LogWarning("Workshop check: {Map} (ID: {Id}) — no API response", mapName, workshopId);
                     result.Errors.Add(new WorkshopMapEntry(mapName, workshopId, null));
                     continue;
                 }
 
+                Logger.LogInformation("Workshop check: {Map} (ID: {Id}) — result={Result}, visibility={Vis}, status={Status}, title={Title}",
+                    mapName, workshopId, info.ResultCode, info.Visibility, info.Status, info.Title ?? "(null)");
+
                 switch (info.Status)
                 {
                     case WorkshopItemStatus.Public:
+                    case WorkshopItemStatus.FriendsOnly:
+                    case WorkshopItemStatus.Unlisted:
                         result.Unchanged.Add(new WorkshopMapEntry(mapName, workshopId, info.Title));
                         break;
-                    case WorkshopItemStatus.NotFoundOrPrivate:
+                    case WorkshopItemStatus.Private:
+                    case WorkshopItemStatus.NotFound:
                         result.PrivateOrDeleted.Add(new WorkshopMapEntry(mapName, workshopId, info.Title));
                         break;
                     default:
@@ -285,24 +302,14 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
         if (result.PrivateOrDeleted.Count == 0)
             return;
 
-        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
-        string configDirectory = ResolveMapConfigDirectory(configProvider);
-        int disabled = 0;
-
         foreach (var entry in result.PrivateOrDeleted)
         {
-            Logger.LogWarning("Disabling map {Map} (workshop {Id}): private or deleted",
+            Logger.LogWarning("Workshop unavailable: {Map} (workshop {Id})",
                 entry.MapName, entry.WorkshopId);
-
-            if (TryDisableMapInToml(configDirectory, entry.MapName))
-                disabled++;
         }
 
-        if (disabled > 0)
-        {
-            Logger.LogInformation("Disabled {Count} map(s) in config, reloading...", disabled);
-            ServiceProvider.GetRequiredService<IMcsMapConfigProvider>().ReloadConfigs();
-        }
+        // TODO: auto-disable is disabled pending API result verification.
+        // Re-enable once false positives are resolved.
     }
 
     private bool TryDisableMapInToml(string configDirectory, string mapName)
