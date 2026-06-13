@@ -43,6 +43,27 @@
 | mcs_rtv_immediate_change_threshold | 0.0 | 0-1 | 投票完了後の RTV 参加率がこの値以上で即時マップ変更。0 = 無効 (常にラウンド終了) |
 | mcs_rtv_threshold_decay_time | 0.0 | 0-3600 | RTV 閾値を 100% から設定値へ減衰させる秒数。0 = 無効 |
 
+### RTV 2段階閾値 (`mcs_rtv_immediate_change_threshold`)
+
+投票完了後、NextMap が確定した状態での `!rtv` の動作を参加率で変えます。
+
+1. `mcs_rtv_vote_start_threshold` (通常閾値, e.g. 0.5) 到達 → ラウンド終了時にマップ変更
+2. `mcs_rtv_immediate_change_threshold` (即時閾値, e.g. 0.8) 到達 → 即時マップ変更に昇格
+3. 0.0 に設定すると即時変更は無効 (常にラウンド終了変更)
+
+通常閾値到達後も `!rtv` は引き続き受け付けられ、即時閾値に達すると自動的に昇格します。
+
+### RTV 閾値の時間減衰 (`mcs_rtv_threshold_decay_time`)
+
+マップ開始時は RTV に 100% の参加率を要求し、時間経過で `mcs_rtv_vote_start_threshold` の設定値まで線形に減衰します。
+
+例: `threshold=0.5`, `decay_time=600` (10分) の場合
+- 0分: 100% 必要 (10人中10人)
+- 5分: 75% 必要 (10人中8人)
+- 10分: 50% 必要 (10人中5人 = 通常値)
+
+0.0 に設定すると減衰なし (最初から設定値の閾値が適用)。
+
 ## Nomination
 
 | ConVar | デフォルト | 範囲 | 説明 |
