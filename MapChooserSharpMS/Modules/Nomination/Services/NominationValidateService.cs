@@ -202,10 +202,14 @@ internal sealed class NominationValidateService
 
     public bool IsCurrentMap(IMapConfig mapConfig)
     {
-        if (_mapTransitionManager.CurrentMap is null)
+        if (_mapTransitionManager.CurrentMap is not null)
+            return _mapTransitionManager.CurrentMap.MapName.Equals(mapConfig.MapName, StringComparison.OrdinalIgnoreCase);
+
+        var liveMapName = SharedSystem.GetModSharp().GetMapName();
+        if (liveMapName is null)
             return false;
 
-        return _mapTransitionManager.CurrentMap.MapName.Equals(mapConfig.MapName);
+        return mapConfig.MapName.Equals(liveMapName, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool IsWithinTimeRange(IMapConfig mapConfig)

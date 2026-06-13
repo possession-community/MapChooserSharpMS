@@ -5,6 +5,8 @@ using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Modules.Nomination.Managers;
 using MapChooserSharpMS.Modules.Nomination.Services;
+using MapChooserSharpMS.Shared.Events.MapVote;
+using MapChooserSharpMS.Shared.Events.MapVote.Params;
 using MapChooserSharpMS.Shared.Events.RockTheVote;
 using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
@@ -25,6 +27,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     : PluginModuleBase(serviceProvider, hotReload),
       IMcsInternalNominationController,
       IRockTheVoteEventListener,
+      IMapVoteEventListener,
       IClientListener
 {
     public override string PluginModuleName => "McsMapNominationController";
@@ -94,6 +97,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
             NotifyNominationFailure);
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
+        _eventManager.RegisterListener<IMapVoteEventListener>(this);
         SharedSystem.GetClientManager().InstallClientListener(this);
 
         AddCommandsUnderNamespace("MapChooserSharpMS.Modules.Nomination.Commands");
@@ -102,7 +106,13 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     protected override void OnUnloadModule()
     {
         _eventManager.RemoveListener<IRockTheVoteEventListener>(this);
+        _eventManager.RemoveListener<IMapVoteEventListener>(this);
         SharedSystem.GetClientManager().RemoveClientListener(this);
+    }
+
+    public void OnMapVoteFinished(IMapVoteFinishedEventParams @params)
+    {
+        NominationService.ClearNominations();
     }
 
     public void OnClientDisconnecting(IGameClient client, NetworkDisconnectionReason reason)
