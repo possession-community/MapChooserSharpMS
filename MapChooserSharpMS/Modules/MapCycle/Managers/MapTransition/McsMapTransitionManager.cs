@@ -147,16 +147,23 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
             var tcs = new TaskCompletionSource<(bool, IWorkshopFetchResult)>();
             _sharedSystem.GetModSharp().InvokeFrameAction(() =>
             {
-                TrySetNextMap(provision.MapConfig);
-                _logger.LogInformation("Set next map from workshop: {Title} (ID: {Id})", provision.Title, workshopId);
-
-                IWorkshopFetchResult workshopHit = new WorkshopFetchResult
+                try
                 {
-                    ExistenceStatus = ExistenceStatus.FoundInWorkshop,
-                    MapName = provision.MapConfig.MapName,
-                    WorkshopId = workshopId,
-                };
-                tcs.SetResult((true, workshopHit));
+                    TrySetNextMap(provision.MapConfig);
+                    _logger.LogInformation("Set next map from workshop: {Title} (ID: {Id})", provision.Title, workshopId);
+
+                    IWorkshopFetchResult workshopHit = new WorkshopFetchResult
+                    {
+                        ExistenceStatus = ExistenceStatus.FoundInWorkshop,
+                        MapName = provision.MapConfig.MapName,
+                        WorkshopId = workshopId,
+                    };
+                    tcs.SetResult((true, workshopHit));
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
             });
             return await tcs.Task;
         }
