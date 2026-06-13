@@ -16,6 +16,7 @@ using MapChooserSharpMS.Shared.Nomination.Services;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
+using System.Threading.Tasks;
 using TnmsPluginFoundation;
 using TnmsPluginFoundation.Models.Plugin;
 
@@ -181,6 +182,62 @@ internal sealed class NominationValidateService
 
         return result;
     }
+
+    public async Task<List<IMapConfig>> FilterPickableMapsAsync(List<IMapConfig> maps)
+    {
+        var snapshot = new PickupSnapshot(
+            CurrentMapName: _mapTransitionManager.CurrentMap?.MapName ?? SharedSystem.GetModSharp().GetMapName(),
+            RealPlayerCount: SharedSystem.GetModSharp().GetIServer().GetGameClients(true).Count(u => !u.IsFakeClient && !u.IsHltv)
+        );
+
+        var filtered = await Task.Run(() =>
+        {
+            return maps.Where(m => CanPickupPure(m, snapshot)).ToList();
+        });
+
+        return filtered.Where(m =>
+        {
+            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
+            return !_eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNominationCheckPassed(nominationEvent));
+        }).ToList();
+    }
+
+    private bool CanPickupPure(IMapConfig mapConfig, PickupSnapshot snapshot)
+    {
+        if (mapConfig.IsDisabled)
+            return false;
+
+        if (snapshot.CurrentMapName is not null
+            && mapConfig.MapName.Equals(snapshot.CurrentMapName, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (GetNominationState(mapConfig).Count > 0)
+            return false;
+
+        if (HasReachedGroupNominationLimit(mapConfig))
+            return false;
+
+        if (IsMapInCooldown(mapConfig))
+            return false;
+
+        if (mapConfig.NominationConfig.MaxPlayers > 0
+            && mapConfig.NominationConfig.MaxPlayers < snapshot.RealPlayerCount)
+            return false;
+
+        if (mapConfig.NominationConfig.MinPlayers > 0
+            && mapConfig.NominationConfig.MinPlayers > snapshot.RealPlayerCount)
+            return false;
+
+        if (!IsWithinAllowedDays(mapConfig))
+            return false;
+
+        if (!IsWithinTimeRange(mapConfig))
+            return false;
+
+        return true;
+    }
+
+    private sealed record PickupSnapshot(string? CurrentMapName, int RealPlayerCount);
 
     public bool IsDuringVotingPeriod()
     {

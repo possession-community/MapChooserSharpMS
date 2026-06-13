@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapVote;
 using MapChooserSharpMS.Modules.MapCycle.Services;
@@ -108,7 +109,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _voteState.SetState(McsMapVoteState.Initializing);
 
         int maxElements = _configProvider.PluginConfig.VoteConfig.MaxMenuElements;
-        var candidates = BuildCandidateList(isActivatedByRtv, maxElements);
+        var candidates = BuildCandidateListAsync(isActivatedByRtv, maxElements).GetAwaiter().GetResult();
 
         if (candidates.Count < 2)
         {
@@ -406,7 +407,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _voteManager.ClearSession();
     }
 
-    private List<IMapVoteOption> BuildCandidateList(bool isRtvVote, int maxElements)
+    private async Task<List<IMapVoteOption>> BuildCandidateListAsync(bool isRtvVote, int maxElements)
     {
         var candidates = new List<IMapVoteOption>();
         var usedMapNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -480,7 +481,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             }
             else
             {
-                mapsToAdd = _randomMapPicker.PickRandomMaps(remaining, usedMapNames);
+                mapsToAdd = await _randomMapPicker.PickRandomMapsAsync(remaining, usedMapNames);
             }
 
             foreach (var map in mapsToAdd)

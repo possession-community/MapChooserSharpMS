@@ -121,7 +121,9 @@ internal sealed class McsMapVoteController
         var mapExtendService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.Interfaces.IMcsInternalMapExtendService>();
         var cooldownLifecycleService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.McsMapCooldownLifecycleService>();
 
-        var randomMapPicker = new RandomMapPickingService(nominationValidateService, configProvider, mapConfigProvider);
+        var randomMapPicker = new RandomMapPickingService(
+            (Modules.Nomination.Services.NominationValidateService)nominationValidateService,
+            configProvider, mapConfigProvider);
 
         McsMapVoteSoundPlayer? soundPlayer = null;
         var soundConfig = configProvider.PluginConfig.VoteConfig.VoteSoundConfig;
