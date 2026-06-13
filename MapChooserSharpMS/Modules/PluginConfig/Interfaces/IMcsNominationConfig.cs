@@ -8,4 +8,6 @@ internal interface IMcsNominationConfig
     internal List<McsSupportedMenuType> AvailableMenuTypes { get; }
 
     internal McsSupportedMenuType CurrentMenuType { get; }
+
+    internal int PerGroupNominationLimit { get; }
 }

@@ -188,7 +188,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
                 break;
 
             case NominationCheckResult.GroupNominationLimitReached:
-                int limit = ((NominationValidateService)NominationValidateService).PerGroupNominationLimit.GetInt32();
+                int limit = ((NominationValidateService)NominationValidateService).PerGroupNominationLimit;
                 PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.GroupLimitReached", limit));
                 break;
 

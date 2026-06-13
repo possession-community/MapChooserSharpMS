@@ -13,8 +13,8 @@ using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
 using MapChooserSharpMS.Shared.Nomination.Services;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Sharp.Shared.Enums;
 using Sharp.Shared.Objects;
 using TnmsPluginFoundation;
 using TnmsPluginFoundation.Models.Plugin;
@@ -24,27 +24,23 @@ namespace MapChooserSharpMS.Modules.Nomination.Services;
 internal sealed class NominationValidateService
     : PluginBasicFeatureBase, INominationValidateService
 {
-    public readonly IConVar PerGroupNominationLimit;
-
     private readonly IMcsInternalNominationManager _nominationManager;
     private readonly IInternalEventManager _eventManager;
     private readonly IMcsInternalNominationController _nominationController;
     private readonly IMapTransitionManager _mapTransitionManager;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IMcsPluginConfigProvider _configProvider;
 
-    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager):base(serviceProvider)
+    public int PerGroupNominationLimit => _configProvider.PluginConfig.NominationConfig.PerGroupNominationLimit;
+
+    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager, IMcsPluginConfigProvider configProvider):base(serviceProvider)
     {
-        var conv = SharedSystem.GetConVarManager().CreateConVar("", 0, 0, 999, "Help", ConVarFlags.None);
-
-        if (conv == null)
-            throw new InvalidOperationException($"Failed to initialize ConVar in {GetType().Name}");
-
-        PerGroupNominationLimit = conv;
         _nominationManager  = nominationManager;
         _eventManager = internalEventManager;
         _nominationController = nominationController;
         _mapTransitionManager = mapTransitionManager;
         _serviceProvider = serviceProvider;
+        _configProvider = configProvider;
     }
 
     public IReadOnlyList<NominationCheckResult> PlayerCanNominateMap(IGameClient client, IMapConfig mapConfig)
@@ -321,7 +317,7 @@ internal sealed class NominationValidateService
 
     public bool HasReachedGroupNominationLimit(IMapConfig mapConfig)
     {
-        if (PerGroupNominationLimit.GetInt16() == 0)
+        if (PerGroupNominationLimit == 0)
             return false;
 
         Dictionary<string, int> groupsNominatedCount = new(StringComparer.OrdinalIgnoreCase);
@@ -341,7 +337,7 @@ internal sealed class NominationValidateService
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
             if (groupsNominatedCount.TryGetValue(groupSetting.GroupName, out int count)
-                && count >= PerGroupNominationLimit.GetInt16())
+                && count >= PerGroupNominationLimit)
                 return true;
         }
 
