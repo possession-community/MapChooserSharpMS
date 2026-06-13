@@ -221,18 +221,18 @@ internal sealed class NominationValidateService
                mapConfig.NominationConfig.DaysAllowed.Contains(DateTime.Today.DayOfWeek);
     }
 
-    public bool IsGreaterThanMinPlayers(IMapConfig mapConfig, bool includeBots = false)
+    public bool IsGreaterThanMinPlayers(IMapConfig mapConfig)
     {
         return mapConfig.NominationConfig.MinPlayers <= 0 ||
-               mapConfig.NominationConfig.MinPlayers < SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
-                   .Count(u => u.IsFakeClient == includeBots && !u.IsHltv);
+               mapConfig.NominationConfig.MinPlayers <= SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
+                   .Count(u => !u.IsFakeClient && !u.IsHltv);
     }
 
-    public bool IsLowerThanMaxPlayers(IMapConfig mapConfig, bool includeBots = false)
+    public bool IsLowerThanMaxPlayers(IMapConfig mapConfig)
     {
         return mapConfig.NominationConfig.MaxPlayers <= 0 ||
-               mapConfig.NominationConfig.MaxPlayers > SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
-                   .Count(u => u.IsFakeClient == includeBots && !u.IsHltv);
+               mapConfig.NominationConfig.MaxPlayers >= SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
+                   .Count(u => !u.IsFakeClient && !u.IsHltv);
     }
 
     public bool IsMapInCooldown(IMapConfig mapConfig)

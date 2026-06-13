@@ -49,9 +49,9 @@ public interface INominationValidateService
 
     bool IsWithinAllowedDays(IMapConfig mapConfig);
 
-    bool IsGreaterThanMinPlayers(IMapConfig mapConfig, bool includeBots = false);
+    bool IsGreaterThanMinPlayers(IMapConfig mapConfig);
 
-    bool IsLowerThanMaxPlayers(IMapConfig mapConfig, bool includeBots = false);
+    bool IsLowerThanMaxPlayers(IMapConfig mapConfig);
 
     bool IsMapInCooldown(IMapConfig mapConfig);
 
