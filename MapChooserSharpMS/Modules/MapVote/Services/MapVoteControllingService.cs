@@ -528,7 +528,13 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             else if (candidate.MapName == MapVoteConstants.DontChangeMapInternalName)
                 visibleName = LocalizedString.From(c => _plugin.Localizer.ForCulture("Vote.Option.DontChange", c ?? System.Globalization.CultureInfo.CurrentCulture));
             else
-                visibleName = LocalizedString.From(_ => candidate.MapConfig?.MapName ?? candidate.MapName);
+            {
+                string displayName = candidate.MapConfig is not null
+                    ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(candidate.MapConfig)
+                    : candidate.MapName;
+                bool isNominated = _nominationManager.NominatedMaps.ContainsKey(candidate.MapName);
+                visibleName = LocalizedString.From(_ => isNominated ? $"(N) {displayName}" : displayName);
+            }
 
             voteContents.Add(new VoteContent
             {
