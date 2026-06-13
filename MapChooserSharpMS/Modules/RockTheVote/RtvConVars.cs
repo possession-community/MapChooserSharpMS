@@ -16,6 +16,7 @@ internal sealed class RtvConVars
     public readonly IConVar MinimumRequirements;
     public readonly IConVar BroadcastPlayerCast;
     public readonly IConVar ImmediateChangeThreshold;
+    public readonly IConVar ThresholdDecayTime;
 
     public RtvConVars(IConVarManager cvm)
     {
@@ -28,6 +29,7 @@ internal sealed class RtvConVars
         MinimumRequirements = cvm.CreateConVar("mcs_rtv_minimum_requirements", 0, 0, 64, "Minimum RTV requirements to start RTV vote. Set 0 to disable this requirement", ConVarFlags.None)!;
         BroadcastPlayerCast = cvm.CreateConVar("mcs_rtv_broadcast_player_cast", 1, 0, 1, "Broadcast when a player casts RTV vote", ConVarFlags.None)!;
         ImmediateChangeThreshold = cvm.CreateConVar("mcs_rtv_immediate_change_threshold", 0.0F, 0.0F, 1.0F, "Post-vote RTV ratio to trigger immediate map change. 0 = disabled (always round-end)", ConVarFlags.None)!;
+        ThresholdDecayTime = cvm.CreateConVar("mcs_rtv_threshold_decay_time", 0.0F, 0.0F, 3600.0F, "Seconds to decay RTV threshold from 100% to configured value. 0 = disabled", ConVarFlags.None)!;
     }
 
     public IEnumerable<IConVar> All()
@@ -41,5 +43,6 @@ internal sealed class RtvConVars
         yield return MinimumRequirements;
         yield return BroadcastPlayerCast;
         yield return ImmediateChangeThreshold;
+        yield return ThresholdDecayTime;
     }
 }

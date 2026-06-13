@@ -13,6 +13,7 @@ internal sealed class InternalRtvManager(TnmsPlugin plugin, RtvConVars conVars) 
     private readonly HashSet<int> _participants = new();
     private RtvStatus _status = RtvStatus.Enabled;
     private TimeSpan _rtvCommandUnlockTime = TimeSpan.Zero;
+    private DateTime _mapStartUtc = DateTime.UtcNow;
 
     public RtvStatus RtvStatus => _status;
     public TimeSpan RtvCommandUnlockTime => _rtvCommandUnlockTime;
@@ -32,14 +33,28 @@ internal sealed class InternalRtvManager(TnmsPlugin plugin, RtvConVars conVars) 
                 .GetGameClients(true)
                 .Count(c => !c.IsFakeClient && !c.IsHltv);
 
-            float ratio = conVars.VoteStartThreshold.GetFloat();
+            float targetRatio = conVars.VoteStartThreshold.GetFloat();
+            float ratio = ApplyDecay(targetRatio);
+
             int minRequired = conVars.MinimumRequirements.GetInt32();
             int fromRatio = (int)Math.Ceiling(realPlayers * ratio);
 
-            // Floor at MinimumRequirements (0 disables that floor); always at least 1
-            // so we never divide by zero in RtvCompletionRatio.
             return Math.Max(Math.Max(fromRatio, minRequired), 1);
         }
+    }
+
+    private float ApplyDecay(float targetRatio)
+    {
+        float decaySeconds = conVars.ThresholdDecayTime.GetFloat();
+        if (decaySeconds <= 0f)
+            return targetRatio;
+
+        float elapsed = (float)(DateTime.UtcNow - _mapStartUtc).TotalSeconds;
+        if (elapsed >= decaySeconds)
+            return targetRatio;
+
+        float progress = elapsed / decaySeconds;
+        return 1.0f - (1.0f - targetRatio) * progress;
     }
 
     public int ImmediateRequiredCounts
@@ -107,5 +122,6 @@ internal sealed class InternalRtvManager(TnmsPlugin plugin, RtvConVars conVars) 
         _rtvCommandUnlockTime = TimeSpan.Zero;
         _participants.Clear();
         _status = RtvStatus.Enabled;
+        _mapStartUtc = DateTime.UtcNow;
     }
 }
