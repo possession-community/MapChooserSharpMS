@@ -718,6 +718,8 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             OverridePriority = source.OverridePriority,
             TargetDays = source.TargetDays is not null ? new List<DayOfWeek>(source.TargetDays) : null,
             TargetTimeRanges = source.TargetTimeRanges is not null ? new List<ITimeRange>(source.TargetTimeRanges) : null,
+            MapSelectionWeight = source.MapSelectionWeight,
+            ShortGroupName = source.ShortGroupName,
         };
     }
 
