@@ -57,6 +57,7 @@ internal sealed class McsMapCycleController
     private McsMapCooldownQueryService _cooldownQueryService = null!;
     private McsMapCooldownCommandService _cooldownCommandService = null!;
     private McsMapCooldownLifecycleService _cooldownLifecycleService = null!;
+    private WorkshopProvisioningService? _workshopProvisioningService;
 
     private MapCycleMode _mode = MapCycleMode.None;
     private Guid _tickTimerId = Guid.Empty;
@@ -128,7 +129,8 @@ internal sealed class McsMapCycleController
     protected override void OnInitialize()
     {
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
-        var workshopProvisioning = CreateWorkshopProvisioningService();
+        _workshopProvisioningService = CreateWorkshopProvisioningService();
+        var workshopProvisioning = _workshopProvisioningService;
         _mapTransitionManager = new McsMapTransitionManager(
             SharedSystem,
             ServiceProvider.GetRequiredService<IMcsMapConfigProvider>(),
@@ -149,13 +151,13 @@ internal sealed class McsMapCycleController
             () => _internalTimeLimitManager,
             OnTimeLimitChanged);
 
-        _extCommandService = new McsExtCommandService(
-            Plugin, this, Logger, _eventManager, _extendService, readOnlyVoteState, _conVars);
-
         _extendVoteService = new McsExtendVoteService(
             Plugin, this, Logger, _eventManager, _extendService,
             _conVars,
             () => _mapTransitionManager.CurrentMap);
+
+        _extCommandService = new McsExtCommandService(
+            Plugin, this, Logger, _eventManager, _extendService, readOnlyVoteState, _extendVoteService, _conVars);
 
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _cooldownQueryService = new McsMapCooldownQueryService();
@@ -193,6 +195,7 @@ internal sealed class McsMapCycleController
     {
         TearDownCurrentMap();
 
+        _workshopProvisioningService?.Dispose();
         _eventManager.RemoveListener<IMapVoteEventListener>(this);
         SharedSystem.GetModSharp().RemoveGameListener(this);
         SharedSystem.GetClientManager().RemoveClientListener(this);

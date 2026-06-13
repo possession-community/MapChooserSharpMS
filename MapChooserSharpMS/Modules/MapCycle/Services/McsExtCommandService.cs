@@ -67,6 +67,7 @@ internal sealed class McsExtCommandService
     private readonly IInternalEventManager _eventManager;
     private readonly IMcsInternalMapExtendService _extendService;
     private readonly IMcsReadOnlyVoteState _voteState;
+    private readonly McsExtendVoteService _extendVoteService;
     private readonly MapCycleConVars _conVars;
 
     private readonly HashSet<int> _participants = new();
@@ -78,6 +79,7 @@ internal sealed class McsExtCommandService
         IInternalEventManager eventManager,
         IMcsInternalMapExtendService extendService,
         IMcsReadOnlyVoteState voteState,
+        McsExtendVoteService extendVoteService,
         MapCycleConVars conVars)
     {
         _plugin = plugin;
@@ -86,6 +88,7 @@ internal sealed class McsExtCommandService
         _eventManager = eventManager;
         _extendService = extendService;
         _voteState = voteState;
+        _extendVoteService = extendVoteService;
         _conVars = conVars;
     }
 
@@ -120,6 +123,7 @@ internal sealed class McsExtCommandService
         // ballot there) — result states like NextMapConfirmed don't block
         // !ext, same independence as the extend vote.
         if (_voteState.IsVotingPeriod()
+            || _extendVoteService.IsExtendVoteInProgress
             || !_extendService.CanExtendNow)
         {
             return McsExtCommandResult.NotAvailable;
