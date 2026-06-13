@@ -96,7 +96,8 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
             _internalNominationManager,
             NominationService,
             _mapConfigToolingService,
-            NotifyNominationFailure);
+            NotifyNominationFailure,
+            _conVars);
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         _eventManager.RegisterListener<IMapVoteEventListener>(this);
