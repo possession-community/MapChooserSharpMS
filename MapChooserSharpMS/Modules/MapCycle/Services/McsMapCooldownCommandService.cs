@@ -74,6 +74,32 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
         return Task.FromResult(true);
     }
 
+    internal bool SetGroupTimedCooldown(string groupName, TimeSpan cooldown)
+    {
+        if (!_mapConfigProvider.GetGroupSettings().TryGetValue(groupName, out var groupVariants)
+            || groupVariants.Count == 0)
+        {
+            return false;
+        }
+
+        bool anySet = false;
+        var endUtc = DateTime.UtcNow + cooldown;
+
+        foreach (var variant in groupVariants)
+        {
+            if (variant.GroupConfig.CooldownConfig is not CooldownConfig cc)
+                continue;
+
+            cc.TimedCooldownEndUtc = endUtc;
+            anySet = true;
+        }
+
+        if (anySet)
+            _logger.LogInformation("[Cooldown] SetGroupTimedCooldown: {Group} until {Until}", groupName, endUtc);
+
+        return anySet;
+    }
+
     public Task<bool> ExcludeFromNomination(IMapConfig mapConfig)
     {
         return SetCooldown(mapConfig, int.MaxValue);
