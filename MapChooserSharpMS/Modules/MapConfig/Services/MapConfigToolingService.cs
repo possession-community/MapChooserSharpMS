@@ -7,9 +7,22 @@ internal sealed class MapConfigToolingService : IMapConfigToolingService
 {
     public string ResolveMapDisplayName(IMapConfig mapConfig)
     {
-        return string.IsNullOrWhiteSpace(mapConfig.MapNameAlias)
+        string baseName = string.IsNullOrWhiteSpace(mapConfig.MapNameAlias)
             ? mapConfig.MapName
             : mapConfig.MapNameAlias;
+
+        string tag = ResolveGroupTag(mapConfig);
+        return tag.Length > 0 ? $"[{tag}] {baseName}" : baseName;
+    }
+
+    private static string ResolveGroupTag(IMapConfig mapConfig)
+    {
+        foreach (var group in mapConfig.GroupSettings)
+        {
+            if (!string.IsNullOrWhiteSpace(group.ShortGroupName))
+                return group.ShortGroupName;
+        }
+        return "";
     }
 
     public int GetHighestCooldown(IMapConfig mapConfig)

@@ -98,8 +98,13 @@ internal static class MapConfigBuilder
         ParsedProperties props,
         IExtraConfigAccessor extraConfig)
     {
+        string shortName = props.ShortGroupName ?? "";
+        if (shortName.Length > 4)
+            shortName = shortName[..4];
+
         return new MapGroupConfig(
             GroupName: groupName,
+            ShortGroupName: shortName,
             MapCooldownOverride: props.CooldownOverride ?? 0,
             IsDisabled: props.IsDisabled ?? false,
             MaxExtends: props.MaxExtends ?? 3,

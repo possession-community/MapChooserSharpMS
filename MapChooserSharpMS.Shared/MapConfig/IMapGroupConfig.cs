@@ -11,6 +11,11 @@ public interface IMapGroupConfig: IBaseMapConfig
     public string GroupName { get; }
     
     /// <summary>
+    /// Short group name tag for display (max 4 chars, e.g. "HD", "EZ")
+    /// </summary>
+    public string ShortGroupName { get; }
+
+    /// <summary>
     /// Map cooldown will override when set to positive integer
     /// </summary>
     public int MapCooldownOverride { get; }

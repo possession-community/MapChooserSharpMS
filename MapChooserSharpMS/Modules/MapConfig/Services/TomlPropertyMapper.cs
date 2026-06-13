@@ -45,6 +45,9 @@ internal sealed class ParsedProperties
     public List<DayOfWeek>? DaysAllowed { get; set; }
     public List<ITimeRange>? AllowedTimeRanges { get; set; }
 
+    // Group display
+    public string? ShortGroupName { get; set; }
+
     // Cooldown
     public int? Cooldown { get; set; }
     public string? CooldownDateTime { get; set; }
@@ -86,6 +89,7 @@ internal static class TomlPropertyMapper
         "ExtendRoundsPerExtends",
         "OnlyNomination",
         "MapSelectionWeight",
+        "ShortGroupName",
         "MaxPlayers",
         "MinPlayers",
         "ProhibitAdminNomination",
@@ -187,6 +191,11 @@ internal static class TomlPropertyMapper
             case "MapSelectionWeight":
                 if (valueNode.TryGetInt64(out var weight))
                     props.MapSelectionWeight = (int)weight;
+                break;
+
+            case "ShortGroupName":
+                if (valueNode.TryGetString(out var shortGn))
+                    props.ShortGroupName = shortGn.ToString();
                 break;
 
             case "MaxPlayers":
