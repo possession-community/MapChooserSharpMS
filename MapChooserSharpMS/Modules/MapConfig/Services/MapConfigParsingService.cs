@@ -740,8 +740,15 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             var tomlFiles = Directory.GetFiles(configPath, "*.toml", SearchOption.AllDirectories);
             foreach (var file in tomlFiles)
             {
-                var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(file);
-                documents.Add(doc);
+                try
+                {
+                    var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(file);
+                    documents.Add(doc);
+                }
+                catch (Exception)
+                {
+                    // Skip malformed TOML file — other files continue loading
+                }
             }
         }
 
