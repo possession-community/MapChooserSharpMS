@@ -6,7 +6,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using MapChooserSharpMS.Shared.Events.MapCycle;
+using MapChooserSharpMS.Shared.Events.MapCycle.Params;
 using MapChooserSharpMS.Shared.MapConfig;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,7 +19,9 @@ using TnmsPluginFoundation.Models.Plugin;
 namespace MapChooserSharpMS.Modules.WorkshopSync;
 
 internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider, bool hotReload)
-    : PluginModuleBase(serviceProvider, hotReload), Sharp.Shared.Listeners.IGameListener
+    : PluginModuleBase(serviceProvider, hotReload),
+      Sharp.Shared.Listeners.IGameListener,
+      Shared.Events.MapCycle.IMapCycleEventListener
 {
     public override string PluginModuleName => "McsWorkshopSyncController";
     public override string ModuleChatPrefix => "";
@@ -26,13 +31,21 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
     public int ListenerPriority => 0;
 
     private readonly SteamWorkshopApiService _apiService = new();
+    private DiscordWebhookService? _webhookService;
     private CancellationTokenSource? _cts;
+    private bool _isIntermissionActivated;
+    private IMapConfig? _pendingNextMap;
+    private int _snapshotPlayerCount;
 
     internal WorkshopVisibilityCheckResult? LastVisibilityCheckResult { get; private set; }
 
     protected override void OnAllModulesLoaded()
     {
         SharedSystem.GetModSharp().InstallGameListener(this);
+        _webhookService = new DiscordWebhookService(Logger);
+        ServiceProvider.GetRequiredService<IInternalEventManager>().RegisterListener<IMapCycleEventListener>(this);
+
+        EnsureWebhookTemplates();
 
         var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
 
@@ -56,6 +69,10 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
 
     public void OnGameActivate()
     {
+        _isIntermissionActivated = false;
+        _pendingNextMap = null;
+        _snapshotPlayerCount = 0;
+
         if (string.IsNullOrEmpty(_apiService.ApiKey))
             return;
 
@@ -64,12 +81,170 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
         Task.Run(() => RunVisibilityCheckAsync(_cts.Token));
     }
 
+    public void OnNextMapConfirmed(INextMapConfirmedEventParams @params)
+    {
+        _pendingNextMap = @params.NextMap;
+        _snapshotPlayerCount = SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
+            .Count(c => !c.IsFakeClient && !c.IsHltv);
+    }
+
+    public void OnMcsIntermission(IMcsIntermissionParams @params)
+    {
+        if (_isIntermissionActivated)
+            return;
+
+        _isIntermissionActivated = true;
+        SendMapTransitionWebhook(@params.NextMap);
+    }
+
+    public void OnGameDeactivate()
+    {
+        if (_isIntermissionActivated || _pendingNextMap is null)
+            return;
+
+        _isIntermissionActivated = true;
+        SendMapTransitionWebhook(_pendingNextMap);
+    }
+
+    private void SendMapTransitionWebhook(IMapConfig nextMap)
+    {
+        if (_webhookService is null)
+            return;
+
+        string configPath = Path.Combine(Plugin.BaseCfgDirectoryPath, "map-transition-webhook.toml");
+
+        var modSharp = SharedSystem.GetModSharp();
+        var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        var transitionManager = ServiceProvider.GetRequiredService<Shared.MapCycle.IMapCycleController>()
+            .MapTransitionManager;
+
+        string currentMapName = modSharp.GetMapName() ?? "";
+        string currentDisplayName = transitionManager.CurrentMap is { } curConfig
+            ? mapConfigProvider.ToolingService.ResolveMapDisplayName(curConfig)
+            : currentMapName;
+        long currentWorkshopId = transitionManager.CurrentMap?.WorkshopId ?? 0;
+
+        string nextDisplayName = mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap);
+
+        int livePlayerCount = modSharp.GetIServer().GetGameClients(true)
+            .Count(c => !c.IsFakeClient && !c.IsHltv);
+        int playerCount = livePlayerCount > 0 ? livePlayerCount : _snapshotPlayerCount;
+        int maxPlayers = modSharp.GetGlobals().MaxClients;
+
+        var placeholders = new Dictionary<string, string>
+        {
+            ["CURRENT_MAP"] = currentMapName,
+            ["CURRENT_MAP_DISPLAY_NAME"] = currentDisplayName,
+            ["CURRENT_WORKSHOP_ID"] = currentWorkshopId.ToString(),
+            ["NEXT_MAP"] = nextMap.MapName,
+            ["NEXT_MAP_DISPLAY_NAME"] = nextDisplayName,
+            ["NEXT_WORKSHOP_ID"] = nextMap.WorkshopId.ToString(),
+            ["PLAYER_COUNT"] = playerCount.ToString(),
+            ["MAX_PLAYERS"] = maxPlayers.ToString(),
+            ["TIMESTAMP"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC"),
+        };
+
+        Task.Run(() => _webhookService.TrySendAsync(configPath, placeholders));
+    }
+
     protected override void OnUnloadModule()
     {
         SharedSystem.GetModSharp().RemoveGameListener(this);
+        ServiceProvider.GetRequiredService<IInternalEventManager>().RemoveListener<IMapCycleEventListener>(this);
         _cts?.Cancel();
         _cts?.Dispose();
         _apiService.Dispose();
+        _webhookService?.Dispose();
+    }
+
+    private void EnsureWebhookTemplates()
+    {
+        EnsureWebhookTemplate(
+            "workshop-visibility-check-webhook.toml",
+            """
+            # Discord Webhook for Workshop Visibility Check
+            # This webhook fires per-map when a workshop map becomes private/deleted/error.
+            #
+            # Available placeholders:
+            #   %MAP_NAME%              - Map config name
+            #   %WORKSHOP_ID%           - Workshop ID
+            #   %WORKSHOP_TITLE%        - Workshop title (empty if unavailable)
+            #   %STATUS%                - "Private/Deleted" or "Error"
+            #   %TOTAL_COUNT%           - Total maps checked
+            #   %UNCHANGED_COUNT%       - Maps still public
+            #   %PRIVATE_DELETED_COUNT% - Maps private or deleted
+            #   %ERROR_COUNT%           - Maps with API errors
+            #   %TIMESTAMP%             - Check time (UTC)
+
+            WebhookUrl = ""
+
+            JsonTemplate = '''
+            {
+              "embeds": [{
+                "title": "Workshop Map Unavailable",
+                "description": "**%MAP_NAME%** (ID: %WORKSHOP_ID%) is now %STATUS%",
+                "color": 16711680,
+                "fields": [
+                  {"name": "Workshop Title", "value": "%WORKSHOP_TITLE%", "inline": true},
+                  {"name": "Status", "value": "%STATUS%", "inline": true}
+                ],
+                "footer": {"text": "%TIMESTAMP% | Total: %TOTAL_COUNT% OK: %UNCHANGED_COUNT% NG: %PRIVATE_DELETED_COUNT%"}
+              }]
+            }
+            '''
+            """);
+
+        EnsureWebhookTemplate(
+            "map-transition-webhook.toml",
+            """
+            # Discord Webhook for Map Transition
+            # This webhook fires on map deactivate (just before transition).
+            #
+            # Available placeholders:
+            #   %CURRENT_MAP%               - Current map name
+            #   %CURRENT_MAP_DISPLAY_NAME%  - Current map display name
+            #   %CURRENT_WORKSHOP_ID%       - Current map workshop ID
+            #   %NEXT_MAP%                  - Next map name (empty if not set)
+            #   %NEXT_MAP_DISPLAY_NAME%     - Next map display name (empty if not set)
+            #   %NEXT_WORKSHOP_ID%          - Next map workshop ID (0 if not set)
+            #   %PLAYER_COUNT%              - Player count at transition (excludes bots/HLTV)
+            #   %MAX_PLAYERS%               - Server max player slots
+            #   %TIMESTAMP%                 - Event time (UTC)
+
+            WebhookUrl = ""
+
+            JsonTemplate = '''
+            {
+              "embeds": [{
+                "title": "Map Transition",
+                "description": "**%CURRENT_MAP_DISPLAY_NAME%** → **%NEXT_MAP_DISPLAY_NAME%**",
+                "color": 3066993,
+                "fields": [
+                  {"name": "Players", "value": "%PLAYER_COUNT%/%MAX_PLAYERS%", "inline": true},
+                  {"name": "Next Workshop ID", "value": "%NEXT_WORKSHOP_ID%", "inline": true}
+                ],
+                "footer": {"text": "%TIMESTAMP%"}
+              }]
+            }
+            '''
+            """);
+    }
+
+    private void EnsureWebhookTemplate(string fileName, string defaultContent)
+    {
+        string filePath = Path.Combine(Plugin.BaseCfgDirectoryPath, fileName);
+        if (File.Exists(filePath))
+            return;
+
+        try
+        {
+            File.WriteAllText(filePath, defaultContent.ReplaceLineEndings("\n"), Encoding.UTF8);
+            Logger.LogInformation("Created default webhook template: {File}", fileName);
+        }
+        catch (IOException ex)
+        {
+            Logger.LogWarning(ex, "Failed to create webhook template: {File}", fileName);
+        }
     }
 
     private async Task RunSyncAsync(string[] collectionIds, CancellationToken ct)
@@ -284,6 +459,7 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
             {
                 LastVisibilityCheckResult = result;
                 ApplyVisibilityResult(result);
+                SendVisibilityWebhookAsync(result, ct);
             }, 0f, GameTimerFlags.None);
         }
         catch (OperationCanceledException) { }
@@ -320,6 +496,47 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
             Logger.LogInformation("Disabled {Count} map(s) in config, reloading...", disabled);
             ServiceProvider.GetRequiredService<IMcsMapConfigProvider>().ReloadConfigs();
         }
+    }
+
+    private void SendVisibilityWebhookAsync(WorkshopVisibilityCheckResult result, CancellationToken ct)
+    {
+        if (_webhookService is null)
+            return;
+
+        string configPath = Path.Combine(Plugin.BaseCfgDirectoryPath, "workshop-visibility-check-webhook.toml");
+
+        var entries = new List<WorkshopMapEntry>();
+        entries.AddRange(result.PrivateOrDeleted);
+        entries.AddRange(result.Errors);
+
+        if (entries.Count == 0)
+            return;
+
+        string timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
+        int total = result.Unchanged.Count + result.PrivateOrDeleted.Count + result.Errors.Count;
+
+        Task.Run(async () =>
+        {
+            foreach (var entry in entries)
+            {
+                string status = result.PrivateOrDeleted.Contains(entry) ? "Private/Deleted" : "Error";
+
+                var placeholders = new Dictionary<string, string>
+                {
+                    ["MAP_NAME"] = entry.MapName,
+                    ["WORKSHOP_ID"] = entry.WorkshopId.ToString(),
+                    ["WORKSHOP_TITLE"] = entry.Title ?? "",
+                    ["STATUS"] = status,
+                    ["TOTAL_COUNT"] = total.ToString(),
+                    ["UNCHANGED_COUNT"] = result.Unchanged.Count.ToString(),
+                    ["PRIVATE_DELETED_COUNT"] = result.PrivateOrDeleted.Count.ToString(),
+                    ["ERROR_COUNT"] = result.Errors.Count.ToString(),
+                    ["TIMESTAMP"] = timestamp,
+                };
+
+                await _webhookService.TrySendAsync(configPath, placeholders, ct);
+            }
+        }, ct);
     }
 
     private bool TryDisableMapInToml(string configDirectory, string mapName)

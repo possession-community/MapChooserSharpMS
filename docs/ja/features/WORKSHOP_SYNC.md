@@ -54,14 +54,51 @@ Workshop unavailable: ze_example_map (workshop 1234567890)
 
 ### 自動 Disable
 Private / 削除済みのマップは config 上で `IsDisabled = true` を自動書込みし、リロードします。
-将来的に Discord Webhook 通知も追加予定。
 
-`LastVisibilityCheckResult` プロパティで構造化された結果を保持:
-- `Unchanged`: 公開/Unlisted/FriendsOnly のマップリスト
-- `PrivateOrDeleted`: 非公開/削除マップリスト
-- `Errors`: API エラーのマップリスト
+### Discord Webhook 通知
 
-各エントリは `WorkshopMapEntry(MapName, WorkshopId, Title)` で Discord Webhook 連携用にマップ詳細を保持。
+Visibility Check の結果、Private/Deleted/Error のマップがあった場合、マップごとに Discord Webhook で通知を送信します。
+
+#### 設定ファイル
+
+モジュールディレクトリ直下に `workshop-visibility-check-webhook.toml` を配置:
+
+```toml
+WebhookUrl = "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
+
+JsonTemplate = """
+{
+  "embeds": [{
+    "title": "Workshop Map Unavailable",
+    "description": "**%MAP_NAME%** (ID: %WORKSHOP_ID%) is now %STATUS%",
+    "color": 16711680,
+    "fields": [
+      {"name": "Workshop Title", "value": "%WORKSHOP_TITLE%", "inline": true},
+      {"name": "Status", "value": "%STATUS%", "inline": true}
+    ],
+    "footer": {"text": "%TIMESTAMP% | Total: %TOTAL_COUNT% Unchanged: %UNCHANGED_COUNT% NG: %PRIVATE_DELETED_COUNT%"}
+  }]
+}
+"""
+```
+
+#### プレースホルダー (per-map)
+
+| プレースホルダー | 説明 |
+|---|---|
+| `%MAP_NAME%` | マップ config 上の名前 |
+| `%WORKSHOP_ID%` | Workshop ID |
+| `%WORKSHOP_TITLE%` | Workshop 上のタイトル (取得できない場合は空) |
+| `%STATUS%` | `Private/Deleted` or `Error` |
+| `%TOTAL_COUNT%` | チェック対象の総マップ数 |
+| `%UNCHANGED_COUNT%` | 正常なマップ数 |
+| `%PRIVATE_DELETED_COUNT%` | 非公開/削除マップ数 |
+| `%ERROR_COUNT%` | エラーマップ数 |
+| `%TIMESTAMP%` | チェック実行時刻 (UTC) |
+
+- `WebhookUrl` が空欄またはファイルが存在しない場合、Webhook は送信されません
+- 問題のあるマップがない場合も送信されません
+- JSON テンプレートは TOML の multiline basic string (`"""..."""`) で記述します
 
 ## Workshop リモートフェッチ (管理コマンド)
 
