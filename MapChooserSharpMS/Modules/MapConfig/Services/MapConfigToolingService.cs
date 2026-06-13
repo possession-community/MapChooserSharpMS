@@ -17,9 +17,6 @@ internal sealed class MapConfigToolingService : IMapConfigToolingService
 
     private static string ResolveTag(IMapConfig mapConfig)
     {
-        if (!string.IsNullOrWhiteSpace(mapConfig.Tag))
-            return mapConfig.Tag;
-
         foreach (var group in mapConfig.GroupSettings)
         {
             if (!string.IsNullOrWhiteSpace(group.ShortGroupName))

@@ -28,16 +28,6 @@ public interface IMapConfig: IBaseMapConfig
     public long WorkshopId { get; }
     
     /// <summary>
-    /// Static tag for display (not translated)
-    /// </summary>
-    public string Tag { get; }
-
-    /// <summary>
-    /// Translation key for a localized tag
-    /// </summary>
-    public string I18nTag { get; }
-
-    /// <summary>
     /// Group settings
     /// </summary>
     public List<IMapGroupConfig> GroupSettings { get; }

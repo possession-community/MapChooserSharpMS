@@ -64,8 +64,6 @@ internal static class MapConfigBuilder
             MapNameAlias: props.MapNameAlias ?? "",
             MapDescription: props.MapDescription ?? "",
             WorkshopId: props.WorkshopId ?? 0,
-            Tag: props.Tag ?? "",
-            I18nTag: props.I18nTag ?? "",
             GroupSettings: groupConfigs,
             IsDisabled: props.IsDisabled ?? false,
             MaxExtends: props.MaxExtends ?? 3,

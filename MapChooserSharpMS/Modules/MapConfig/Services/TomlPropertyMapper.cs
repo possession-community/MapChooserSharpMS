@@ -45,9 +45,7 @@ internal sealed class ParsedProperties
     public List<DayOfWeek>? DaysAllowed { get; set; }
     public List<ITimeRange>? AllowedTimeRanges { get; set; }
 
-    // Display tags
-    public string? Tag { get; set; }
-    public string? I18nTag { get; set; }
+    // Group display
     public string? ShortGroupName { get; set; }
 
     // Cooldown
@@ -91,8 +89,6 @@ internal static class TomlPropertyMapper
         "ExtendRoundsPerExtends",
         "OnlyNomination",
         "MapSelectionWeight",
-        "Tag",
-        "I18nTag",
         "ShortGroupName",
         "MaxPlayers",
         "MinPlayers",
@@ -195,16 +191,6 @@ internal static class TomlPropertyMapper
             case "MapSelectionWeight":
                 if (valueNode.TryGetInt64(out var weight))
                     props.MapSelectionWeight = (int)weight;
-                break;
-
-            case "Tag":
-                if (valueNode.TryGetString(out var tag))
-                    props.Tag = tag.ToString();
-                break;
-
-            case "I18nTag":
-                if (valueNode.TryGetString(out var i18nTag))
-                    props.I18nTag = i18nTag.ToString();
                 break;
 
             case "ShortGroupName":

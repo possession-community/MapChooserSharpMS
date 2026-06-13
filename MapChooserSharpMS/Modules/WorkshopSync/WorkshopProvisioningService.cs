@@ -52,8 +52,6 @@ internal sealed class WorkshopProvisioningService
             MapNameAlias: "",
             MapDescription: "",
             WorkshopId: item.PublishedFileId,
-            Tag: "",
-            I18nTag: "",
             GroupSettings: [],
             IsDisabled: false,
             MaxExtends: 3,
