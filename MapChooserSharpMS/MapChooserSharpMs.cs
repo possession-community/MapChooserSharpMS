@@ -67,6 +67,9 @@ public sealed class MapChooserSharpMs(
         Logger.LogInformation("Registering module: McsChatListenerController");
         RegisterModule<Modules.ChatListener.McsChatListenerController>();
 
+        Logger.LogInformation("Registering module: McsWorkshopSyncController");
+        RegisterModule<Modules.WorkshopSync.McsWorkshopSyncController>();
+
         Logger.LogInformation("All modules registered");
     }
 
