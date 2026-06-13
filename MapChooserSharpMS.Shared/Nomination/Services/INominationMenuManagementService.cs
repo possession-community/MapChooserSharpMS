@@ -44,4 +44,6 @@ public interface INominationMenuManagementService
     /// </summary>
     /// <param name="client"></param>
     void ShowRemoveNominationMenu(IGameClient client);
+
+    void NominateOrConfirm(IGameClient client, IMapConfig config, bool isAdmin);
 }

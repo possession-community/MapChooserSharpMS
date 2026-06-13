@@ -89,9 +89,7 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
             return;
         }
 
-        var nominateResult = _controller.NominationService.TryNominateMap(client, matched[0]);
-        if (nominateResult.Count > 0)
-            _controller.NotifyNominationFailure(client, matched[0], nominateResult);
+        _controller.NominationMenuManagementService.NominateOrConfirm(client, matched[0], false);
     }
 
 }

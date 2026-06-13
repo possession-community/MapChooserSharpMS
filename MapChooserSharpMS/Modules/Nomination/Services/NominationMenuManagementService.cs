@@ -109,22 +109,23 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
 
     private McsMenuItem CreateNominationMenuItem(IMapConfig config, IGameClient client, bool isAdmin)
     {
-        string displayName = _toolingService.ResolveMapDisplayName(config);
-
         return new McsMenuItem
         {
-            DisplayText = displayName,
-            OnSelect = c =>
-            {
-                if (!isAdmin && _conVars.ConfirmMenu.GetInt32() != 0)
-                {
-                    ShowConfirmMenu(c, config, displayName);
-                    return;
-                }
-
-                ExecuteNomination(c, config, isAdmin);
-            },
+            DisplayText = _toolingService.ResolveMapDisplayName(config),
+            OnSelect = c => NominateOrConfirm(c, config, isAdmin),
         };
+    }
+
+    public void NominateOrConfirm(IGameClient client, IMapConfig config, bool isAdmin)
+    {
+        if (!isAdmin && _conVars.ConfirmMenu.GetInt32() != 0)
+        {
+            string displayName = _toolingService.ResolveMapDisplayName(config);
+            ShowConfirmMenu(client, config, displayName);
+            return;
+        }
+
+        ExecuteNomination(client, config, isAdmin);
     }
 
     private void ShowConfirmMenu(IGameClient client, IMapConfig config, string displayName)
