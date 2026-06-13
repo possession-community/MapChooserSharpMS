@@ -103,6 +103,10 @@ public class McsEventDebugger : IModSharpModule,
     public void OnVoteStartThresholdReached(IVoteStartThresholdReachedEventParams p)
         => _logger.LogInformation("[MapCycle] OnVoteStartThresholdReached: Type={Type}", p.LimitType);
 
+    public void OnMapInfoCommandExecuted(IMapInfoCommandExecutedParams p)
+        => _logger.LogInformation("[MapCycle] OnMapInfoCommandExecuted: Client={Client}, Map={Map}",
+            p.Client?.Name, p.MapConfig?.MapName);
+
     // ── MapVote ──
 
     public bool OnMapVoteStart(IMapVoteStartParams p)

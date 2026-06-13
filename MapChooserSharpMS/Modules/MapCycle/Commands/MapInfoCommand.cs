@@ -1,5 +1,8 @@
 using System;
 using System.Linq;
+using MapChooserSharpMS.Modules.EventManager;
+using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
+using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
 using MapChooserSharpMS.Shared.Nomination.Services;
@@ -20,6 +23,7 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
     private IMapCycleController _controller = null!;
     private IMcsMapConfigProvider _mapConfigProvider = null!;
     private INominationValidateService _nominationValidateService = null!;
+    private IInternalEventManager _eventManager = null!;
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
@@ -29,6 +33,7 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
         _controller ??= ServiceProvider.GetRequiredService<IMapCycleController>();
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _nominationValidateService ??= ServiceProvider.GetRequiredService<INominationValidateService>();
+        _eventManager ??= ServiceProvider.GetRequiredService<IInternalEventManager>();
 
         IMapConfig? mapConfig;
         if (commandInfo.ArgCount < 1)
@@ -87,6 +92,12 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
             ? $"{LocalizeString(client, "Word.Yes")} {LocalizeString(client, "Word.MapInfo.NominationCheck.Success")}"
             : $"{LocalizeString(client, "Word.No")} {LocalizeString(client, $"Word.MapInfo.NominationCheck.{checkResults[0]}")}";
         Print(client, "MapCycle.Command.Notification.MapInfo.YouCanNominate", canNominate);
+
+        if (_controller is TnmsPluginFoundation.Models.Plugin.PluginModuleBase moduleBase)
+        {
+            var eventParams = new MapInfoCommandExecutedParams(Plugin, moduleBase, client, commandInfo, mapConfig);
+            _eventManager.Fire<IMapCycleEventListener>(e => e.OnMapInfoCommandExecuted(eventParams));
+        }
     }
 
     private void Print(IGameClient client, string key, params object[] args)

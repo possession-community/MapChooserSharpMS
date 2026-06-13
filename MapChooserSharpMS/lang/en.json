@@ -108,7 +108,10 @@
     "MapVote.Broadcast.VoteResult.Extend": "Current map has been {lime}extended{default}! ({0}% of {1} votes)",
     "MapVote.Broadcast.VoteResult.NotChanging": "Map will {lightred}not be changed{default}. ({0}% of {1} votes)",
     "MapVote.Broadcast.VoteResult.NoVotes": "There is no votes! Next map is set to {lime}{0}{default}",
+    "MapVote.Broadcast.VoteCast": "{lime}{0}{default} voted for {lime}{1}{default}",
+    "MapVote.Broadcast.NotEnoughMapsToStartVote": "There are not enough maps to initiate a vote! Please contact the server admin!",
     "MapVote.Broadcast.StartingRunoffVote": "No maps got over {0}% of votes! Starting runoff vote!",
+    "MapVote.Notification.SpectatorIsExcluded": "Spectator voting is disabled on this server, so you cannot participate in this vote!",
 
     "MapCycle.Command.Notification.NextMap": "Next map: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "Current map: {lime}{0}{default}",

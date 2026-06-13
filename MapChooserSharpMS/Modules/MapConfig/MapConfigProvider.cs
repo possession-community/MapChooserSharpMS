@@ -10,15 +10,19 @@ using MapChooserSharpMS.Shared.MapConfig.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TnmsPluginFoundation.Models.Plugin;
+using TnmsPluginFoundation.Utils.Other;
 
 namespace MapChooserSharpMS.Modules.MapConfig;
 
 internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool hotReload)
-    : PluginModuleBase(serviceProvider, hotReload), IMcsMapConfigProvider
+    : PluginModuleBase(serviceProvider, hotReload), IMcsMapConfigProvider, Sharp.Shared.Listeners.IGameListener
 {
     public override string PluginModuleName => "MapChooserSharpMS - MapConfigProvider";
     public override string ModuleChatPrefix => "";
     protected override bool UseTranslationKeyInModuleChatPrefix => false;
+
+    public int ListenerVersion => 1;
+    public int ListenerPriority => 0;
     
     
     private Dictionary<string, IReadOnlyCollection<IMapGroupConfigOverrides>>  _mapGroupSettings = new(StringComparer.OrdinalIgnoreCase);
@@ -42,6 +46,17 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
     protected override void OnInitialize()
     {
         ReloadConfigs();
+        SharedSystem.GetModSharp().InstallGameListener(this);
+    }
+
+    protected override void OnUnloadModule()
+    {
+        SharedSystem.GetModSharp().RemoveGameListener(this);
+    }
+
+    public void OnGameActivate()
+    {
+        TryAutoFixMapName();
     }
 
     public void ReloadConfigs()
@@ -131,14 +146,11 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
         return _mapConfigsWorkshopIdMapping.TryGetValue(workshopId, out found);
     }
 
-    // Naive resolution: returns the first override's MapConfig. Day-of-week
-    // / time-range aware selection is deferred — this is the minimum needed
-    // to unblock MapTransitionManager and downstream consumers.
     public bool TryGetMapConfig(string mapName, out IMapConfig found)
     {
         if (_mapConfigsNameMapping.TryGetValue(mapName, out var overrides) && overrides.Count > 0)
         {
-            found = overrides.First().MapConfig;
+            found = ResolveOverride(overrides).MapConfig;
             return true;
         }
 
@@ -150,12 +162,98 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
     {
         if (_mapConfigsWorkshopIdMapping.TryGetValue(workshopId, out var overrides) && overrides.Count > 0)
         {
-            found = overrides.First().MapConfig;
+            found = ResolveOverride(overrides).MapConfig;
             return true;
         }
 
         found = null!;
         return false;
+    }
+
+    private void TryAutoFixMapName()
+    {
+        var configProvider = ServiceProvider.GetService<IMcsPluginConfigProvider>();
+        if (configProvider is null || !configProvider.PluginConfig.GeneralConfig.ShouldAutoFixMapName)
+            return;
+
+        long workshopId = MapUtil.GetCurrentMapWorkshopId();
+        if (workshopId < 0)
+            return;
+
+        string actualMapName = SharedSystem.GetModSharp().GetMapName() ?? string.Empty;
+        if (string.IsNullOrEmpty(actualMapName))
+            return;
+
+        if (!TryGetMapConfig(workshopId, out var mapConfig))
+        {
+            Logger.LogDebug("AutoFix: No config found for workshop ID {WorkshopId}", workshopId);
+            return;
+        }
+
+        if (string.Equals(mapConfig.MapName, actualMapName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        string configDirectory = ResolveMapConfigDirectory();
+        string oldPath = Path.Combine(configDirectory, $"{mapConfig.MapName}.toml");
+        string newPath = Path.Combine(configDirectory, $"{actualMapName}.toml");
+
+        if (!File.Exists(oldPath))
+        {
+            Logger.LogWarning("AutoFix: Config file not found at {Path}, skipping", oldPath);
+            return;
+        }
+
+        try
+        {
+            File.Move(oldPath, newPath, overwrite: false);
+            Logger.LogInformation("AutoFix: Renamed {Old} → {New} (workshop {Id})",
+                Path.GetFileName(oldPath), Path.GetFileName(newPath), workshopId);
+            ReloadConfigs();
+        }
+        catch (IOException ex)
+        {
+            Logger.LogWarning(ex, "AutoFix: Failed to rename config file");
+        }
+    }
+
+    private static IMapConfigOverrides ResolveOverride(IReadOnlyCollection<IMapConfigOverrides> overrides)
+    {
+        if (overrides.Count == 1)
+            return overrides.First();
+
+        var now = DateTime.Now;
+        var today = now.DayOfWeek;
+        var currentTime = TimeOnly.FromDateTime(now);
+
+        IMapConfigOverrides? baseConfig = null;
+        IMapConfigOverrides? best = null;
+
+        foreach (var ov in overrides)
+        {
+            if (ov.OverrideConfigName == IBaseOverrideConfig.BaseConfigName)
+            {
+                baseConfig = ov;
+                continue;
+            }
+
+            if (!ov.Enabled)
+                continue;
+
+            if (ov.TargetDays.Count > 0 && !ov.TargetDays.Contains(today))
+                continue;
+
+            if (ov.TargetTimeRanges.Count > 0 && !ov.TargetTimeRanges.Any(tr => tr.IsInRange(currentTime)))
+                continue;
+
+            if (best is null
+                || ov.ForceOverride && !best.ForceOverride
+                || ov.ForceOverride == best.ForceOverride && ov.OverridePriority > best.OverridePriority)
+            {
+                best = ov;
+            }
+        }
+
+        return best ?? baseConfig ?? overrides.First();
     }
 
     public IMapGroupConfig? TryGetGroupConfig(IMapGroupConfigOverrides overrides)

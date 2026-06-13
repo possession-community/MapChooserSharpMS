@@ -108,7 +108,10 @@
     "MapVote.Broadcast.VoteResult.Extend": "マップが{lime}延長{default}されました！ ({0}% {1}票)",
     "MapVote.Broadcast.VoteResult.NotChanging": "マップは{lightred}変更されません{default}。 ({0}% {1}票)",
     "MapVote.Broadcast.VoteResult.NoVotes": "投票がなかったため次のマップは {lime}{0}{default} になります",
+    "MapVote.Broadcast.VoteCast": "{lime}{0}{default} が {lime}{1}{default} に投票しました",
+    "MapVote.Broadcast.NotEnoughMapsToStartVote": "マップ投票を開始するために十分なマップが存在しません! サーバー管理者にお問い合わせください!",
     "MapVote.Broadcast.StartingRunoffVote": "どのマップの投票率も {0}% を超えませんでした! 最終投票を開始します!",
+    "MapVote.Notification.SpectatorIsExcluded": "観戦者の投票がサーバーにより無効化されているため、この投票には参加できません!",
 
     "MapCycle.Command.Notification.NextMap": "次のマップ: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "現在のマップ: {lime}{0}{default}",

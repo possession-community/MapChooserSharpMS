@@ -47,6 +47,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private readonly Ui.Countdown.McsCountdownUiController? _countdownUi;
 
     private Guid _countdownTimerId = Guid.Empty;
+    private Guid _voteEndTimerId = Guid.Empty;
     private float _voteDuration;
     private DateTime _voteStartTime;
 
@@ -112,6 +113,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         if (candidates.Count < 2)
         {
             _logger.LogWarning("Not enough maps to start vote ({Count} candidates)", candidates.Count);
+            BroadcastToAll("MapVote.Broadcast.NotEnoughMapsToStartVote");
+
             session.CurrentState = McsMapVoteState.NotEnoughMapsToStartVote;
             _voteState.SetState(McsMapVoteState.NotEnoughMapsToStartVote);
 
@@ -585,6 +588,11 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _soundPlayer?.SetRunoff(isRunoff);
         _soundPlayer?.PlayVoteStartSoundToAll();
 
+        if (_configProvider.PluginConfig.VoteConfig.ShouldPrintVoteRemainingTime)
+            StartVoteEndCountdown(session, voteDuration);
+
+        NotifyExcludedSpectators();
+
         return true;
     }
 
@@ -644,6 +652,89 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             _countdownTimerId = Guid.Empty;
         }
         _countdownUi?.CloseCountdownUiAll();
+        StopVoteEndTimer();
+    }
+
+    private void StopVoteEndTimer()
+    {
+        if (_voteEndTimerId != Guid.Empty)
+        {
+            _plugin.SharedSystem.GetModSharp().StopTimer(_voteEndTimerId);
+            _voteEndTimerId = Guid.Empty;
+        }
+    }
+
+    private void StartVoteEndCountdown(MapVoteInformation session, float durationSeconds)
+    {
+        var startTime = DateTime.UtcNow;
+        int totalSeconds = (int)durationSeconds;
+
+        _voteEndTimerId = _plugin.SharedSystem.GetModSharp().PushTimer(() =>
+        {
+            if (!ReferenceEquals(_voteManager.CurrentSession, session))
+            {
+                StopVoteEndTimer();
+                return;
+            }
+
+            int elapsed = (int)(DateTime.UtcNow - startTime).TotalSeconds;
+            int remaining = totalSeconds - elapsed;
+
+            if (remaining <= 0)
+            {
+                StopVoteEndTimer();
+                return;
+            }
+
+            BroadcastToAll("MapVote.Broadcast.Voting.VoteEndCountdown", remaining);
+        }, 1.0, Sharp.Shared.Enums.GameTimerFlags.Repeatable | Sharp.Shared.Enums.GameTimerFlags.StopOnMapEnd);
+    }
+
+    internal void NotifyVoteCast(Sharp.Shared.Objects.IGameClient voter, IMapVoteOption option)
+    {
+        if (!_configProvider.PluginConfig.VoteConfig.ShouldPrintVoteToChat)
+            return;
+
+        var clients = _plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+        foreach (var client in clients)
+        {
+            if (client.IsFakeClient || client.IsHltv)
+                continue;
+
+            string mapDisplay = ResolveVoteOptionDisplayName(option, client);
+            client.GetPlayerController()?.PrintToChat(
+                $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.VoteCast", voter.Name, mapDisplay)}");
+        }
+    }
+
+    private string ResolveVoteOptionDisplayName(IMapVoteOption option, Sharp.Shared.Objects.IGameClient client)
+    {
+        if (option.MapName == MapVoteConstants.ExtendMapInternalName)
+            return _plugin.LocalizeStringForPlayer(client, "Vote.Option.ExtendMap");
+        if (option.MapName == MapVoteConstants.DontChangeMapInternalName)
+            return _plugin.LocalizeStringForPlayer(client, "Vote.Option.DontChange");
+        if (option.MapConfig is not null)
+            return _mapConfigProvider.ToolingService.ResolveMapDisplayName(option.MapConfig);
+        return option.MapName;
+    }
+
+    private void NotifyExcludedSpectators()
+    {
+        if (_conVars.ExcludeSpectators.GetInt32() == 0)
+            return;
+
+        var clients = _plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+        foreach (var client in clients)
+        {
+            if (client.IsFakeClient || client.IsHltv)
+                continue;
+
+            if (client.GetPlayerController()?.Team == CStrikeTeam.Spectator)
+            {
+                client.GetPlayerController()?.PrintToChat(
+                    $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, "MapVote.Notification.SpectatorIsExcluded")}");
+            }
+        }
     }
 
     private void BroadcastToAll(string key, params object[] args)
