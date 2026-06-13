@@ -91,7 +91,7 @@
     "NominationRemoveMap.Command.Notification.Usage": "Usage: !nominate_removemap <MapName>",
     "NominationList.Command.Notification.ThereIsNoNomination": "No maps nominated yet!",
     "NominationList.Command.Notification.ListHeader": "Nomination List",
-    "NominationList.Command.Notification.Content": "{orange}{0}{default}: {1} | {blue}{2}{default} votes",
+    "NominationList.Command.Notification.VoteCount": "{blue}{0}{default} votes",
     "NominationList.Command.Notification.AdminNomination": "{red}Admin nomination{default}",
 
     "Vote.Option.ExtendMap": "Extend Current Map",

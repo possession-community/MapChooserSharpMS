@@ -91,7 +91,7 @@
     "NominationRemoveMap.Command.Notification.Usage": "使い方: !nominate_removemap <マップ名>",
     "NominationList.Command.Notification.ThereIsNoNomination": "まだどのマップもノミネートされていません!",
     "NominationList.Command.Notification.ListHeader": "ノミネーションリスト",
-    "NominationList.Command.Notification.Content": "{orange}{0}{default}: {1} | {blue}{2}{default} 票",
+    "NominationList.Command.Notification.VoteCount": "{blue}{0}{default} 票",
     "NominationList.Command.Notification.AdminNomination": "{red}管理者ノミネート{default}",
 
     "Vote.Option.ExtendMap": "現在のマップを延長",

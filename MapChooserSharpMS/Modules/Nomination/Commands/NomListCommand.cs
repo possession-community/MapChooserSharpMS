@@ -41,17 +41,14 @@ internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCo
         foreach (var (_, nomination) in nominations)
         {
             string mapDisplay = _toolingService.ResolveMapDisplayName(nomination.MapConfig);
-            string info;
-            if (nomination.IsForceNominated)
-                info = LocalizeString(client, "NominationList.Command.Notification.AdminNomination");
-            else
-                info = nomination.NominationParticipants.Count.ToString();
+
+            string info = nomination.IsForceNominated
+                ? Plugin.LocalizeStringForPlayer(client, "NominationList.Command.Notification.AdminNomination")
+                : Plugin.LocalizeStringForPlayer(client, "NominationList.Command.Notification.VoteCount", nomination.NominationParticipants.Count);
 
             client.GetPlayerController()?.PrintToChat(
-                GetTextWithPluginPrefix(client,
-                    LocalizeString(client, "NominationList.Command.Notification.Content", index, mapDisplay, info)));
+                $" {Plugin.GetPluginPrefix(client)} {index}: {mapDisplay} | {info}");
             index++;
         }
     }
-
 }
