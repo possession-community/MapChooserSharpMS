@@ -16,37 +16,50 @@ using TnmsPluginFoundation.Models.Plugin;
 namespace MapChooserSharpMS.Modules.WorkshopSync;
 
 internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider, bool hotReload)
-    : PluginModuleBase(serviceProvider, hotReload)
+    : PluginModuleBase(serviceProvider, hotReload), Sharp.Shared.Listeners.IGameListener
 {
     public override string PluginModuleName => "McsWorkshopSyncController";
     public override string ModuleChatPrefix => "";
     protected override bool UseTranslationKeyInModuleChatPrefix => false;
 
-    private SteamWorkshopApiService? _apiService;
+    public int ListenerVersion => 1;
+    public int ListenerPriority => 0;
+
+    private readonly SteamWorkshopApiService _apiService = new();
     private CancellationTokenSource? _cts;
+
+    internal WorkshopVisibilityCheckResult? LastVisibilityCheckResult { get; private set; }
 
     protected override void OnAllModulesLoaded()
     {
+        SharedSystem.GetModSharp().InstallGameListener(this);
+
         var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         var collectionIds = configProvider.PluginConfig.GeneralConfig.WorkshopCollectionIds;
 
         if (collectionIds.Length == 0)
         {
-            Logger.LogDebug("No WorkshopCollectionIds configured, skipping sync");
+            Logger.LogDebug("No WorkshopCollectionIds configured, skipping collection sync");
             return;
         }
 
-        _apiService = new SteamWorkshopApiService();
         _cts = new CancellationTokenSource();
-
         Task.Run(() => RunSyncAsync(collectionIds, _cts.Token));
+    }
+
+    public void OnGameActivate()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        Task.Run(() => RunVisibilityCheckAsync(_cts.Token));
     }
 
     protected override void OnUnloadModule()
     {
+        SharedSystem.GetModSharp().RemoveGameListener(this);
         _cts?.Cancel();
         _cts?.Dispose();
-        _apiService?.Dispose();
+        _apiService.Dispose();
     }
 
     private async Task RunSyncAsync(string[] collectionIds, CancellationToken ct)
@@ -194,5 +207,173 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
             valid = valid[..100];
 
         return valid.ToLowerInvariant();
+    }
+
+    // ── Workshop Visibility Check (runs on map start) ──
+
+    private async Task RunVisibilityCheckAsync(CancellationToken ct)
+    {
+        try
+        {
+            var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+            var targets = new List<(string MapName, long WorkshopId)>();
+
+            foreach (var (mapName, overrides) in mapConfigProvider.GetMapConfigs())
+            {
+                foreach (var ov in overrides)
+                {
+                    if (ov.MapConfig.IsDisabled)
+                        continue;
+                    if (ov.MapConfig.WorkshopId <= 0)
+                        continue;
+
+                    targets.Add((mapName, ov.MapConfig.WorkshopId));
+                    break;
+                }
+            }
+
+            if (targets.Count == 0)
+                return;
+
+            var workshopIds = targets.Select(t => t.WorkshopId).Distinct().ToList();
+            var details = await _apiService.GetPublishedFileDetails(workshopIds, ct);
+            var statusById = details.ToDictionary(d => d.PublishedFileId, d => d);
+
+            var result = new WorkshopVisibilityCheckResult();
+
+            foreach (var (mapName, workshopId) in targets)
+            {
+                if (!statusById.TryGetValue(workshopId, out var info))
+                {
+                    result.Errors.Add(new WorkshopMapEntry(mapName, workshopId, null));
+                    continue;
+                }
+
+                switch (info.Status)
+                {
+                    case WorkshopItemStatus.Public:
+                        result.Unchanged.Add(new WorkshopMapEntry(mapName, workshopId, info.Title));
+                        break;
+                    case WorkshopItemStatus.NotFoundOrPrivate:
+                        result.PrivateOrDeleted.Add(new WorkshopMapEntry(mapName, workshopId, info.Title));
+                        break;
+                    default:
+                        result.Errors.Add(new WorkshopMapEntry(mapName, workshopId, info.Title));
+                        break;
+                }
+            }
+
+            SharedSystem.GetModSharp().PushTimer(() =>
+            {
+                LastVisibilityCheckResult = result;
+                ApplyVisibilityResult(result);
+            }, 0f, GameTimerFlags.None);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Workshop visibility check failed");
+        }
+    }
+
+    private void ApplyVisibilityResult(WorkshopVisibilityCheckResult result)
+    {
+        Logger.LogInformation(
+            "Workshop visibility check: Unchanged {Unchanged} | Private/Deleted {Private} | Errors {Errors}",
+            result.Unchanged.Count, result.PrivateOrDeleted.Count, result.Errors.Count);
+
+        if (result.PrivateOrDeleted.Count == 0)
+            return;
+
+        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+        string configDirectory = ResolveMapConfigDirectory(configProvider);
+        int disabled = 0;
+
+        foreach (var entry in result.PrivateOrDeleted)
+        {
+            Logger.LogWarning("Disabling map {Map} (workshop {Id}): private or deleted",
+                entry.MapName, entry.WorkshopId);
+
+            if (TryDisableMapInToml(configDirectory, entry.MapName))
+                disabled++;
+        }
+
+        if (disabled > 0)
+        {
+            Logger.LogInformation("Disabled {Count} map(s) in config, reloading...", disabled);
+            ServiceProvider.GetRequiredService<IMcsMapConfigProvider>().ReloadConfigs();
+        }
+    }
+
+    private bool TryDisableMapInToml(string configDirectory, string mapName)
+    {
+        if (!Directory.Exists(configDirectory))
+            return false;
+
+        var sectionPattern = new Regex(
+            @"^\[" + Regex.Escape(mapName) + @"\]\s*$",
+            RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+        foreach (string filePath in Directory.EnumerateFiles(configDirectory, "*.toml", SearchOption.AllDirectories))
+        {
+            try
+            {
+                string content = File.ReadAllText(filePath, Encoding.UTF8);
+                if (!sectionPattern.IsMatch(content))
+                    continue;
+
+                string updated = InsertOrReplaceDisabled(content, mapName);
+                if (updated == content)
+                    continue;
+
+                File.WriteAllText(filePath, updated, Encoding.UTF8);
+                return true;
+            }
+            catch (IOException ex)
+            {
+                Logger.LogWarning(ex, "Failed to modify {File}", filePath);
+            }
+        }
+
+        return false;
+    }
+
+    private static string InsertOrReplaceDisabled(string content, string mapName)
+    {
+        var lines = content.Split('\n');
+        var result = new List<string>(lines.Length + 1);
+        bool inTargetSection = false;
+        bool replaced = false;
+
+        string sectionHeader = $"[{mapName}]";
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string trimmed = lines[i].TrimEnd('\r').Trim();
+
+            if (trimmed.StartsWith('[') && trimmed.EndsWith(']'))
+            {
+                if (inTargetSection && !replaced)
+                {
+                    result.Add("IsDisabled = true");
+                    replaced = true;
+                }
+                inTargetSection = string.Equals(trimmed, sectionHeader, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (inTargetSection && trimmed.StartsWith("IsDisabled", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Add("IsDisabled = true");
+                replaced = true;
+                continue;
+            }
+
+            result.Add(lines[i].TrimEnd('\r'));
+        }
+
+        if (inTargetSection && !replaced)
+            result.Add("IsDisabled = true");
+
+        return string.Join("\n", result);
     }
 }
