@@ -152,6 +152,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         {
             _changeAttemptsUsed = 1;
             IssueMapChange(target);
+            ArmEarlyTransitionNotice(target);
             ArmTransitionRetryWatchdog(target);
         }
 
@@ -173,6 +174,14 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         }
 
         MapUtil.ChangeMap(target.MapName);
+    }
+
+    private void ArmEarlyTransitionNotice(IMapConfig target)
+    {
+        _sharedSystem.GetModSharp().PushTimer(() =>
+        {
+            BroadcastToAll("MapCycle.Broadcast.MapTransitionPending", ResolveDisplayName(target));
+        }, 5.0, GameTimerFlags.StopOnMapEnd);
     }
 
     /// <summary>
