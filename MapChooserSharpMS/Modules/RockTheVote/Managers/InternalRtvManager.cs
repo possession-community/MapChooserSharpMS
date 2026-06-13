@@ -42,6 +42,22 @@ internal sealed class InternalRtvManager(TnmsPlugin plugin, RtvConVars conVars) 
         }
     }
 
+    public int ImmediateRequiredCounts
+    {
+        get
+        {
+            float threshold = conVars.ImmediateChangeThreshold.GetFloat();
+            if (threshold <= 0f)
+                return int.MaxValue;
+
+            int realPlayers = plugin.SharedSystem.GetModSharp().GetIServer()
+                .GetGameClients(true)
+                .Count(c => !c.IsFakeClient && !c.IsHltv);
+
+            return Math.Max((int)Math.Ceiling(realPlayers * threshold), 1);
+        }
+    }
+
     public float RtvCompletionRatio => RtvCounts / (float)RequiredCounts;
     public IReadOnlySet<int> RtvParticipants => _participants;
     

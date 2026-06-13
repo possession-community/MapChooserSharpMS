@@ -13,7 +13,6 @@ internal sealed class MapVoteConVars
     public readonly IConVar RunoffMapPickupThreshold;
     public readonly IConVar WinnerPickupThreshold;
     public readonly IConVar ExcludeSpectators;
-    public readonly IConVar ChangeMapImmediatelyOnRtvSuccess;
 
     public MapVoteConVars(IConVarManager cvm)
     {
@@ -23,7 +22,6 @@ internal sealed class MapVoteConVars
         RunoffMapPickupThreshold = cvm.CreateConVar("mcs_vote_runoff_map_pickup_threshold", 0.3F, 0.0F, 1.0F, "If there is no vote that higher than mcs_vote_winner_pickup_threshold, then it will pick up maps higher than this percentage for runoff vote", ConVarFlags.None)!;
         WinnerPickupThreshold = cvm.CreateConVar("mcs_vote_winner_pickup_threshold", 0.7F, 0.0F, 1.0F, "If vote is higher than this percent, it will picked up as winner.", ConVarFlags.None)!;
         ExcludeSpectators = cvm.CreateConVar("mcs_vote_exclude_spectators", false, "Should exclude spectators from vote", ConVarFlags.None)!;
-        ChangeMapImmediatelyOnRtvSuccess = cvm.CreateConVar("mcs_vote_change_map_immediately_rtv_vote_success", false, "Change to next map immediately when enabled and RTV vote is success", ConVarFlags.None)!;
     }
 
     public IEnumerable<IConVar> All()
@@ -34,6 +32,5 @@ internal sealed class MapVoteConVars
         yield return RunoffMapPickupThreshold;
         yield return WinnerPickupThreshold;
         yield return ExcludeSpectators;
-        yield return ChangeMapImmediatelyOnRtvSuccess;
     }
 }

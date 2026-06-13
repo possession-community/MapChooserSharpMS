@@ -65,14 +65,19 @@ internal sealed class RtvService(
         if (!rtvManager.AddParticipants(client))
             return RtvExecutionResult.AlreadyVoted;
 
-        if (rtvManager.RtvCounts >= rtvManager.RequiredCounts)
+        if (TransitionManager.IsNextMapConfirmed)
         {
-            // When the next map is already decided there is nothing to vote on —
-            // RTV success means "go to the confirmed next map now" (old MCS behaviour).
-            if (TransitionManager.IsNextMapConfirmed)
-                ChangeToNextMap();
+            if (rtvManager.RtvCounts >= rtvManager.ImmediateRequiredCounts)
+                TransitionToNextMapImmediately();
+            else if (rtvManager.RtvCounts >= rtvManager.RequiredCounts
+                     && rtvManager.RtvStatus != RtvStatus.TriggeredWaitingForMapTransition)
+                SetChangeOnRoundEnd();
             else
-                InitiateRtvVote();
+                BroadcastPostVoteProgress(client);
+        }
+        else if (rtvManager.RtvCounts >= rtvManager.RequiredCounts)
+        {
+            InitiateRtvVote();
         }
         else
         {
@@ -165,7 +170,7 @@ internal sealed class RtvService(
 
         if (TransitionManager.IsNextMapConfirmed)
         {
-            ChangeToNextMap();
+            TransitionToNextMapImmediately();
             return;
         }
 
@@ -180,11 +185,24 @@ internal sealed class RtvService(
     private IMcsInternalMapTransitionManager TransitionManager =>
         ServiceProvider.GetRequiredService<IMcsInternalMapTransitionManager>();
 
-    /// <summary>
-    /// RTV succeeded while the next map is already confirmed — skip the map
-    /// vote entirely and transition to the confirmed next map.
-    /// </summary>
-    private void ChangeToNextMap()
+    private void SetChangeOnRoundEnd()
+    {
+        var transitionManager = TransitionManager;
+        var nextMap = transitionManager.NextMap;
+        if (nextMap is null)
+            return;
+
+        rtvManager.ForceSetRtvStatus(RtvStatus.TriggeredWaitingForMapTransition);
+        transitionManager.ChangeMapOnNextRoundEnd = true;
+
+        string mapDisplayName = ServiceProvider
+            .GetRequiredService<IMapConfigToolingService>()
+            .ResolveMapDisplayName(nextMap);
+
+        BroadcastToAll("Rtv.Broadcast.ChangeOnRoundEnd", mapDisplayName);
+    }
+
+    private void TransitionToNextMapImmediately()
     {
         var transitionManager = TransitionManager;
         var nextMap = transitionManager.NextMap;
@@ -205,10 +223,6 @@ internal sealed class RtvService(
         {
             case RtvMapChangeBehaviourType.Cs2EndMatchScreen:
                 BroadcastToAll("Rtv.Broadcast.ChangeToNextMapCs2EndMatchScreen", mapDisplayName);
-
-                // ForceEndMatch drives the game's native end-match flow; the
-                // cs_intermission hook in McsMapCycleController then performs
-                // the actual transition (and fires McsIntermission there).
                 transitionManager.ChangeMapOnNextRoundEnd = false;
                 transitionManager.ForceEndMatch();
                 break;
@@ -255,6 +269,39 @@ internal sealed class RtvService(
 
             c.GetPlayerController()?.PrintToChat(
                 $" {plugin.GetPluginPrefix(c)} {plugin.LocalizeStringForPlayer(c, "Rtv.Notification.Progress", caster.Name, current, required)}");
+        }
+    }
+
+    private void BroadcastPostVoteProgress(IGameClient caster)
+    {
+        if (conVars.BroadcastPlayerCast.GetInt32() == 0)
+            return;
+
+        bool hasImmediateThreshold = conVars.ImmediateChangeThreshold.GetFloat() > 0f;
+        bool normalReached = rtvManager.RtvCounts >= rtvManager.RequiredCounts;
+
+        string key;
+        int required;
+        if (hasImmediateThreshold && normalReached)
+        {
+            key = "Rtv.Notification.Progress.ChangeImmediately";
+            required = rtvManager.ImmediateRequiredCounts;
+        }
+        else
+        {
+            key = "Rtv.Notification.Progress.ChangeOnRoundEnd";
+            required = rtvManager.RequiredCounts;
+        }
+
+        int current = rtvManager.RtvCounts;
+        var clients = plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+        foreach (var c in clients)
+        {
+            if (c.IsFakeClient || c.IsHltv)
+                continue;
+
+            c.GetPlayerController()?.PrintToChat(
+                $" {plugin.GetPluginPrefix(c)} {plugin.LocalizeStringForPlayer(c, key, caster.Name, current, required)}");
         }
     }
 }
