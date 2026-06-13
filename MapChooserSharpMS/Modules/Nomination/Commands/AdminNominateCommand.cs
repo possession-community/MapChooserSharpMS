@@ -57,19 +57,19 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
 
         string mapName = commandInfo[1];
 
-        if (_mapConfigProvider.TryGetMapConfig(mapName, out var exactMatch))
-        {
-            var result = _controller.NominationService.TryAdminNominateMap(client, exactMatch);
-            if (result.Count > 0)
-                _controller.NotifyNominationFailure(client, exactMatch, result);
-            return;
-        }
-
         var allMaps = _mapConfigProvider.GetMapConfigs();
         var matched = allMaps
             .Where(kv => kv.Key.Contains(mapName, StringComparison.OrdinalIgnoreCase))
             .Select(kv => kv.Value.First().MapConfig)
             .ToList();
+
+        if (matched.Count > 1)
+        {
+            var exact = matched.FirstOrDefault(m =>
+                string.Equals(m.MapName, mapName, StringComparison.OrdinalIgnoreCase));
+            if (exact is not null)
+                matched = [exact];
+        }
 
         if (matched.Count == 0)
         {

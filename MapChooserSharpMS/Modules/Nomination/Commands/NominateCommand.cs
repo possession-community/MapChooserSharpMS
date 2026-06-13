@@ -55,20 +55,26 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
 
         string mapName = commandInfo[1];
 
-        if (_mapConfigProvider.TryGetMapConfig(mapName, out var exactMatch))
-        {
-            var result = _controller.NominationService.TryNominateMap(client, exactMatch);
-            if (result.Count > 0)
-                _controller.NotifyNominationFailure(client, exactMatch, result);
-            return;
-        }
-
+        // Search all maps by partial match (Contains), then prefer an exact
+        // match if one exists among the results. This matches the old MCS
+        // flow: full list search → exact/single hit = nominate, multiple =
+        // menu, none = message only.
         var allMaps = _mapConfigProvider.GetMapConfigs();
         var matched = allMaps
             .Where(kv => kv.Key.Contains(mapName, StringComparison.OrdinalIgnoreCase))
             .Select(kv => kv.Value.First().MapConfig)
             .Where(m => !m.IsDisabled)
             .ToList();
+
+        // If there are multiple partial matches but one is an exact match,
+        // treat it as a single hit (nominate directly).
+        if (matched.Count > 1)
+        {
+            var exact = matched.FirstOrDefault(m =>
+                string.Equals(m.MapName, mapName, StringComparison.OrdinalIgnoreCase));
+            if (exact is not null)
+                matched = [exact];
+        }
 
         if (matched.Count == 0)
         {

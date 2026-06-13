@@ -61,6 +61,14 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCo
             .Where(kv => kv.Key.Contains(mapName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
+        if (matched.Count > 1)
+        {
+            var exact = matched.FirstOrDefault(kv =>
+                string.Equals(kv.Key, mapName, StringComparison.OrdinalIgnoreCase));
+            if (exact.Value is not null)
+                matched = [exact];
+        }
+
         if (matched.Count == 0)
         {
             PrintMessageToServerOrPlayerChat(client,
