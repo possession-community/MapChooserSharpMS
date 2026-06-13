@@ -112,7 +112,9 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         return new McsMenuItem
         {
             DisplayText = _toolingService.ResolveMapDisplayName(config),
-            OnSelect = c => NominateOrConfirm(c, config, isAdmin),
+            OnSelect = isAdmin
+                ? c => ExecuteNomination(c, config, true)
+                : c => NominateOrConfirm(c, config, false),
         };
     }
 
