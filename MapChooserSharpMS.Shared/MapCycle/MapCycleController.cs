@@ -1,4 +1,5 @@
-﻿using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
+﻿using MapChooserSharpMS.Shared.Events.MapCycle;
+using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Shared.MapCycle.Services;
 
@@ -13,5 +14,9 @@ public interface IMapCycleController
     IMapCooldownQueryService  MapCooldownQueryService { get; }
 
     IMapCooldownCommandService  MapCooldownCommandService { get; }
+
+    void InstallEventListener(IMapCycleEventListener listener);
+
+    void RemoveEventListener(IMapCycleEventListener listener);
 }
 

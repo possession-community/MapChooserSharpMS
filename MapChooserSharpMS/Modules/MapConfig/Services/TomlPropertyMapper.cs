@@ -36,6 +36,7 @@ internal sealed class ParsedProperties
 
     // Random pick (OnlyNomination maps to IsPickable = !OnlyNomination)
     public bool? OnlyNomination { get; set; }
+    public int? MapSelectionWeight { get; set; }
 
     // Nomination
     public int? MaxPlayers { get; set; }
@@ -44,9 +45,16 @@ internal sealed class ParsedProperties
     public List<DayOfWeek>? DaysAllowed { get; set; }
     public List<ITimeRange>? AllowedTimeRanges { get; set; }
 
+    // Group display
+    public string? ShortGroupName { get; set; }
+
     // Cooldown
     public int? Cooldown { get; set; }
     public string? CooldownDateTime { get; set; }
+
+    // Nomination Cooldown
+    public int? NominationCooldown { get; set; }
+    public string? NominationCooldownDateTime { get; set; }
 
     // Override-specific
     public bool? Enabled { get; set; }
@@ -61,6 +69,38 @@ internal sealed class ParsedProperties
 /// </summary>
 internal static class TomlPropertyMapper
 {
+    /// <summary>
+    /// Scalar keys allowed at the top level of a map section.
+    /// Keep in sync with the MapProperty switch below — a section containing
+    /// any key outside this set is rejected as "not a map config".
+    /// </summary>
+    internal static readonly HashSet<string> KnownMapSectionKeys = new(StringComparer.Ordinal)
+    {
+        "MapNameAlias",
+        "MapDescription",
+        "WorkshopId",
+        "GroupSettings",
+        "IsDisabled",
+        "MaxExtends",
+        "MaxExtCommandUses",
+        "MapTime",
+        "ExtendTimePerExtends",
+        "MapRounds",
+        "ExtendRoundsPerExtends",
+        "OnlyNomination",
+        "MapSelectionWeight",
+        "ShortGroupName",
+        "MaxPlayers",
+        "MinPlayers",
+        "ProhibitAdminNomination",
+        "DaysAllowed",
+        "AllowedTimeRanges",
+        "Cooldown",
+        "CooldownDateTime",
+        "NominationCooldown",
+        "NominationCooldownDateTime",
+    };
+
     public static ParsedProperties ExtractProperties(TomlDocumentNode node)
     {
         var props = new ParsedProperties();
@@ -148,6 +188,16 @@ internal static class TomlPropertyMapper
                     props.OnlyNomination = onlyNom;
                 break;
 
+            case "MapSelectionWeight":
+                if (valueNode.TryGetInt64(out var weight))
+                    props.MapSelectionWeight = (int)weight;
+                break;
+
+            case "ShortGroupName":
+                if (valueNode.TryGetString(out var shortGn))
+                    props.ShortGroupName = shortGn.ToString();
+                break;
+
             case "MaxPlayers":
                 if (valueNode.TryGetInt64(out var maxP))
                     props.MaxPlayers = (int)maxP;
@@ -179,6 +229,16 @@ internal static class TomlPropertyMapper
             case "CooldownDateTime":
                 if (valueNode.TryGetString(out var cdDt))
                     props.CooldownDateTime = cdDt;
+                break;
+
+            case "NominationCooldown":
+                if (valueNode.TryGetInt64(out var ncd))
+                    props.NominationCooldown = (int)ncd;
+                break;
+
+            case "NominationCooldownDateTime":
+                if (valueNode.TryGetString(out var ncdDt))
+                    props.NominationCooldownDateTime = ncdDt;
                 break;
 
             // Override properties
@@ -266,7 +326,7 @@ internal static class TomlPropertyMapper
 
     /// <summary>
     /// Parses the CooldownDateTime string into a TimeSpan.
-    /// Supports "d" (day) and "m" (month, treated as 30 days) suffixes.
+    /// Supported suffixes: "h" (hours), "d" (days), "w" (weeks), "m" (months = 30 days).
     /// </summary>
     internal static TimeSpan ParseCooldownDateTime(string? value)
     {
@@ -285,7 +345,9 @@ internal static class TomlPropertyMapper
 
         return suffix switch
         {
+            'h' => TimeSpan.FromHours(number),
             'd' => TimeSpan.FromDays(number),
+            'w' => TimeSpan.FromDays(number * 7),
             'm' => TimeSpan.FromDays(number * 30),
             _ => TimeSpan.Zero,
         };

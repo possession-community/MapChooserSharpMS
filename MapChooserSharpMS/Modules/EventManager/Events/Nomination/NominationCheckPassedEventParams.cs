@@ -16,7 +16,7 @@ public class NominationCheckPassedEventParams(
     public string ModulePrefix(CultureInfo? culture = null)
     {
         culture ??= CultureInfo.CurrentCulture;
-        return plugin.Localizer[moduleBase.ModuleChatPrefix, culture];
+        return plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture);
     }
 
     public IGameClient? Client { get; } = nominator;

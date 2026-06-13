@@ -44,8 +44,8 @@ internal abstract class MapVoteNativeHandlerBase : IMultiChoiceVoteHandler
         if (IsStaleSession()) return;
 
         var option = Session.VoteOptions.FirstOrDefault(o => o.MapName == content.InternalName);
-        if (option is not null)
-            Session.AddVote(chooser.Slot, option);
+        if (option is not null && Session.AddVote(chooser.Slot, option))
+            Service.NotifyVoteCast(chooser, option);
 
         Logger.LogDebug(
             "[{Kind}] {Player} voted {Choice} ({Voted}/{Total})",

@@ -2,17 +2,25 @@ using System;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
+using MapChooserSharpMS.Modules.WorkshopSync;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
+using MapChooserSharpMS.Modules.MapCycle.Services;
+using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapCycle;
+using MapChooserSharpMS.Shared.Events.MapVote;
+using MapChooserSharpMS.Shared.Events.MapVote.Params;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
 using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Shared.MapCycle.Services;
+using MapChooserSharpMS.Shared.MapVote;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NativeVoteManagerMS.Shared;
 using Sharp.Shared.Enums;
 using Sharp.Shared.Listeners;
 using Sharp.Shared.Objects;
@@ -20,7 +28,14 @@ using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.MapCycle;
 
-internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleController, IGameListener, IEventListener
+internal sealed class McsMapCycleController
+    : PluginModuleBase,
+      IMapCycleController,
+      IMapCycleExtendController,
+      IGameListener,
+      IClientListener,
+      IEventListener,
+      IMapVoteEventListener
 {
     public override string PluginModuleName => "McsMapCycleController";
     public override string ModuleChatPrefix => "Prefix.MapCycle";
@@ -32,11 +47,16 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     // Writer for the extend-vote slot of the plugin-owned state manager.
     // Received via ctor already narrowed to <see cref="IMcsInternalExtendVoteState"/>
     // — this controller cannot touch the main-vote slot even by accident.
-    private readonly IMcsInternalExtendVoteState _voteState;
 
     private IInternalTimeLimitManager? _internalTimeLimitManager;
     private TimeLimitTransitionTracker? _transitionTracker;
     private IMcsInternalMapTransitionManager _mapTransitionManager = null!;
+    private McsMapExtendService _extendService = null!;
+    private McsExtCommandService _extCommandService = null!;
+    private McsExtendVoteService _extendVoteService = null!;
+    private McsMapCooldownQueryService _cooldownQueryService = null!;
+    private McsMapCooldownCommandService _cooldownCommandService = null!;
+    private McsMapCooldownLifecycleService _cooldownLifecycleService = null!;
 
     private MapCycleMode _mode = MapCycleMode.None;
     private Guid _tickTimerId = Guid.Empty;
@@ -47,19 +67,46 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
 
     public IMapTransitionManager MapTransitionManager => _mapTransitionManager;
 
-    // TODO Implement MapCooldown services
-    public IMapCooldownQueryService MapCooldownQueryService => throw new NotImplementedException();
-    public IMapCooldownCommandService MapCooldownCommandService => throw new NotImplementedException();
+    public IMapCooldownQueryService MapCooldownQueryService => _cooldownQueryService;
+    public IMapCooldownCommandService MapCooldownCommandService => _cooldownCommandService;
+
+    #region IMapCycleExtendController
+
+    public int ExtendsLeft => _extendService.ExtendsLeft;
+
+    public int ExtCommandUsesLeft => _extendService.ExtCommandUsesLeft;
+
+    public bool IsExtendVoteInProgress => _extendVoteService.IsExtendVoteInProgress;
+
+    public McsMapExtendResult TryExtendCurrentMap(int? overrideAmount = null)
+        => _extendService.TryExtend(McsExtendTrigger.AdminOrApi, overrideAmount);
+
+    public void SetExtCommandUsesLeft(int count)
+        => _extendService.SetExtCommandUsesLeft(count);
+
+    public bool IsExtEnabled => _extCommandService.IsEnabled;
+
+    public void EnableExt() => _extCommandService.IsEnabled = true;
+
+    public void DisableExt() => _extCommandService.IsEnabled = false;
+
+    public McsExtendVoteStartResult StartExtendVote(IGameClient? initiator = null, int? overrideAmount = null)
+        => _extendVoteService.StartExtendVote(initiator, overrideAmount);
+
+    public bool CancelExtendVote(IGameClient? canceller = null)
+        => _extendVoteService.CancelExtendVote(canceller);
+
+    #endregion
+
+    internal McsExtCommandService ExtCommandService => _extCommandService;
 
     public int ListenerVersion => 1;
     public int ListenerPriority => 0;
 
-    internal McsMapCycleController(
+    public McsMapCycleController(
         IServiceProvider serviceProvider,
-        bool hotReload,
-        IMcsInternalExtendVoteState voteState) : base(serviceProvider, hotReload)
+        bool hotReload) : base(serviceProvider, hotReload)
     {
-        _voteState = voteState;
         _conVars = new MapCycleConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);
     }
@@ -67,26 +114,63 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     public override void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<IMapCycleController>(this);
+        services.AddSingleton<IMapCycleExtendController>(this);
         // Created during OnInitialize; expose via factory so DI consumers
         // resolve the same instance once it's constructed.
         services.AddSingleton<IMapTransitionManager>(_ => _mapTransitionManager);
         services.AddSingleton<IMcsInternalMapTransitionManager>(_ => _mapTransitionManager);
+        services.AddSingleton<IMcsInternalMapExtendService>(_ => _extendService);
+        services.AddSingleton<McsExtCommandService>(_ => _extCommandService);
+        services.AddSingleton<McsMapCooldownLifecycleService>(_ => _cooldownLifecycleService);
+        services.AddSingleton<McsMapCooldownCommandService>(_ => _cooldownCommandService);
     }
 
     protected override void OnInitialize()
     {
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
+        var workshopProvisioning = CreateWorkshopProvisioningService();
         _mapTransitionManager = new McsMapTransitionManager(
             SharedSystem,
             ServiceProvider.GetRequiredService<IMcsMapConfigProvider>(),
-            Logger);
+            Logger,
+            Plugin,
+            this,
+            _eventManager,
+            () => _internalTimeLimitManager?.IsLimitReached == true,
+            () => _internalTimeLimitManager?.TimeLimitType,
+            _conVars,
+            workshopProvisioning);
+
+        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+        var readOnlyVoteState = ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
+
+        _extendService = new McsMapExtendService(
+            Plugin, this, Logger, _eventManager, configProvider,
+            () => _internalTimeLimitManager,
+            OnTimeLimitChanged);
+
+        _extCommandService = new McsExtCommandService(
+            Plugin, this, Logger, _eventManager, _extendService, readOnlyVoteState, _conVars);
+
+        _extendVoteService = new McsExtendVoteService(
+            Plugin, this, Logger, _eventManager, _extendService,
+            _conVars,
+            () => _mapTransitionManager.CurrentMap);
+
+        var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        _cooldownQueryService = new McsMapCooldownQueryService();
+        _cooldownCommandService = new McsMapCooldownCommandService(Logger, mapConfigProvider);
+        _cooldownLifecycleService = new McsMapCooldownLifecycleService(
+            Logger, Plugin, this, mapConfigProvider, _eventManager);
 
         SharedSystem.GetModSharp().InstallGameListener(this);
+        SharedSystem.GetClientManager().InstallClientListener(this);
 
         var em = SharedSystem.GetEventManager();
         em.InstallEventListener(this);
         em.HookEvent("round_start");
         em.HookEvent("round_end");
+        em.HookEvent("cs_intermission");
 
         if (HotReload)
         {
@@ -96,15 +180,42 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
 
     protected override void OnAllModulesLoaded()
     {
+        _extendVoteService.NativeVoteManager = SharedSystem.GetSharpModuleManager()
+            .GetRequiredSharpModuleInterface<INativeVoteManager>(INativeVoteManager.ModSharpModuleIdentity)
+            .Instance;
+
+        _eventManager.RegisterListener<IMapVoteEventListener>(this);
+
+        AddCommandsUnderNamespace("MapChooserSharpMS.Modules.MapCycle.Commands");
     }
 
     protected override void OnUnloadModule()
     {
         TearDownCurrentMap();
 
+        _eventManager.RemoveListener<IMapVoteEventListener>(this);
         SharedSystem.GetModSharp().RemoveGameListener(this);
+        SharedSystem.GetClientManager().RemoveClientListener(this);
         SharedSystem.GetEventManager().RemoveEventListener(this);
     }
+
+    #region IMapVoteEventListener
+
+    public void OnMapConfirmed(IMapVoteMapConfirmedEventParams @params)
+    {
+        _mapTransitionManager.TrySetNextMap(@params.ConfirmedMap);
+    }
+
+    #endregion
+
+    #region IClientListener
+
+    public void OnClientDisconnecting(IGameClient client, NetworkDisconnectionReason reason)
+    {
+        _extCommandService.RemoveParticipant(client.Slot);
+    }
+
+    #endregion
 
     public void InstallEventListener(IMapCycleEventListener listener)
     {
@@ -143,7 +254,37 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
             case "round_end":
                 _mapTransitionManager.OnRoundEnd();
                 break;
+            case "cs_intermission":
+                OnGameIntermission();
+                break;
         }
+    }
+
+    /// <summary>
+    /// The game entered its native end-match flow (timelimit/maxrounds ran
+    /// out naturally, or <see cref="IMcsInternalMapTransitionManager.ForceEndMatch"/>
+    /// forced it). When a next map is confirmed, take over the transition so
+    /// the game's own mapcycle never picks a different map.
+    /// </summary>
+    private void OnGameIntermission()
+    {
+        var nextMap = _mapTransitionManager.NextMap;
+        if (nextMap is null)
+            return;
+
+        // The round_end transition path is armed and owns this change.
+        if (_mapTransitionManager.ChangeMapOnNextRoundEnd)
+            return;
+
+        float extraTime = SharedSystem.GetConVarManager()
+            .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f;
+        float delay = Math.Max(extraTime - 1.0f, 0f);
+
+        var intermissionParams = new EventManager.Events.MapCycle.McsIntermissionParams(
+            Plugin, this, nextMap);
+        _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
+
+        _mapTransitionManager.TransitionToNextMap(delay);
     }
 
     #endregion
@@ -156,6 +297,8 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
 
         var currentMapName = SharedSystem.GetModSharp().GetMapName() ?? string.Empty;
         _mapTransitionManager.SetCurrentMap(currentMapName);
+        _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap);
+        _extCommandService.ClearParticipants();
 
         var mode = ParseMode(_conVars.Mode.GetString());
         var cvm = SharedSystem.GetConVarManager();
@@ -166,6 +309,18 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
             {
                 int maxRounds = cvm.FindConVar("mp_maxrounds")?.GetInt32() ?? 0;
                 int roundThreshold = _conVars.VoteStartRoundThreshold.GetInt32();
+
+                // mp_maxrounds=0 would initialize an already-reached limit:
+                // instant vote at map start and a permanent "last round"
+                // state. Give it headroom past the vote threshold instead.
+                if (maxRounds <= 0)
+                {
+                    maxRounds = roundThreshold + 1;
+                    Logger.LogWarning(
+                        "[MapCycle] Round mode but mp_maxrounds is 0 — forcing internal round limit to {Rounds}",
+                        maxRounds);
+                }
+
                 InitializeRoundBasedLimit(maxRounds, roundThreshold);
                 _mode = MapCycleMode.Round;
                 Logger.LogInformation(
@@ -178,6 +333,17 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
                 float timeLimitMinutes = cvm.FindConVar("mp_timelimit")?.GetFloat() ?? 0f;
                 var timeLimit = TimeSpan.FromMinutes(timeLimitMinutes);
                 var voteThreshold = TimeSpan.FromSeconds(_conVars.VoteStartTimeThresholdSeconds.GetInt32());
+
+                // Same guard for time mode: mp_timelimit=0 means "already
+                // reached". Leave enough room for the vote to start normally.
+                if (timeLimit <= TimeSpan.Zero)
+                {
+                    timeLimit = voteThreshold + TimeSpan.FromSeconds(60);
+                    Logger.LogWarning(
+                        "[MapCycle] Time mode but mp_timelimit is 0 — forcing internal time limit to {Limit}",
+                        timeLimit);
+                }
+
                 InitializeTimeBasedLimit(timeLimit, voteThreshold);
                 _mode = MapCycleMode.Time;
                 Logger.LogInformation(
@@ -224,12 +390,18 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
             _tickTimerId = Guid.Empty;
         }
 
+        _cooldownLifecycleService?.DecrementAllCooldowns();
+
+        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap is { } playedMap)
+            _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);
+
         _internalTimeLimitManager = null;
         _transitionTracker = null;
         _mode = MapCycleMode.None;
-        // Defensive: only clear when the manager is already constructed.
-        // OnUnload may run before OnInitialize on certain failure paths.
         _mapTransitionManager?.ClearState();
+        _extendService?.ClearState();
+        _extCommandService?.ClearParticipants();
+        _extendVoteService?.ResetOnMapEnd();
     }
 
     #endregion
@@ -291,6 +463,31 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
     public void OnTimeLimitChanged()
     {
         _transitionTracker?.ResetFlags();
+
+        // An extend past an already-reached limit means "keep playing" —
+        // otherwise the pending round-end transition would fire anyway and
+        // the extend would be silently ineffective.
+        if (_internalTimeLimitManager is { IsLimitReached: false })
+            _mapTransitionManager.ChangeMapOnNextRoundEnd = false;
+    }
+
+    private WorkshopProvisioningService? CreateWorkshopProvisioningService()
+    {
+        try
+        {
+            var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+            string apiKey = configProvider.PluginConfig.GeneralConfig.SteamWebApiKey;
+            if (string.IsNullOrEmpty(apiKey))
+                return null;
+
+            var apiService = new SteamWorkshopApiService();
+            apiService.SetApiKey(apiKey);
+            return new WorkshopProvisioningService(apiService);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void FireTransitions()
@@ -316,6 +513,9 @@ internal sealed class McsMapCycleController : PluginModuleBase, IMapCycleControl
                         l => l.OnTimeLimitReached(
                             new EventManager.Events.MapCycle.TimeLimitReachedParams(
                                 Plugin, this, _internalTimeLimitManager.TimeLimitType)));
+
+                    if (_mapTransitionManager.IsNextMapConfirmed)
+                        _mapTransitionManager.ChangeMapOnNextRoundEnd = true;
                     break;
             }
         }

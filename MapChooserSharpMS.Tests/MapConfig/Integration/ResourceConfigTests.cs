@@ -506,13 +506,14 @@ public class ResourceConfigTests
     // ================================================================
 
     [Fact]
-    public void EdgeCases_UnknownPropsIgnored()
+    public void EdgeCases_UnknownPropsRejectSection()
     {
         var result = LoadAndParse("17_edge_cases.toml");
 
-        // Unknown property silently ignored, MaxExtends=5 still parsed
-        var unknown = result.MapConfigsNameMapping["ze_unknown_prop"].First().MapConfig;
-        Assert.Equal(5, unknown.MaxExtends);
+        // A section containing an unknown property is not a valid map config
+        // and is skipped entirely; other sections still load.
+        Assert.False(result.MapConfigsNameMapping.ContainsKey("ze_unknown_prop"));
+        Assert.True(result.MapConfigsNameMapping.ContainsKey("ze_type_mismatch"));
     }
 
     [Fact]

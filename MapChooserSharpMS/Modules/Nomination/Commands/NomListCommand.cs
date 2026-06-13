@@ -1,10 +1,12 @@
 using System;
+using System.Text;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
 using Sharp.Shared.Types;
+using Sharp.Shared.Units;
 using TnmsPluginFoundation.Models.Command;
 using TnmsPluginFoundation.Extensions.Client;
 
@@ -34,6 +36,10 @@ internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCo
             return;
         }
 
+        bool isVerbose = commandInfo.ArgCount >= 1
+                         && commandInfo[1].Equals("full", StringComparison.OrdinalIgnoreCase)
+                         && TnmsPluginFoundation.TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, "mcs.admin.command.nomination.nomlist.verbose");
+
         client.GetPlayerController()?.PrintToChat(
             LocalizeWithPluginPrefix(client, "NominationList.Command.Notification.ListHeader"));
 
@@ -41,19 +47,42 @@ internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCo
         foreach (var (_, nomination) in nominations)
         {
             string mapDisplay = _toolingService.ResolveMapDisplayName(nomination.MapConfig);
+
             string info;
             if (nomination.IsForceNominated)
-                info = LocalizeString(client, "NominationList.Command.Notification.AdminNomination");
+            {
+                info = Plugin.LocalizeStringForPlayer(client, "NominationList.Command.Notification.AdminNomination");
+            }
+            else if (isVerbose)
+            {
+                info = BuildVerboseNominators(nomination);
+            }
             else
-                info = nomination.NominationParticipants.Count.ToString();
+            {
+                info = Plugin.LocalizeStringForPlayer(client, "NominationList.Command.Notification.VoteCount", nomination.NominationParticipants.Count);
+            }
 
             client.GetPlayerController()?.PrintToChat(
-                GetTextWithPluginPrefix(client,
-                    LocalizeString(client, "NominationList.Command.Notification.Content", index, mapDisplay, info)));
+                $" {Plugin.GetPluginPrefix(client)} {index}: {mapDisplay} | {info}");
             index++;
         }
     }
 
-    private T GetRequiredService<T>() where T : notnull
-        => (T)ServiceProvider.GetService(typeof(T))!;
+    private string BuildVerboseNominators(Shared.Nomination.IMcsNominationData nomination)
+    {
+        var sb = new StringBuilder();
+        var clientManager = SharedSystem.GetClientManager();
+
+        foreach (int slot in nomination.NominationParticipants)
+        {
+            var participant = clientManager.GetGameClient(new PlayerSlot(slot));
+            if (participant is null) continue;
+
+            if (sb.Length > 0)
+                sb.Append(", ");
+            sb.Append(participant.Name);
+        }
+
+        return sb.Length > 0 ? sb.ToString() : "-";
+    }
 }

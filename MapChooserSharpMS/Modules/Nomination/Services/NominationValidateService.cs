@@ -68,6 +68,9 @@ internal sealed class NominationValidateService
         if (IsMapInCooldown(mapConfig))
             result.Add(NominationCheckResult.MapIsInCooldown);
 
+        if (IsMapInNominationCooldown(mapConfig))
+            result.Add(NominationCheckResult.NominationCooldownActive);
+
         if (!IsLowerThanMaxPlayers(mapConfig))
             result.Add(NominationCheckResult.TooMuchPlayers);
 
@@ -121,6 +124,9 @@ internal sealed class NominationValidateService
 
             if (IsMapInCooldown(mapConfig))
                 result.Add(NominationCheckResult.MapIsInCooldown);
+
+            if (IsMapInNominationCooldown(mapConfig))
+                result.Add(NominationCheckResult.NominationCooldownActive);
         }
 
         if (result.Count == 0)
@@ -196,10 +202,14 @@ internal sealed class NominationValidateService
 
     public bool IsCurrentMap(IMapConfig mapConfig)
     {
-        if (_mapTransitionManager.CurrentMap is null)
+        if (_mapTransitionManager.CurrentMap is not null)
+            return _mapTransitionManager.CurrentMap.MapName.Equals(mapConfig.MapName, StringComparison.OrdinalIgnoreCase);
+
+        var liveMapName = SharedSystem.GetModSharp().GetMapName();
+        if (liveMapName is null)
             return false;
 
-        return _mapTransitionManager.CurrentMap.MapName.Equals(mapConfig.MapName);
+        return mapConfig.MapName.Equals(liveMapName, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool IsWithinTimeRange(IMapConfig mapConfig)
@@ -234,6 +244,20 @@ internal sealed class NominationValidateService
         return GetCooldownInformations(mapConfig).HasCooldown;
     }
 
+    public bool IsMapInNominationCooldown(IMapConfig mapConfig)
+    {
+        if (mapConfig.CooldownConfig is not MapConfig.Models.CooldownConfig cc)
+            return false;
+
+        if (cc.CurrentNominationCooldown > 0)
+            return true;
+
+        if (cc.NominationTimedCooldownEndUtc > DateTime.UtcNow)
+            return true;
+
+        return false;
+    }
+
     public IReadOnlyList<NominationCheckResult> GetNominationState(IMapConfig mapConfig, IGameClient? client = null)
     {
         if (!_nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var nominated))
@@ -257,30 +281,38 @@ internal sealed class NominationValidateService
     public IDetailedCooldownResult GetCooldownInformations(IMapConfig mapConfig)
     {
         int curMapCooldown = mapConfig.CooldownConfig.CurrentCooldown;
-        var curMapTimedCooldown = mapConfig.CooldownConfig.LastPlayedAt + mapConfig.CooldownConfig.TimedCooldown;
+        var curMapTimedCooldown = GetTimedCooldownEnd(mapConfig.CooldownConfig);
         Dictionary<string, int> groupCooldown = new Dictionary<string, int>();
         Dictionary<string, DateTime> groupTimedCooldown = new ();
 
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
             groupCooldown[groupSetting.GroupName] = groupSetting.CooldownConfig.CurrentCooldown;
-            groupTimedCooldown[groupSetting.GroupName] = groupSetting.CooldownConfig.LastPlayedAt + groupSetting.CooldownConfig.TimedCooldown;
+            groupTimedCooldown[groupSetting.GroupName] = GetTimedCooldownEnd(groupSetting.CooldownConfig);
         }
 
         return new DetailedCooldownResult(mapConfig, curMapCooldown, groupCooldown, curMapTimedCooldown, groupTimedCooldown);
     }
 
+    private static DateTime GetTimedCooldownEnd(ICooldownConfig config)
+    {
+        if (config is MapConfig.Models.CooldownConfig cc)
+            return cc.TimedCooldownEndUtc;
+
+        return DateTime.MinValue;
+    }
+
     public bool IsPlayerDeniedByPermission(IMapConfig mapConfig, IGameClient client)
     {
         // Resolution: Any Deny > Any Allow > Default (allowed)
-        // Check map-level deny
-        if (TnmsPlugin.AdminManager.ClientHasPermission(client, $"mcs.nominate.map.deny.{mapConfig.MapName}"))
+        // Deny checks use exact matching — wildcard holders (e.g. root *)
+        // must not accidentally match deny nodes.
+        if (TnmsPlugin.AdminManager.PlayerHasPermissionExact(client.SteamId, $"mcs.nominate.map.deny.{mapConfig.MapName}"))
             return true;
 
-        // Check group-level deny
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
-            if (TnmsPlugin.AdminManager.ClientHasPermission(client, $"mcs.nominate.group.deny.{groupSetting.GroupName}"))
+            if (TnmsPlugin.AdminManager.PlayerHasPermissionExact(client.SteamId, $"mcs.nominate.group.deny.{groupSetting.GroupName}"))
                 return true;
         }
 
@@ -308,7 +340,8 @@ internal sealed class NominationValidateService
 
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
-            if (groupsNominatedCount[groupSetting.GroupName] >= PerGroupNominationLimit.GetInt16())
+            if (groupsNominatedCount.TryGetValue(groupSetting.GroupName, out int count)
+                && count >= PerGroupNominationLimit.GetInt16())
                 return true;
         }
 

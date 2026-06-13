@@ -23,7 +23,7 @@ internal sealed class MapNominationService(
     IMcsPluginConfigProvider configProvider,
     IInternalEventManager eventManager,
     IMcsInternalNominationManager nominationManager,
-    IMcsNominationController nominationController,
+    IMcsInternalNominationController nominationController,
     INominationValidateService nominationValidator
 ) : IMcsInternalMapNominationService
 {
@@ -73,10 +73,12 @@ internal sealed class MapNominationService(
             previousNomination.NominationParticipants.Remove(nominator.Slot);
 
             if (previousNomination.NominationParticipants.Count <= 0)
-                TryRemoveNomination(mapConfig, nominator);
+                TryRemoveNomination(previousNomination.MapConfig, nominator);
         }
 
         nomination.NominationParticipants.Add(nominator.Slot);
+
+        nominationController.BroadcastNomination(nominator, mapConfig, isNominationChanged: previousNomination != null);
 
         return [];
     }
@@ -125,6 +127,8 @@ internal sealed class MapNominationService(
         if (nominator != null)
             nomination.NominationParticipants.Add(nominator.Slot);
 
+        nominationController.BroadcastAdminNomination(nominator, mapConfig, changedExistingToAdmin: existing != null);
+
         return [];
     }
 
@@ -148,6 +152,11 @@ internal sealed class MapNominationService(
             executor);
 
         eventManager.Fire<INominationEventListener>(evt => evt.OnNominationRemoved(nominationRemovedParam));
+
+        // forceRemoval only comes from the admin command / remove menu —
+        // organic pruning (last participant left) stays silent.
+        if (forceRemoval)
+            nominationController.BroadcastNominationRemoved(executor, mapConfig);
 
         return true;
     }

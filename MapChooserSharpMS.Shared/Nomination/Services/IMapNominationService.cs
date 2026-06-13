@@ -43,4 +43,6 @@ public interface IMapNominationService
     /// longer be available. Same semantics otherwise.
     /// </summary>
     bool TryUnNominate(int slot, UnNominateReason reason = UnNominateReason.Normally);
+
+    bool ClearNominations();
 }

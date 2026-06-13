@@ -9,10 +9,22 @@ internal sealed class CooldownConfig : ICooldownConfig
     public TimeSpan TimedCooldown { get; }
     public int CurrentCooldown { get; set; }
     public DateTime LastPlayedAt { get; set; }
+    internal DateTime TimedCooldownEndUtc { get; set; } = DateTime.MinValue;
 
-    public CooldownConfig(int configCooldown, TimeSpan timedCooldown)
+    public int ConfigNominationCooldown { get; }
+    public TimeSpan NominationTimedCooldown { get; }
+    internal int CurrentNominationCooldown { get; set; }
+    internal DateTime NominationTimedCooldownEndUtc { get; set; } = DateTime.MinValue;
+
+    public CooldownConfig(
+        int configCooldown,
+        TimeSpan timedCooldown,
+        int configNominationCooldown = 0,
+        TimeSpan nominationTimedCooldown = default)
     {
         ConfigCooldown = configCooldown;
         TimedCooldown = timedCooldown;
+        ConfigNominationCooldown = configNominationCooldown;
+        NominationTimedCooldown = nominationTimedCooldown;
     }
 }

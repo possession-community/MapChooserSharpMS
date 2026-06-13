@@ -5,6 +5,7 @@ using MapChooserSharpMS.Modules.RockTheVote.Interfaces;
 using MapChooserSharpMS.Modules.RockTheVote.Managers;
 using MapChooserSharpMS.Modules.RockTheVote.Services;
 using MapChooserSharpMS.Shared.Events.MapCycle;
+using MapChooserSharpMS.Shared.Events.MapCycle.Params;
 using MapChooserSharpMS.Shared.Events.MapVote;
 using MapChooserSharpMS.Shared.Events.MapVote.Params;
 using MapChooserSharpMS.Shared.Events.RockTheVote;
@@ -22,7 +23,7 @@ using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.RockTheVote;
 
-internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvController, IMapVoteEventListener, IMapCycleEventListener, IGameListener
+internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvController, IMapVoteEventListener, IMapCycleEventListener, IGameListener, IClientListener
 {
     public override string PluginModuleName => "McsRtvController";
     public override string ModuleChatPrefix => "Prefix.Rtv";
@@ -39,7 +40,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
     public IRtvService RtvService => _rtvService;
     public RtvConVars ConVars => _conVars;
 
-    internal McsRtvController(IServiceProvider serviceProvider, bool hotReload): base(serviceProvider, hotReload)
+    public McsRtvController(IServiceProvider serviceProvider, bool hotReload): base(serviceProvider, hotReload)
     {
         _conVars = new RtvConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);
@@ -48,6 +49,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
     public override void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<IMcsInternalRtvController>(this);
+        services.AddSingleton<IRtvService>(_ => _rtvService);
     }
 
     protected override void OnInitialize()
@@ -55,7 +57,10 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _rtvManager = new InternalRtvManager(Plugin, _conVars);
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         _configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
-        _rtvService = new RtvService(Plugin, this, _rtvManager, _eventManager, ServiceProvider);
+        // Redirect, not a snapshot: OnInitialize runs before later modules
+        // (MapCycle etc.) register their services, and ServiceProvider is
+        // replaced on every rebuild. The accessor always yields the current one.
+        _rtvService = new RtvService(Plugin, this, _rtvManager, _eventManager, () => ServiceProvider, _conVars);
     }
 
     protected override void OnAllModulesLoaded()
@@ -63,11 +68,15 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _eventManager.RegisterListener<IMapVoteEventListener>(this);
         _eventManager.RegisterListener<IMapCycleEventListener>(this);
         SharedSystem.GetModSharp().InstallGameListener(this);
+        SharedSystem.GetClientManager().InstallClientListener(this);
+
+        AddCommandsUnderNamespace("MapChooserSharpMS.Modules.RockTheVote.Commands");
     }
 
     protected override void OnUnloadModule()
     {
         SharedSystem.GetModSharp().RemoveGameListener(this);
+        SharedSystem.GetClientManager().RemoveClientListener(this);
         _eventManager.RemoveListener<IMapVoteEventListener>(this);
         _eventManager.RemoveListener<IMapCycleEventListener>(this);
         StopCooldownTimer();
@@ -100,18 +109,24 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _rtvManager.ClearParticipants();
     }
 
+    // Old MCS reset participants + status on every vote result (ResetRtvStatus),
+    // not only on OnMapVoteFinished — keep that redundancy so a missed event on
+    // one path can never leave stale per-player RTV state behind.
     public void OnMapConfirmed(IMapVoteMapConfirmedEventParams @params)
     {
+        _rtvManager.ClearParticipants();
         ScheduleCooldown(_conVars.CommandUnlockTimeNextMapConfirmed.GetFloat());
     }
 
     public void OnMapExtended(IMapVoteExtendParams @params)
     {
+        _rtvManager.ClearParticipants();
         ScheduleCooldown(_conVars.CommandUnlockTimeMapExtend.GetFloat());
     }
 
     public void OnMapNotChanged(IMapVoteNotChangedParams @params)
     {
+        _rtvManager.ClearParticipants();
         ScheduleCooldown(_conVars.CommandUnlockTimeMapNotChanged.GetFloat());
     }
 
@@ -127,6 +142,48 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _rtvManager.ForceReset();
         ScheduleCooldown(_conVars.CommandUnlockTimeMapStart.GetFloat());
     }
+
+    #region IMapCycleEventListener — extend vote coordination
+
+    /// <summary>
+    /// Covers next-map confirmation from non-vote sources (admin/API
+    /// <c>TrySetNextMap</c>) — vote-confirmed maps already reset via
+    /// <see cref="OnMapConfirmed"/>. Skipped while an RTV-triggered vote or
+    /// map transition is in flight so it cannot clobber that state.
+    /// </summary>
+    public void OnNextMapConfirmed(INextMapConfirmedEventParams @params)
+    {
+        if (_rtvManager.RtvStatus is RtvStatus.TriggeredWaitingForVote
+            or RtvStatus.TriggeredWaitingForMapTransition)
+        {
+            return;
+        }
+
+        _rtvManager.ClearParticipants();
+        ScheduleCooldown(_conVars.CommandUnlockTimeNextMapConfirmed.GetFloat());
+    }
+
+    public void OnExtendVoteStarted(IExtendVoteStartedEventParams @params)
+    {
+        if (_rtvManager.RtvStatus == RtvStatus.Enabled)
+            _rtvManager.ForceSetRtvStatus(RtvStatus.AnotherVoteOngoing);
+    }
+
+    public void OnExtendVoteFinished(IExtendVoteFinishedEventParams @params)
+    {
+        // On pass, OnMapExtended has already scheduled the post-extend
+        // cooldown (status InCooldown) — only restore from the blocked state.
+        if (_rtvManager.RtvStatus == RtvStatus.AnotherVoteOngoing)
+            _rtvManager.ForceSetRtvStatus(RtvStatus.Enabled);
+    }
+
+    public void OnExtendVoteCancelled(IExtendVoteCancelledEventParams @params)
+    {
+        if (_rtvManager.RtvStatus == RtvStatus.AnotherVoteOngoing)
+            _rtvManager.ForceSetRtvStatus(RtvStatus.Enabled);
+    }
+
+    #endregion
 
     public void InstallEventListener(IRockTheVoteEventListener listener)
     {
@@ -144,9 +201,9 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _rtvManager.ForceReset();
     }
 
-    public void OnClientDisconnect(int slot)
+    public void OnClientDisconnecting(IGameClient client, NetworkDisconnectionReason reason)
     {
-        _rtvService.RemoveClientFromRtv(slot);
+        _rtvService.RemoveClientFromRtv(client.Slot);
     }
 
     private void ScheduleCooldown(float seconds)

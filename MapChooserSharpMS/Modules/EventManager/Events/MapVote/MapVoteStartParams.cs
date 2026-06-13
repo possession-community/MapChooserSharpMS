@@ -16,7 +16,7 @@ internal sealed class MapVoteStartParams(
 ) : IMapVoteStartParams
 {
     public string ModulePrefix(CultureInfo? culture = null)
-        => plugin.Localizer[moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture];
+        => plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture);
 
     public IReadOnlyList<IMapConfig> MapsToVote { get; } = mapsToVote;
 

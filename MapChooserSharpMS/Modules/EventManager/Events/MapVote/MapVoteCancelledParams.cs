@@ -13,7 +13,7 @@ internal sealed class MapVoteCancelledParams(
 ) : IMapVoteCancelledParams
 {
     public string ModulePrefix(CultureInfo? culture = null)
-        => plugin.Localizer[moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture];
+        => plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture);
 
     public IGameClient? CancelledBy { get; } = cancelledBy;
 }

@@ -14,7 +14,7 @@ internal sealed class MapVoteFinishedParams(
 ) : IMapVoteFinishedEventParams
 {
     public string ModulePrefix(CultureInfo? culture = null)
-        => plugin.Localizer[moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture];
+        => plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture);
 
     public IMapVoteInformation VoteInformation { get; } = voteInformation;
 

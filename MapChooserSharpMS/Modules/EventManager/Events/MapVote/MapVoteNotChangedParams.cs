@@ -11,5 +11,5 @@ internal sealed class MapVoteNotChangedParams(
 ) : IMapVoteNotChangedParams
 {
     public string ModulePrefix(CultureInfo? culture = null)
-        => plugin.Localizer[moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture];
+        => plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture);
 }

@@ -9,11 +9,14 @@ namespace MapChooserSharpMS.Modules.EventManager.Events.MapVote;
 internal sealed class MapVoteMapConfirmedParams(
     TnmsPlugin plugin,
     PluginModuleBase moduleBase,
-    IMapConfig confirmedMap
+    IMapConfig confirmedMap,
+    bool isRtvVote
 ) : IMapVoteMapConfirmedEventParams
 {
     public string ModulePrefix(CultureInfo? culture = null)
-        => plugin.Localizer[moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture];
+        => plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture);
 
     public IMapConfig ConfirmedMap { get; } = confirmedMap;
+
+    public bool IsRtvVote { get; } = isRtvVote;
 }

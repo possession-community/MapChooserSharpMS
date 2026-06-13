@@ -8,4 +8,9 @@ namespace MapChooserSharpMS.Shared.Events.MapVote.Params;
 public interface IMapVoteMapConfirmedEventParams : IEventBaseParams
 {
     IMapConfig ConfirmedMap { get; }
+
+    /// <summary>
+    /// True when this map confirmation was triggered by an RTV vote.
+    /// </summary>
+    bool IsRtvVote { get; }
 }

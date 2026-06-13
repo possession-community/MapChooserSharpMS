@@ -45,4 +45,9 @@ internal sealed class TimeRange : ITimeRange
         // Normal range: e.g., 10:00-12:00
         return time >= StartTime && time < EndTime;
     }
+
+    public override string ToString()
+    {
+        return StartTime.ToString("HH:mm") + " - " + EndTime.ToString("HH:mm");
+    }
 }

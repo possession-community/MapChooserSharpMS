@@ -40,6 +40,8 @@ internal static class MapConfigBuilder
             AllowedTimeRanges = overrideProps.AllowedTimeRanges ?? baseProps.AllowedTimeRanges,
             Cooldown = overrideProps.Cooldown ?? baseProps.Cooldown,
             CooldownDateTime = overrideProps.CooldownDateTime ?? baseProps.CooldownDateTime,
+            NominationCooldown = overrideProps.NominationCooldown ?? baseProps.NominationCooldown,
+            NominationCooldownDateTime = overrideProps.NominationCooldownDateTime ?? baseProps.NominationCooldownDateTime,
             Enabled = overrideProps.Enabled ?? baseProps.Enabled,
             ForceOverride = overrideProps.ForceOverride ?? baseProps.ForceOverride,
             OverridePriority = overrideProps.OverridePriority ?? baseProps.OverridePriority,
@@ -71,7 +73,7 @@ internal static class MapConfigBuilder
             MapRounds: props.MapRounds ?? 10,
             ExtendRoundsPerExtends: props.ExtendRoundsPerExtends ?? 5,
             RandomPickConfig: new RandomPickConfig(
-                MapSelectionWeight: 1,
+                MapSelectionWeight: (uint)Math.Max(props.MapSelectionWeight ?? 1, 0),
                 IsPickable: !(props.OnlyNomination ?? false),
                 BypassNominationRestriction: false),
             NominationConfig: new NominationConfig(
@@ -82,7 +84,9 @@ internal static class MapConfigBuilder
                 AllowedTimeRanges: props.AllowedTimeRanges ?? []),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
-                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime)),
+                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
+                configNominationCooldown: props.NominationCooldown ?? 0,
+                nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
             ExtraConfiguration: extraConfig);
     }
 
@@ -94,8 +98,13 @@ internal static class MapConfigBuilder
         ParsedProperties props,
         IExtraConfigAccessor extraConfig)
     {
+        string shortName = props.ShortGroupName ?? "";
+        if (shortName.Length > 4)
+            shortName = shortName[..4];
+
         return new MapGroupConfig(
             GroupName: groupName,
+            ShortGroupName: shortName,
             MapCooldownOverride: props.CooldownOverride ?? 0,
             IsDisabled: props.IsDisabled ?? false,
             MaxExtends: props.MaxExtends ?? 3,
@@ -105,7 +114,7 @@ internal static class MapConfigBuilder
             MapRounds: props.MapRounds ?? 10,
             ExtendRoundsPerExtends: props.ExtendRoundsPerExtends ?? 5,
             RandomPickConfig: new RandomPickConfig(
-                MapSelectionWeight: 1,
+                MapSelectionWeight: (uint)Math.Max(props.MapSelectionWeight ?? 1, 0),
                 IsPickable: !(props.OnlyNomination ?? false),
                 BypassNominationRestriction: false),
             NominationConfig: new NominationConfig(
@@ -116,7 +125,9 @@ internal static class MapConfigBuilder
                 AllowedTimeRanges: props.AllowedTimeRanges ?? []),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
-                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime)),
+                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
+                configNominationCooldown: props.NominationCooldown ?? 0,
+                nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
             ExtraConfiguration: extraConfig);
     }
 }

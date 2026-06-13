@@ -28,7 +28,7 @@ public interface IMapConfig: IBaseMapConfig
     public long WorkshopId { get; }
     
     /// <summary>
-    /// Group settings 
+    /// Group settings
     /// </summary>
     public List<IMapGroupConfig> GroupSettings { get; }
 }

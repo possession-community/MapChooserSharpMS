@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.Nomination;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
     private IMcsInternalNominationController _controller = null!;
     private IMcsMapConfigProvider _mapConfigProvider = null!;
     private IMcsReadOnlyVoteState _voteState = null!;
+    private IMapTransitionManager _transitionManager = null!;
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
@@ -31,32 +33,30 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
         _controller ??= ServiceProvider.GetRequiredService<IMcsInternalNominationController>();
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _voteState ??= ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
+        _transitionManager ??= ServiceProvider.GetRequiredService<IMapTransitionManager>();
 
         if (_voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
         {
+            string nextMapDisplay = _transitionManager.NextMap is { } nextMap
+                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+                : LocalizeString(client, "Word.VotePending");
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap"));
+                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
             return;
         }
 
-        if (commandInfo.ArgCount < 2)
+        if (commandInfo.ArgCount < 1)
         {
-            client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.Usage"));
             _controller.NominationMenuManagementService.ShowNominationMenu(client);
             return;
         }
 
         string mapName = commandInfo[1];
 
-        if (_mapConfigProvider.TryGetMapConfig(mapName, out var exactMatch))
-        {
-            var result = _controller.NominationService.TryNominateMap(client, exactMatch);
-            if (result.Count > 0)
-                NotifyNominationFailure(client, exactMatch, result);
-            return;
-        }
-
+        // Search all maps by partial match (Contains), then prefer an exact
+        // match if one exists among the results. This matches the old MCS
+        // flow: full list search → exact/single hit = nominate, multiple =
+        // menu, none = message only.
         var allMaps = _mapConfigProvider.GetMapConfigs();
         var matched = allMaps
             .Where(kv => kv.Key.Contains(mapName, StringComparison.OrdinalIgnoreCase))
@@ -64,11 +64,20 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
             .Where(m => !m.IsDisabled)
             .ToList();
 
+        // If there are multiple partial matches but one is an exact match,
+        // treat it as a single hit (nominate directly).
+        if (matched.Count > 1)
+        {
+            var exact = matched.FirstOrDefault(m =>
+                string.Equals(m.MapName, mapName, StringComparison.OrdinalIgnoreCase));
+            if (exact is not null)
+                matched = [exact];
+        }
+
         if (matched.Count == 0)
         {
             client.GetPlayerController()?.PrintToChat(
                 LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
-            _controller.NominationMenuManagementService.ShowNominationMenu(client);
             return;
         }
 
@@ -80,25 +89,7 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
             return;
         }
 
-        var nominateResult = _controller.NominationService.TryNominateMap(client, matched[0]);
-        if (nominateResult.Count > 0)
-            NotifyNominationFailure(client, matched[0], nominateResult);
+        _controller.NominationMenuManagementService.NominateOrConfirm(client, matched[0], false);
     }
 
-    private void NotifyNominationFailure(IGameClient client, IMapConfig mapConfig, IReadOnlyList<NominationCheckResult> results)
-    {
-        // Delegate to the controller's existing ProcessNominationCheckResult logic
-        // by calling NominationService — the controller already has chat notification
-        // wired in ProcessNominationCheckResult. The service returned failures,
-        // which the command layer should display. For now, show the first failure.
-        string mapDisplay = _mapConfigProvider.ToolingService.ResolveMapDisplayName(mapConfig);
-        foreach (var r in results)
-        {
-            client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, $"Nomination.Notification.Failure.{r}", mapDisplay));
-        }
-    }
-
-    private T GetRequiredService<T>() where T : notnull
-        => (T)ServiceProvider.GetService(typeof(T))!;
 }

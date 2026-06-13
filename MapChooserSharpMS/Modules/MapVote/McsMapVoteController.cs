@@ -26,7 +26,8 @@ internal sealed class McsMapVoteController
     : PluginModuleBase,
       IMcsInternalVoteController,
       IRockTheVoteEventListener,
-      IMapCycleEventListener
+      IMapCycleEventListener,
+      Sharp.Shared.Listeners.IGameListener
 {
     public override string PluginModuleName => "McsMapVoteController";
     public override string ModuleChatPrefix => "Prefix.Vote";
@@ -38,7 +39,7 @@ internal sealed class McsMapVoteController
     private IInternalEventManager _eventManager = null!;
     private INativeVoteManager _nativeVoteManager = null!;
 
-    private readonly IMcsInternalMainVoteState _voteState;
+    private IMcsInternalMainVoteState _voteState = null!;
     private readonly MapVoteConVars _conVars;
     private readonly VoteControllingManager _voteManager = new();
 
@@ -65,12 +66,10 @@ internal sealed class McsMapVoteController
 
     internal INativeVoteManager NativeVoteManager => _nativeVoteManager;
 
-    internal McsMapVoteController(
+    public McsMapVoteController(
         IServiceProvider serviceProvider,
-        bool hotReload,
-        IMcsInternalMainVoteState voteState) : base(serviceProvider, hotReload)
+        bool hotReload) : base(serviceProvider, hotReload)
     {
-        _voteState = voteState;
         _conVars = new MapVoteConVars(Plugin.SharedSystem.GetConVarManager());
         foreach (var cv in _conVars.All()) TrackConVar(cv);
     }
@@ -83,7 +82,30 @@ internal sealed class McsMapVoteController
 
     protected override void OnInitialize()
     {
+        _voteState = ServiceProvider.GetRequiredService<IMcsInternalMainVoteState>();
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
+        SharedSystem.GetModSharp().InstallGameListener(this);
+    }
+
+    /// <summary>
+    /// The state manager outlives map changes — without this reset, a
+    /// NextMapConfirmed left by the previous map's vote would permanently
+    /// block extends/nominations on every following map.
+    /// </summary>
+    public void OnGameActivate()
+    {
+        // A vote session (or its pre-vote countdown) interrupted by a map
+        // transition leaves CurrentSession behind — InitiateVote would then
+        // early-return on the stale session forever. Force-clear both on
+        // map boundaries.
+        _controllingService?.ForceResetVote();
+        _voteState.Reset();
+    }
+
+    public void OnGameDeactivate()
+    {
+        _controllingService?.ForceResetVote();
+        _voteState.Reset();
     }
 
     protected override void OnAllModulesLoaded()
@@ -96,14 +118,25 @@ internal sealed class McsMapVoteController
         var nominationValidateService = ServiceProvider.GetRequiredService<INominationValidateService>();
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         var nominationManager = ServiceProvider.GetRequiredService<INominationManager>();
+        var mapExtendService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.Interfaces.IMcsInternalMapExtendService>();
+        var cooldownLifecycleService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.McsMapCooldownLifecycleService>();
 
         var randomMapPicker = new RandomMapPickingService(nominationValidateService, configProvider, mapConfigProvider);
+
+        McsMapVoteSoundPlayer? soundPlayer = null;
+        var soundConfig = configProvider.PluginConfig.VoteConfig.VoteSoundConfig;
+        if (!string.IsNullOrEmpty(soundConfig.VSndEvtsSoundFilePath))
+            soundPlayer = new McsMapVoteSoundPlayer(Plugin, SharedSystem.GetSoundManager(), soundConfig);
+
+        var countdownUi = ServiceProvider.GetRequiredService<Ui.Countdown.McsCountdownUiController>();
 
         _controllingService = new MapVoteControllingService(
             Plugin, this, Logger,
             _voteManager, _voteState, _eventManager,
             _nativeVoteManager, _conVars, configProvider,
-            randomMapPicker, nominationManager, mapConfigProvider);
+            randomMapPicker, nominationManager, mapConfigProvider,
+            mapExtendService, cooldownLifecycleService,
+            soundPlayer, countdownUi);
 
         _controllingService.CustomWinnerThresholdProvider = _customWinnerThresholdProvider;
 
@@ -115,9 +148,30 @@ internal sealed class McsMapVoteController
 
     protected override void OnUnloadModule()
     {
+        SharedSystem.GetModSharp().RemoveGameListener(this);
         _eventManager.RemoveListener<IRockTheVoteEventListener>(this);
         _eventManager.RemoveListener<IMapCycleEventListener>(this);
         _controllingService?.ForceResetVote();
+    }
+
+    /// <summary>
+    /// Admin/API <c>TrySetNextMap</c> outside a vote must block further votes
+    /// and nominations the same way a vote-confirmed map does. The vote path
+    /// sets this state itself, so re-setting the same value here is harmless.
+    /// </summary>
+    public void OnNextMapConfirmed(INextMapConfirmedEventParams @params)
+    {
+        _voteState.SetState(McsMapVoteState.NextMapConfirmed);
+    }
+
+    /// <summary>
+    /// Removing the next map (admin !removenextmap / API) lifts the
+    /// NextMapConfirmed block so votes and nominations work again.
+    /// </summary>
+    public void OnNextMapRemoved(INextMapRemovedEventParams @params)
+    {
+        if ((_voteState as IMcsReadOnlyVoteState)?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
+            _voteState.Reset();
     }
 
     public void OnRtvConfirmed(IRtvConfirmedParams @params)

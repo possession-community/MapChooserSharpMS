@@ -17,21 +17,45 @@ internal sealed class RandomMapPickingService(
         if (amount == -1)
             amount = pluginConfigProvider.PluginConfig.VoteConfig.MaxMenuElements;
 
-        var allMaps = mapConfigProvider.GetMapConfigs()
+        var candidates = mapConfigProvider.GetMapConfigs()
             .Where(kv => excludeMapNames is null || !excludeMapNames.Contains(kv.Key))
             .Select(kv => kv.Value.First().MapConfig)
-            .OrderBy(_ => Random.Shared.Next())
+            .Where(m => nominationValidateService.CanPickupMap(m).Count == 0)
+            .ToList();
+
+        return WeightedShuffle(candidates, amount);
+    }
+
+    private static List<IMapConfig> WeightedShuffle(List<IMapConfig> candidates, int amount)
+    {
+        var pool = candidates
+            .Select(m => (Config: m, Weight: Math.Max(m.RandomPickConfig.MapSelectionWeight, 1u)))
             .ToList();
 
         var picked = new List<IMapConfig>();
 
-        foreach (var mapConfig in allMaps)
+        while (picked.Count < amount && pool.Count > 0)
         {
-            if (picked.Count >= amount)
-                break;
+            uint totalWeight = 0;
+            foreach (var entry in pool)
+                totalWeight += entry.Weight;
 
-            if (nominationValidateService.CanPickupMap(mapConfig).Count == 0)
-                picked.Add(mapConfig);
+            uint roll = (uint)(Random.Shared.NextInt64(totalWeight));
+            uint cumulative = 0;
+            int selectedIndex = pool.Count - 1;
+
+            for (int i = 0; i < pool.Count; i++)
+            {
+                cumulative += pool[i].Weight;
+                if (roll < cumulative)
+                {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+
+            picked.Add(pool[selectedIndex].Config);
+            pool.RemoveAt(selectedIndex);
         }
 
         return picked;

@@ -18,19 +18,25 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     private readonly INominationManager _nominationManager;
     private readonly IMapNominationService _nominationService;
     private readonly IMapConfigToolingService _toolingService;
+    private readonly Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> _failureNotifier;
+    private readonly NominationConVars _conVars;
 
     internal NominationMenuManagementService(
         Func<IMcsMenuCompat?> menuCompatProvider,
         IMcsMapConfigProvider mapConfigProvider,
         INominationManager nominationManager,
         IMapNominationService nominationService,
-        IMapConfigToolingService toolingService)
+        IMapConfigToolingService toolingService,
+        Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> failureNotifier,
+        NominationConVars conVars)
     {
         _menuCompatProvider = menuCompatProvider;
         _mapConfigProvider = mapConfigProvider;
         _nominationManager = nominationManager;
         _nominationService = nominationService;
         _toolingService = toolingService;
+        _failureNotifier = failureNotifier;
+        _conVars = conVars;
     }
 
     public void ShowNominationMenu(IGameClient client, List<IMapConfig> configs)
@@ -106,14 +112,54 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         return new McsMenuItem
         {
             DisplayText = _toolingService.ResolveMapDisplayName(config),
-            OnSelect = c =>
-            {
-                if (isAdmin)
-                    _nominationService.TryAdminNominateMap(c, config);
-                else
-                    _nominationService.TryNominateMap(c, config);
-            },
+            OnSelect = isAdmin
+                ? c => ExecuteNomination(c, config, true)
+                : c => NominateOrConfirm(c, config, false),
         };
+    }
+
+    public void NominateOrConfirm(IGameClient client, IMapConfig config, bool isAdmin)
+    {
+        if (!isAdmin && _conVars.ConfirmMenu.GetInt32() != 0)
+        {
+            string displayName = _toolingService.ResolveMapDisplayName(config);
+            ShowConfirmMenu(client, config, displayName);
+            return;
+        }
+
+        ExecuteNomination(client, config, isAdmin);
+    }
+
+    private void ShowConfirmMenu(IGameClient client, IMapConfig config, string displayName)
+    {
+        var compat = GetMenuCompatOrThrow();
+        compat.ShowMenu(client, new McsMenuDefinition
+        {
+            Title = $"Nominate {displayName}?",
+            Items =
+            [
+                new McsMenuItem
+                {
+                    DisplayText = "Yes",
+                    OnSelect = c => ExecuteNomination(c, config, false),
+                },
+                new McsMenuItem
+                {
+                    DisplayText = "No",
+                    OnSelect = _ => { },
+                },
+            ],
+        });
+    }
+
+    private void ExecuteNomination(IGameClient client, IMapConfig config, bool isAdmin)
+    {
+        var results = isAdmin
+            ? _nominationService.TryAdminNominateMap(client, config)
+            : _nominationService.TryNominateMap(client, config);
+
+        if (results.Count > 0)
+            _failureNotifier(client, config, results);
     }
 
     private IMcsMenuCompat GetMenuCompatOrThrow()

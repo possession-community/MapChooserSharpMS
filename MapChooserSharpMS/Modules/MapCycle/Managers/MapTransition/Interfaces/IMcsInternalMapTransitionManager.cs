@@ -30,4 +30,15 @@ internal interface IMcsInternalMapTransitionManager : IMapTransitionManager
     /// <see cref="IMapTransitionManager.TransitionToNextMap"/>.
     /// </summary>
     void OnRoundEnd();
+
+    /// <summary>
+    /// Force the game into its native end-match flow (scoreboard /
+    /// intermission screen), replicating what happens when mp_timelimit
+    /// runs out. One-shot writes mp_timelimit/mp_maxrounds to 1 and
+    /// terminates the round; the original value is restored in
+    /// <see cref="ClearState"/> on map end. The actual transition to
+    /// <see cref="IMapTransitionManager.NextMap"/> is performed by the
+    /// cs_intermission hook in McsMapCycleController.
+    /// </summary>
+    void ForceEndMatch();
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using MapChooserSharpMS.Modules.Nomination;
 using MapChooserSharpMS.Shared.Events.Nomination.Params;
@@ -21,7 +21,7 @@ internal sealed class NominationRemovedEventParams(
 {
     public string ModulePrefix(CultureInfo? culture = null)
     {
-        return plugin.Localizer[moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture];
+        return plugin.Localizer.ForCulture(moduleBase.ModuleChatPrefix, culture ?? CultureInfo.CurrentCulture);
     }
 
     public IGameClient? Client { get; } = client;

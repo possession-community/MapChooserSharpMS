@@ -65,3 +65,18 @@ Planned/decided usage in MapChooserSharpMS:
   so map-keyed cooldowns may need a different surface; decide with the user).
 - **Menus** → `IMenu`/`IMenuInstance` (world-HUD paged menus) is a candidate
   backend for `IMcsMenuCompat` alongside the FPM compat plugin.
+
+## Deploy layout (`%MOD_SHARP_DIR%`)
+
+When copying build outputs to the game server:
+
+- **Module DLLs** → `%MOD_SHARP_DIR%\modules\<ModuleName>\<Module>.dll`
+  - e.g. `modules\MapChooserSharpMS\MapChooserSharpMS.dll`
+- **Shared DLLs** → `%MOD_SHARP_DIR%\shared\<SharedDLLName>\<Shared>.dll`
+  - e.g. `shared\MapChooserSharpMS.Shared\MapChooserSharpMS.Shared.dll`
+  - **Never place Shared DLLs inside `modules/`.**
+- **Lang files** → `%MOD_SHARP_DIR%\modules\<ModuleName>\lang\*.json`
+
+## Git commit rules
+
+- **Do NOT add `Co-Authored-By` trailers to commit messages.** This project does not use them.

@@ -5,6 +5,8 @@ using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Modules.Nomination.Managers;
 using MapChooserSharpMS.Modules.Nomination.Services;
+using MapChooserSharpMS.Shared.Events.MapVote;
+using MapChooserSharpMS.Shared.Events.MapVote.Params;
 using MapChooserSharpMS.Shared.Events.RockTheVote;
 using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
@@ -25,6 +27,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     : PluginModuleBase(serviceProvider, hotReload),
       IMcsInternalNominationController,
       IRockTheVoteEventListener,
+      IMapVoteEventListener,
       IClientListener
 {
     public override string PluginModuleName => "McsMapNominationController";
@@ -53,6 +56,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     private IInternalEventManager _eventManager = null!;
     private IMcsMapConfigProvider _mapConfigProvider = null!;
     private IMapConfigToolingService _mapConfigToolingService = null!;
+    private NominationConVars _conVars = null!;
 
     public IReadOnlyDictionary<string, IMcsNominationData> GetNominatedMaps() => _internalNominationManager.NominatedMaps;
 
@@ -74,10 +78,15 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     protected override void OnInitialize()
     {
         _internalNominationManager = ActivatorUtilities.CreateInstance<InternalNominationManager>(ServiceProvider);
+        _conVars = new NominationConVars(SharedSystem.GetConVarManager());
     }
 
     protected override void OnAllModulesLoaded()
     {
+        _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
+        _mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        _mapConfigToolingService = ServiceProvider.GetRequiredService<IMapConfigToolingService>();
+
         NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this);
         NominationService          = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService);
 
@@ -86,13 +95,12 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
             _mapConfigProvider,
             _internalNominationManager,
             NominationService,
-            _mapConfigToolingService);
-
-        _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
-        _mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
-        _mapConfigToolingService = ServiceProvider.GetRequiredService<IMapConfigToolingService>();
+            _mapConfigToolingService,
+            NotifyNominationFailure,
+            _conVars);
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
+        _eventManager.RegisterListener<IMapVoteEventListener>(this);
         SharedSystem.GetClientManager().InstallClientListener(this);
 
         AddCommandsUnderNamespace("MapChooserSharpMS.Modules.Nomination.Commands");
@@ -101,7 +109,13 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     protected override void OnUnloadModule()
     {
         _eventManager.RemoveListener<IRockTheVoteEventListener>(this);
+        _eventManager.RemoveListener<IMapVoteEventListener>(this);
         SharedSystem.GetClientManager().RemoveClientListener(this);
+    }
+
+    public void OnMapVoteFinished(IMapVoteFinishedEventParams @params)
+    {
+        NominationService.ClearNominations();
     }
 
     public void OnClientDisconnecting(IGameClient client, NetworkDisconnectionReason reason)
@@ -109,69 +123,116 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         NominationService.TryUnNominate(client, UnNominateReason.PlayerDisconnect);
     }
 
-    private bool ProcessNominationCheckResult(IGameClient player, IMapConfig mapConfig, IReadOnlyList<NominationCheckResult> check)
+    public void NotifyNominationFailure(IGameClient? player, IMapConfig mapConfig, IReadOnlyList<NominationCheckResult> check)
     {
         // Success - empty list
         if (check.Count == 0)
-            return true;
+            return;
 
-        int playerCountCurrently = SharedSystem.GetClientManager().GetClientCount();
         string mapDisplay = _mapConfigToolingService.ResolveMapDisplayName(mapConfig);
 
-        if (check.Contains(NominationCheckResult.Disabled))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.MapDisabled", mapDisplay));
-
-        if (check.Contains(NominationCheckResult.NotEnoughPermissions))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotEnoughPermission", mapDisplay));
-
-        if (check.Contains(NominationCheckResult.TooMuchPlayers))
+        // Only the first (highest-priority) failure is reported — printing
+        // every reason floods the chat when several checks fail at once.
+        switch (check[0])
         {
-            int maxPlayers = mapConfig.NominationConfig.MaxPlayers;
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.TooMuchPlayers", mapDisplay, playerCountCurrently, maxPlayers));
+            case NominationCheckResult.Disabled:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.MapDisabled", mapDisplay));
+                break;
+
+            case NominationCheckResult.NotEnoughPermissions:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotEnoughPermission", mapDisplay));
+                break;
+
+            case NominationCheckResult.TooMuchPlayers:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.TooMuchPlayers", mapDisplay,
+                    SharedSystem.GetClientManager().GetClientCount(), mapConfig.NominationConfig.MaxPlayers));
+                break;
+
+            case NominationCheckResult.NotEnoughPlayers:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotEnoughPlayers", mapDisplay,
+                    SharedSystem.GetClientManager().GetClientCount(), mapConfig.NominationConfig.MinPlayers));
+                break;
+
+            case NominationCheckResult.VotingPeriod:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.DisableAtThisTime"));
+                break;
+
+            case NominationCheckResult.OnlySpecificDay:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.OnlySpecificDay", mapDisplay));
+                PrintMessageToServerOrPlayerChat(player, GetTextWithModulePrefix(player, LocalizeString(player, "Nomination.Notification.Failure.OnlySpecificDay.Days", string.Join(", ", mapConfig.NominationConfig.DaysAllowed))));
+                break;
+
+            case NominationCheckResult.OnlySpecificTime:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.OnlySpecificTime", mapDisplay));
+                PrintMessageToServerOrPlayerChat(player, GetTextWithModulePrefix(player, LocalizeString(player, "Nomination.Notification.Failure.OnlySpecificTime.Times", string.Join(", ", mapConfig.NominationConfig.AllowedTimeRanges))));
+                break;
+
+            case NominationCheckResult.MapIsInCooldown:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.MapIsInCooldown", mapDisplay, _mapConfigToolingService.GetHighestCooldown(mapConfig)));
+                break;
+
+            case NominationCheckResult.NominationCooldownActive:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NominationCooldownActive", mapDisplay));
+                break;
+
+            case NominationCheckResult.AlreadyNominated:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.AlreadyNominatedSameMap", mapDisplay));
+                break;
+
+            case NominationCheckResult.NominatedByAdmin:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.AlreadyNominatedByAdmin", mapDisplay));
+                break;
+
+            case NominationCheckResult.SameMap:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.SameMap"));
+                break;
+
+            case NominationCheckResult.GroupNominationLimitReached:
+                int limit = ((NominationValidateService)NominationValidateService).PerGroupNominationLimit.GetInt32();
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.GroupLimitReached", limit));
+                break;
+
+            case NominationCheckResult.CancelledByExternalPlugin:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.Generic.WithMapName", mapDisplay));
+                break;
+
+            case NominationCheckResult.ProhibitAdminNomination:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.ProhibitAdminNomination", mapDisplay));
+                break;
         }
+    }
 
-        if (check.Contains(NominationCheckResult.NotEnoughPlayers))
-        {
-            int minPlayers = mapConfig.NominationConfig.MinPlayers;
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.NotEnoughPlayers", mapDisplay, playerCountCurrently, minPlayers));
-        }
+    public void BroadcastNomination(IGameClient nominator, IMapConfig mapConfig, bool isNominationChanged)
+    {
+        if (_conVars.BroadcastEnabled.GetInt32() == 0)
+            return;
 
-        if (check.Contains(NominationCheckResult.VotingPeriod))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.DisableAtThisTime"));
+        string mapDisplay = _mapConfigToolingService.ResolveMapDisplayName(mapConfig);
 
-        if (check.Contains(NominationCheckResult.OnlySpecificDay))
-        {
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.OnlySpecificDay", mapDisplay));
-            player.GetPlayerController()?.PrintToChat(GetTextWithModulePrefix(player, LocalizeString(player, "Nomination.Notification.Failure.OnlySpecificDay.Days", string.Join(", ", mapConfig.NominationConfig.DaysAllowed))));
-        }
+        PrintLocalizedChatToAllWithModulePrefix(
+            isNominationChanged
+                ? "Nomination.Broadcast.NominationChanged"
+                : "Nomination.Broadcast.Nominated",
+            nominator.Name, mapDisplay);
+    }
 
-        if (check.Contains(NominationCheckResult.OnlySpecificTime))
-        {
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.OnlySpecificTime", mapDisplay));
-            player.GetPlayerController()?.PrintToChat(GetTextWithModulePrefix(player, LocalizeString(player, "Nomination.Notification.Failure.OnlySpecificTime.Times", string.Join(", ", mapConfig.NominationConfig.AllowedTimeRanges))));
-        }
+    public void BroadcastAdminNomination(IGameClient? executor, IMapConfig mapConfig, bool changedExistingToAdmin)
+    {
+        string mapDisplay = _mapConfigToolingService.ResolveMapDisplayName(mapConfig);
 
-        if (check.Contains(NominationCheckResult.MapIsInCooldown))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.MapIsInCooldown", mapDisplay, _mapConfigToolingService.GetHighestCooldown(mapConfig)));
+        PrintLocalizedChatToAllWithModulePrefix(
+            changedExistingToAdmin
+                ? "Nomination.Broadcast.Admin.ChangedToAdminNomination"
+                : "Nomination.Broadcast.Admin.Nominated",
+            executor?.Name ?? "Console", mapDisplay);
+    }
 
-        if (check.Contains(NominationCheckResult.AlreadyNominated))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.AlreadyNominatedSameMap", mapDisplay));
+    public void BroadcastNominationRemoved(IGameClient? executor, IMapConfig mapConfig)
+    {
+        string mapDisplay = _mapConfigToolingService.ResolveMapDisplayName(mapConfig);
 
-        if (check.Contains(NominationCheckResult.NominatedByAdmin))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.AlreadyNominatedByAdmin", mapDisplay));
-
-        if (check.Contains(NominationCheckResult.SameMap))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.SameMap"));
-
-        if (check.Contains(NominationCheckResult.GroupNominationLimitReached))
-        {
-            int limit = ((NominationValidateService)NominationValidateService).PerGroupNominationLimit.GetInt32();
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.GroupLimitReached", limit));
-        }
-
-        if (check.Contains(NominationCheckResult.CancelledByExternalPlugin))
-            player.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.Generic.WithMapName", mapDisplay));
-
-        return false;
+        PrintLocalizedChatToAllWithModulePrefix(
+            "Nomination.Broadcast.Admin.RemovedNomination",
+            executor?.Name ?? "Console", mapDisplay);
     }
 }

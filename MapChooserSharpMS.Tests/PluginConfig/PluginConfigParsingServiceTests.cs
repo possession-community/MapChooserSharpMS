@@ -93,8 +93,8 @@ public class PluginConfigParsingServiceTests
         Assert.Equal(5, config.MapCycleConfig.FallbackExtendRoundsPerExtends);
         Assert.False(config.MapCycleConfig.ShouldStopSourceTvRecording);
         Assert.Equal(McsMapConfigExecutionType.ExactMatch, config.MapCycleConfig.MapConfigExecutionType);
-        Assert.Equal("MapChooserSharp/maps/", config.MapCycleConfig.MapConfigDirectoryPath);
-        Assert.Equal("MapChooserSharp/groups/", config.MapCycleConfig.GroupConfigDirectoryPath);
+        Assert.Equal("maps/", config.MapCycleConfig.MapConfigDirectoryPath);
+        Assert.Equal("groups/", config.MapCycleConfig.GroupConfigDirectoryPath);
 
         // MapVote defaults
         Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);

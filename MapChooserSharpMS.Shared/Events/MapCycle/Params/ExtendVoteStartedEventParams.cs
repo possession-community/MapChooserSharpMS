@@ -1,14 +1,26 @@
-﻿using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapConfig;
+using Sharp.Shared.Objects;
 
 namespace MapChooserSharpMS.Shared.Events.MapCycle.Params;
 
 /// <summary>
-/// Fired when next map is removed
+/// Fired when an extend vote has started
 /// </summary>
 public interface IExtendVoteStartedEventParams: IEventBaseParams
 {
     /// <summary>
-    /// The previous map that was set.
+    /// The map being voted to extend (current map).
+    /// null when MCS has no config for the current map.
     /// </summary>
-    IMapConfig PreviousNextMap { get; }
+    IMapConfig? CurrentMap { get; }
+
+    /// <summary>
+    /// Who initiated the extend vote. null means console/server.
+    /// </summary>
+    IGameClient? Initiator { get; }
+
+    /// <summary>
+    /// Vote duration in seconds.
+    /// </summary>
+    float VoteDuration { get; }
 }

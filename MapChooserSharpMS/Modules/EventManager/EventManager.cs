@@ -3,10 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using MapChooserSharpMS.Shared.Events;
-using MapChooserSharpMS.Shared.Events.MapCycle;
-using MapChooserSharpMS.Shared.Events.MapVote;
-using MapChooserSharpMS.Shared.Events.Nomination;
-using MapChooserSharpMS.Shared.MapConfig;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TnmsPluginFoundation.Models.Plugin;
@@ -27,9 +23,6 @@ internal sealed class EventManager(IServiceProvider serviceProvider, bool hotRel
 
     protected override void OnInitialize()
     {
-        Fire<IMapCycleEventListener>(l => l.OnExtendVoteCancelled(null!));
-        var cancelled = FireCancellable<IMapCycleEventListener>(l => l.OnExtCommandExecute(null!));
-        var results = FireCollect<IMapVoteEventListener, List<IMapConfig>>(l => l.OnRandomMapPick(null!));
     }
 
 

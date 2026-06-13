@@ -42,10 +42,14 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         string[] workshopCollectionIds = GetStringArray(generalNode, "WorkshopCollectionIds"u8);
         bool shouldAutoFix = GetBool(generalNode, "ShouldAutoFixMapName"u8, true);
         var rtvBehaviour = GetEnum(generalNode, "RtvMapChangeBehaviour"u8, RtvMapChangeBehaviourType.ImmediatelyWithTime);
+        string steamWebApiKey = GetString(generalNode, "SteamWebApiKey"u8, "");
+
+        if (string.IsNullOrWhiteSpace(steamWebApiKey))
+            steamWebApiKey = System.Environment.GetEnvironmentVariable("STEAM_WEB_API_KEY") ?? "";
 
         var sqlConfig = ParseSqlConfig(generalNode);
 
-        return new GeneralConfig(shouldUseAlias, verboseCooldown, workshopCollectionIds, shouldAutoFix, sqlConfig, rtvBehaviour);
+        return new GeneralConfig(shouldUseAlias, verboseCooldown, workshopCollectionIds, shouldAutoFix, sqlConfig, rtvBehaviour, steamWebApiKey);
     }
 
     private SqlConfig ParseSqlConfig(TomlDocumentNode generalNode)
@@ -72,8 +76,8 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         int fallbackExtendRounds = GetInt(cycleNode, "FallbackExtendRoundsPerExtends"u8, 5);
         bool shouldStopSourceTv = GetBool(cycleNode, "ShouldStopSourceTvRecording"u8, false);
         var executionType = GetEnum(cycleNode, "MapConfigExecutionType"u8, McsMapConfigExecutionType.ExactMatch);
-        string mapConfigDir = GetString(cycleNode, "MapConfigDirectoryPath"u8, "MapChooserSharp/maps/");
-        string groupConfigDir = GetString(cycleNode, "GroupConfigDirectoryPath"u8, "MapChooserSharp/groups/");
+        string mapConfigDir = GetString(cycleNode, "MapConfigDirectoryPath"u8, "maps/");
+        string groupConfigDir = GetString(cycleNode, "GroupConfigDirectoryPath"u8, "groups/");
 
         return new McsMapCycleConfig(
             fallbackMaxExtends, fallbackMaxExtCommandUses,
