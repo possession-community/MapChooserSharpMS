@@ -2,6 +2,7 @@ using System;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
+using MapChooserSharpMS.Modules.WorkshopSync;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
 using MapChooserSharpMS.Modules.MapCycle.Services;
@@ -127,6 +128,7 @@ internal sealed class McsMapCycleController
     protected override void OnInitialize()
     {
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
+        var workshopProvisioning = CreateWorkshopProvisioningService();
         _mapTransitionManager = new McsMapTransitionManager(
             SharedSystem,
             ServiceProvider.GetRequiredService<IMcsMapConfigProvider>(),
@@ -136,7 +138,8 @@ internal sealed class McsMapCycleController
             _eventManager,
             () => _internalTimeLimitManager?.IsLimitReached == true,
             () => _internalTimeLimitManager?.TimeLimitType,
-            _conVars);
+            _conVars,
+            workshopProvisioning);
 
         var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         var readOnlyVoteState = ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
@@ -486,6 +489,25 @@ internal sealed class McsMapCycleController
         // the extend would be silently ineffective.
         if (_internalTimeLimitManager is { IsLimitReached: false })
             _mapTransitionManager.ChangeMapOnNextRoundEnd = false;
+    }
+
+    private WorkshopProvisioningService? CreateWorkshopProvisioningService()
+    {
+        try
+        {
+            var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+            string apiKey = configProvider.PluginConfig.GeneralConfig.SteamWebApiKey;
+            if (string.IsNullOrEmpty(apiKey))
+                return null;
+
+            var apiService = new SteamWorkshopApiService();
+            apiService.SetApiKey(apiKey);
+            return new WorkshopProvisioningService(apiService);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void FireTransitions()

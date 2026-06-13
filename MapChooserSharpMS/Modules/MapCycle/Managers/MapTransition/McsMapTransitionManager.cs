@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
+using MapChooserSharpMS.Modules.WorkshopSync;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
@@ -28,6 +29,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly Func<bool> _isTimeLimitReached;
     private readonly Func<TimeLimitType?> _timeLimitTypeProvider;
     private readonly MapCycleConVars _conVars;
+    private readonly WorkshopProvisioningService? _workshopProvisioning;
 
     private IMapConfig? _currentMap;
     private IMapConfig? _nextMap;
@@ -49,7 +51,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         IInternalEventManager eventManager,
         Func<bool> isTimeLimitReached,
         Func<TimeLimitType?> timeLimitTypeProvider,
-        MapCycleConVars conVars)
+        MapCycleConVars conVars,
+        WorkshopProvisioningService? workshopProvisioning)
     {
         _sharedSystem = sharedSystem;
         _mapConfigProvider = mapConfigProvider;
@@ -60,6 +63,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _isTimeLimitReached = isTimeLimitReached;
         _timeLimitTypeProvider = timeLimitTypeProvider;
         _conVars = conVars;
+        _workshopProvisioning = workshopProvisioning;
     }
 
     public IMapConfig? NextMap => _nextMap;
@@ -99,9 +103,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         return TrySetNextMap(found);
     }
 
-    public Task<(bool Success, IWorkshopFetchResult FetchResult)> TrySetNextMap(long workshopId)
+    public async Task<(bool Success, IWorkshopFetchResult FetchResult)> TrySetNextMap(long workshopId)
     {
-        // First: try to find in already-loaded map configs.
         if (_mapConfigProvider.TryGetMapConfig(workshopId, out var found))
         {
             TrySetNextMap(found);
@@ -111,18 +114,63 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
                 MapName = found.MapName,
                 WorkshopId = workshopId,
             };
-            return Task.FromResult((true, hit));
+            return (true, hit);
         }
 
-        // Second: remote workshop fetch is deferred (planned: SteamApi.Net based).
-        // Until that lands, surface a clear "unknown" result so callers can decide.
-        IWorkshopFetchResult miss = new WorkshopFetchResult
+        if (_workshopProvisioning is null || !_workshopProvisioning.IsAvailable)
         {
-            ExistenceStatus = ExistenceStatus.FailedToFetchUnknown,
-            MapName = null,
-            WorkshopId = workshopId,
-        };
-        return Task.FromResult((false, miss));
+            IWorkshopFetchResult noApi = new WorkshopFetchResult
+            {
+                ExistenceStatus = ExistenceStatus.FailedToFetchUnknown,
+                MapName = null,
+                WorkshopId = workshopId,
+            };
+            return (false, noApi);
+        }
+
+        try
+        {
+            var provision = await _workshopProvisioning.TryProvisionAsync(workshopId);
+
+            if (provision.MapConfig is null)
+            {
+                _logger.LogWarning("Workshop item {Id} is not available (status: {Status})", workshopId, provision.Status);
+                IWorkshopFetchResult unavailable = new WorkshopFetchResult
+                {
+                    ExistenceStatus = provision.Status,
+                    MapName = provision.Title,
+                    WorkshopId = workshopId,
+                };
+                return (false, unavailable);
+            }
+
+            var tcs = new TaskCompletionSource<(bool, IWorkshopFetchResult)>();
+            _sharedSystem.GetModSharp().InvokeFrameAction(() =>
+            {
+                TrySetNextMap(provision.MapConfig);
+                _logger.LogInformation("Set next map from workshop: {Title} (ID: {Id})", provision.Title, workshopId);
+
+                IWorkshopFetchResult workshopHit = new WorkshopFetchResult
+                {
+                    ExistenceStatus = ExistenceStatus.FoundInWorkshop,
+                    MapName = provision.MapConfig.MapName,
+                    WorkshopId = workshopId,
+                };
+                tcs.SetResult((true, workshopHit));
+            });
+            return await tcs.Task;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch workshop item {Id}", workshopId);
+            IWorkshopFetchResult error = new WorkshopFetchResult
+            {
+                ExistenceStatus = ExistenceStatus.FailedToFetchHttpError,
+                MapName = null,
+                WorkshopId = workshopId,
+            };
+            return (false, error);
+        }
     }
 
     public bool TryRemoveNextMap()

@@ -24,8 +24,11 @@
 | コマンド | 権限ノード | 説明 |
 |---|---|---|
 | !nominate_addmap \<map\> | mcs.admin.command.nomination.addmap | マップを管理者ノミネーションとして追加 |
+| !nominate_addwsmap \<workshopId\> | mcs.admin.command.nomination.addwsmap | Workshop ID でマップを管理者ノミネーション追加 (config 未登録でも API フェッチ) |
 | !nominate_removemap \<map\> | mcs.admin.command.nomination.removemap | ノミネーションからマップを削除 |
-| !setnextmap \<map\> | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定 |
+| !map \<map\> | mcs.admin.command.mapcycle.map | マップへ即時変更 |
+| !wsmap \<workshopId\> | mcs.admin.command.mapcycle.wsmap | Workshop ID でマップへ即時変更 (config 未登録でも API フェッチ) |
+| !setnextmap \<map/workshopId\> | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定 (Workshop ID も可) |
 | !removenextmap | mcs.admin.command.mapcycle.removenextmap | 次のマップ設定を解除 |
 | !extend \<amount\> | mcs.admin.command.mapcycle.extend | マップの時間/ラウンドを延長 (マイナスで短縮) |
 | !voteextend \<minutes\> | mcs.admin.voteextend | 延長投票 (NVM YesNo 投票) を開始 |

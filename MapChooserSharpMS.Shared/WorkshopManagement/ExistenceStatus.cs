@@ -4,6 +4,7 @@ public enum ExistenceStatus
 {
     FoundInMemoryConfig,
     FoundInWorkshop,
+    NotAvailableInWorkshop,
     FailedToFetchHttpError,
     FailedToFetchUnknown,
 }

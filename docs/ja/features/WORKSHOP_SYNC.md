@@ -53,7 +53,8 @@ Workshop unavailable: ze_example_map (workshop 1234567890)
 ```
 
 ### 自動 Disable
-現在は無効 (ログ通知のみ)。将来的に Discord Webhook 通知 + 管理者判断で手動 Disable の運用を想定。
+Private / 削除済みのマップは config 上で `IsDisabled = true` を自動書込みし、リロードします。
+将来的に Discord Webhook 通知も追加予定。
 
 `LastVisibilityCheckResult` プロパティで構造化された結果を保持:
 - `Unchanged`: 公開/Unlisted/FriendsOnly のマップリスト
@@ -61,6 +62,20 @@ Workshop unavailable: ze_example_map (workshop 1234567890)
 - `Errors`: API エラーのマップリスト
 
 各エントリは `WorkshopMapEntry(MapName, WorkshopId, Title)` で Discord Webhook 連携用にマップ詳細を保持。
+
+## Workshop リモートフェッチ (管理コマンド)
+
+config に登録されていない Workshop マップでも、Steam API から情報をフェッチして仮の MapConfig を作成し、利用可能です。
+
+| コマンド | 説明 |
+|---|---|
+| `!setnextmap <workshopId>` | 次マップに設定 (名前検索 → 未ヒット & 数値なら API フェッチ) |
+| `!wsmap <workshopId>` | 即時マップ変更 (API フェッチ + transition watchdog 付き) |
+| `!nominate_addwsmap <workshopId>` | 管理者ノミネーション追加 |
+
+仮 MapConfig はデフォルト値 (MaxExtends=3, MapTime=20 等) で作成され、MapName には Workshop タイトルがそのまま使用されます。
+
+**要件:** Steam Web API Key が設定されていること。未設定の場合はエラーを返します。
 
 ## AutoFixMapWorkshopId
 
