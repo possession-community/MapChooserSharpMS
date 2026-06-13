@@ -12,7 +12,7 @@
 | mcs_vote_runoff_map_pickup_threshold | 0.3 | 0-1 | Runoff 投票に進むマップの最低得票率 |
 | mcs_vote_winner_pickup_threshold | 0.7 | 0-1 | この得票率以上で即勝者確定 |
 | mcs_vote_exclude_spectators | 0 | 0-1 | 観戦者を投票から除外するか |
-| mcs_vote_change_map_immediately_rtv_vote_success | 0 | 0-1 | RTV 投票成功時に即マップ変更するか |
+| ~~mcs_vote_change_map_immediately_rtv_vote_success~~ | - | - | **廃止** → `mcs_rtv_immediate_change_threshold` に移行 |
 
 ## MapCycle
 
@@ -40,3 +40,20 @@
 | mcs_rtv_map_change_timing | 3.0 | 0-60 | RTV 成功後のマップ変更までの秒数。0 で即変更 |
 | mcs_rtv_minimum_requirements | 0 | 0-64 | RTV 開始に必要な最低投票数。0 で無効 |
 | mcs_rtv_broadcast_player_cast | 1 | 0-1 | RTV 投票時に全体通知するか |
+| mcs_rtv_immediate_change_threshold | 0.0 | 0-1 | 投票完了後の RTV 参加率がこの値以上で即時マップ変更。0 = 無効 (常にラウンド終了) |
+| mcs_rtv_threshold_decay_time | 0.0 | 0-3600 | RTV 閾値を 100% から設定値へ減衰させる秒数。0 = 無効 |
+
+## Nomination
+
+| ConVar | デフォルト | 範囲 | 説明 |
+|---|---|---|---|
+| mcs_nomination_broadcast_enabled | 1 | 0-1 | ノミネーション時の全体通知を有効にするか |
+| mcs_nomination_confirm_menu | 0 | 0-1 | ノミネーション時に確認メニューを表示するか |
+
+## ChatListener
+
+| ConVar | デフォルト | 範囲 | 説明 |
+|---|---|---|---|
+| mcs_block_chat_during_vote | 0 | 0-1 | 投票中のチャットをブロックするか (AntiCanvas) |
+| mcs_rtv_immediate_change_threshold | 0.0 | 0-1 | 投票完了後の RTV 参加率がこの値以上で即時マップ変更。0 = 無効 (常にラウンド終了) |
+| mcs_rtv_threshold_decay_time | 0.0 | 0-3600 | RTV 閾値を 100% から設定値へ減衰させる秒数。0 = 無効 |
