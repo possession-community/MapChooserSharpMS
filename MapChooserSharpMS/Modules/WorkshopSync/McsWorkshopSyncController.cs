@@ -302,14 +302,24 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
         if (result.PrivateOrDeleted.Count == 0)
             return;
 
+        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+        string configDirectory = ResolveMapConfigDirectory(configProvider);
+        int disabled = 0;
+
         foreach (var entry in result.PrivateOrDeleted)
         {
-            Logger.LogWarning("Workshop unavailable: {Map} (workshop {Id})",
+            Logger.LogWarning("Disabling map {Map} (workshop {Id}): private or deleted",
                 entry.MapName, entry.WorkshopId);
+
+            if (TryDisableMapInToml(configDirectory, entry.MapName))
+                disabled++;
         }
 
-        // TODO: auto-disable is disabled pending API result verification.
-        // Re-enable once false positives are resolved.
+        if (disabled > 0)
+        {
+            Logger.LogInformation("Disabled {Count} map(s) in config, reloading...", disabled);
+            ServiceProvider.GetRequiredService<IMcsMapConfigProvider>().ReloadConfigs();
+        }
     }
 
     private bool TryDisableMapInToml(string configDirectory, string mapName)
