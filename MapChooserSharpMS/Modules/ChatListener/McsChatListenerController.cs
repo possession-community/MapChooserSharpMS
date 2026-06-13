@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Enums;
 using Sharp.Shared.Listeners;
 using Sharp.Shared.Objects;
+using TnmsPluginFoundation.Extensions.Client;
 using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.ChatListener;
@@ -74,7 +75,11 @@ internal sealed class McsChatListenerController : PluginModuleBase, IClientListe
         }
 
         if (_blockChatDuringVote.GetInt32() != 0 && _voteState.IsVotingPeriod())
+        {
+            client.GetPlayerController()?.PrintToChat(
+                $" {Plugin.GetPluginPrefix(client)} {Plugin.LocalizeStringForPlayer(client, "Chat.Notification.MutedDuringVote")}");
             return ECommandAction.Handled;
+        }
 
         return ECommandAction.Skipped;
     }

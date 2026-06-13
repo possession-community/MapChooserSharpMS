@@ -189,6 +189,7 @@
     "MapCycle.ExtCommand.Notification.InvalidArgument": "Invalid argument. Usage: !setext <number>",
     "MapCycle.ExtCommand.Notification.SetSuccess": "!ext uses set to {lime}{0}{default}",
 
+    "Chat.Notification.MutedDuringVote": "Chat is muted during the map vote!",
     "Common.Validation.Failure.Permission": "You don't have permission to use this command",
     "Common.Validation.Failure.Target": "Invalid target"
 }

@@ -189,6 +189,7 @@
     "MapCycle.ExtCommand.Notification.InvalidArgument": "不正な引数です。使い方: !setext <数値>",
     "MapCycle.ExtCommand.Notification.SetSuccess": "!ext の残り回数を {lime}{0}{default} に設定しました",
 
+    "Chat.Notification.MutedDuringVote": "投票中はチャットがミュートされています！",
     "Common.Validation.Failure.Permission": "このコマンドを使用する権限がありません",
     "Common.Validation.Failure.Target": "不正な対象です"
 }
