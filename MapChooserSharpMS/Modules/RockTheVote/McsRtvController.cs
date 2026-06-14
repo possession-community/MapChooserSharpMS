@@ -163,6 +163,15 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         ScheduleCooldown(_conVars.CommandUnlockTimeNextMapConfirmed.GetFloat());
     }
 
+    public void OnNextMapRemoved(INextMapRemovedEventParams @params)
+    {
+        if (_rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForMapTransition)
+        {
+            _rtvManager.ClearParticipants();
+            _rtvManager.ForceSetRtvStatus(RtvStatus.Enabled);
+        }
+    }
+
     public void OnExtendVoteStarted(IExtendVoteStartedEventParams @params)
     {
         if (_rtvManager.RtvStatus == RtvStatus.Enabled)
