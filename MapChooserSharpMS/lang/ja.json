@@ -189,6 +189,8 @@
     "MapCycle.ExtendVote.Notification.ExtendVoteAlreadyInProgress": "延長投票が既に進行中です",
     "MapCycle.ExtendVote.Notification.TimeLimitNotActive": "有効な時間/ラウンド制限がありません",
     "MapCycle.ExtendVote.Notification.FailedToInitiateNativeVote": "投票の開始に失敗しました",
+    "MapCycle.ExtendVote.Broadcast.Passed": "延長投票が{green}可決{default}されました！マップが延長されます。",
+    "MapCycle.ExtendVote.Broadcast.Failed": "延長投票が{lightred}否決{default}されました。マップは延長されません。",
 
     "MapCycle.ExtCommand.Notification.AlreadyParticipating": "既に !ext に投票しています",
     "MapCycle.ExtCommand.Notification.NoUsesLeft": "!ext の使用回数の上限に達しました",

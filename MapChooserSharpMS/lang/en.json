@@ -189,6 +189,8 @@
     "MapCycle.ExtendVote.Notification.ExtendVoteAlreadyInProgress": "An extend vote is already in progress",
     "MapCycle.ExtendVote.Notification.TimeLimitNotActive": "No active time/round limit",
     "MapCycle.ExtendVote.Notification.FailedToInitiateNativeVote": "Failed to initiate vote",
+    "MapCycle.ExtendVote.Broadcast.Passed": "Extend vote {green}passed{default}! The map has been extended.",
+    "MapCycle.ExtendVote.Broadcast.Failed": "Extend vote {lightred}failed{default}. The map will not be extended.",
 
     "MapCycle.ExtCommand.Notification.AlreadyParticipating": "You have already voted for !ext",
     "MapCycle.ExtCommand.Notification.NoUsesLeft": "No !ext uses remaining",
