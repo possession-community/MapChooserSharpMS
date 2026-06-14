@@ -32,8 +32,8 @@
 | !removenextmap | mcs.admin.command.mapcycle.removenextmap | 次のマップ設定を解除 |
 | !extend \<amount\> | mcs.admin.command.mapcycle.extend | マップの時間/ラウンドを延長 (マイナスで短縮) |
 | !voteextend \<minutes\> | mcs.admin.command.mapcycle.voteextend | 延長投票 (NVM YesNo 投票) を開始 |
-| !setmapcooldown \<map\> \<cd\> | mcs.admin.command.mapcycle.setmapcooldown | マップのクールダウン (回数) を設定 |
-| !setgroupcooldown \<group\> \<cd\> | mcs.admin.command.mapcycle.setgroupcooldown | グループのクールダウン (回数) を設定 |
+| !setmapcooldown \<map\> \<cd\> | mcs.admin.command.mapcycle.setmapcooldown | マップのクールダウン (回数) を設定。エイリアス: `!setmapcd` |
+| !setgroupcooldown \<group\> \<cd\> | mcs.admin.command.mapcycle.setgroupcooldown | グループのクールダウン (回数) を設定。エイリアス: `!setgroupcd` |
 | !setmaptcd \<map\> \<duration\> | mcs.admin.command.mapcycle.setmaptcd | マップの時限クールダウンを設定 (例: 2h, 3d, 1w) |
 | !setgrouptcd \<group\> \<duration\> | mcs.admin.command.mapcycle.setgrouptcd | グループの時限クールダウンを設定 (例: 2h, 3d, 1w) |
 | !forceresetmcs | mcs.admin.command.mapvote.forceresetmcs | MCS の全状態を強制リセット (投票/RTV/ノミネーション) |
