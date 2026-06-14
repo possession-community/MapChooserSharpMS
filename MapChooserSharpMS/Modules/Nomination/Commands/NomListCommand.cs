@@ -75,15 +75,7 @@ internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCo
 
         foreach (int slot in nomination.NominationParticipants)
         {
-            IGameClient? participant;
-            try
-            {
-                participant = clientManager.GetGameClient(new PlayerSlot(slot));
-            }
-            catch
-            {
-                continue;
-            }
+            var participant = clientManager.GetGameClient(new PlayerSlot((byte)slot));
             if (participant is null) continue;
 
             if (sb.Length > 0)

@@ -90,7 +90,7 @@ internal sealed class RtvService(
 
     public RtvExecutionResult AddClientToRtv(int slot)
     {
-        var client = plugin.SharedSystem.GetClientManager().GetGameClient(new PlayerSlot(slot));
+        var client = plugin.SharedSystem.GetClientManager().GetGameClient(new PlayerSlot((byte)slot));
 
         if (client == null)
             return RtvExecutionResult.NotAllowed;
