@@ -48,5 +48,5 @@ internal interface IMcsInternalMapTransitionManager : IMapTransitionManager
     /// to 1, then calls TerminateRound so the round ends naturally and
     /// triggers OnRoundEnd → TransitionToNextMap.
     /// </summary>
-    void TerminateAndTransition(float terminateDelay = 0f);
+    void TerminateAndTransition(float? terminateDelay = null);
 }

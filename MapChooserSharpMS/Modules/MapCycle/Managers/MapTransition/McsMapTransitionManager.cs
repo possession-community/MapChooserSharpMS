@@ -425,10 +425,12 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         TransitionToNextMap(delay);
     }
 
-    public void TerminateAndTransition(float terminateDelay = 0f)
+    public void TerminateAndTransition(float? terminateDelay = null)
     {
         if (_nextMap is null)
             return;
+
+        float delay = terminateDelay ?? _conVars.TransitionDelay.GetFloat();
 
         ChangeMapOnNextRoundEnd = true;
 
@@ -443,12 +445,12 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
             _sharedSystem.GetModSharp().PushTimer(() =>
             {
-                ForceTerminateRound(terminateDelay);
+                ForceTerminateRound(delay);
             }, 1.0, GameTimerFlags.StopOnMapEnd);
             return;
         }
 
-        ForceTerminateRound(terminateDelay);
+        ForceTerminateRound(delay);
     }
 
     private void ForceTerminateRound(float terminateDelay)
