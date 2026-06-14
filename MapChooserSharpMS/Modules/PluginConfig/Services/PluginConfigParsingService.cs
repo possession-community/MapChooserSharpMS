@@ -141,7 +141,7 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
 
         var menuType = GetEnum(nominationNode, "MenuType"u8, McsSupportedMenuType.Default);
         var availableMenuTypes = new List<McsSupportedMenuType> { McsSupportedMenuType.Default };
-        int perGroupNominationLimit = GetInt(nominationNode, "PerGroupNominationLimit"u8, 0);
+        int perGroupNominationLimit = Math.Max(0, GetInt(nominationNode, "PerGroupNominationLimit"u8, 0));
 
         return new NominationConfig(availableMenuTypes, menuType, perGroupNominationLimit);
     }
