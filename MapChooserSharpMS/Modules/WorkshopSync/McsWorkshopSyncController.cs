@@ -385,7 +385,7 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
         if (string.IsNullOrWhiteSpace(workshopTitle))
             return $"workshop_{workshopId}";
 
-        string valid = Regex.Replace(workshopTitle, @"[^a-zA-Z0-9_\-.]", "_");
+        string valid = Regex.Replace(workshopTitle, @"[^a-zA-Z0-9_\-]", "_");
 
         if (string.IsNullOrWhiteSpace(valid) || valid.StartsWith('-') || valid.StartsWith('.'))
             valid = "map_" + valid;
