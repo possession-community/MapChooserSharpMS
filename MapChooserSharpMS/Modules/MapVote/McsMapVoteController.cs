@@ -174,8 +174,8 @@ internal sealed class McsMapVoteController
     /// </summary>
     public void OnNextMapRemoved(INextMapRemovedEventParams @params)
     {
-        if ((_voteState as IMcsReadOnlyVoteState)?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
-            _voteState.Reset();
+        _controllingService?.ForceResetVote();
+        _voteState.Reset();
     }
 
     public void OnRtvConfirmed(IRtvConfirmedParams @params)
