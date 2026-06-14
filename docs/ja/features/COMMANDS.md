@@ -36,6 +36,7 @@
 | !setgroupcooldown \<group\> \<cd\> | mcs.admin.command.mapcycle.setgroupcooldown | グループのクールダウン (回数) を設定 |
 | !setmaptcd \<map\> \<duration\> | mcs.admin.command.mapcycle.setmaptcd | マップの時限クールダウンを設定 (例: 2h, 3d, 1w) |
 | !setgrouptcd \<group\> \<duration\> | mcs.admin.command.mapcycle.setgrouptcd | グループの時限クールダウンを設定 (例: 2h, 3d, 1w) |
+| !forceresetmcs | mcs.admin.command.mapvote.forceresetmcs | MCS の全状態を強制リセット (投票/RTV/ノミネーション) |
 | !reloadmapcfgs | mcs.admin.command.mapconfig.reload | マップ config をリロード |
 | !forcertv | mcs.admin.command.rtv.forcertv | 強制的に RTV を発動 |
 | !enablertv | mcs.admin.command.rtv.enablertv | RTV を有効化 |
