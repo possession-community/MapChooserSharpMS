@@ -18,15 +18,16 @@
 
 | ConVar | デフォルト | 範囲 | 説明 |
 |---|---|---|---|
-| mcs_mapcycle_mode | 0 | 0-2 | マップサイクルモード。0=Time, 1=Round, 2=TimeRound |
+| mcs_mapcycle_mode | time | none/time/round | マップサイクルモード |
 | mcs_mapcycle_vote_start_time_threshold | 180 | 0-3600 | Time モードでの投票開始残り時間 (秒) |
-| mcs_mapcycle_vote_start_round_threshold | 3 | 0-100 | Round モードでの投票開始残りラウンド数 |
-| mcs_ext_user_vote_threshold | 0.6 | 0-1 | !ext の必要投票率 |
-| mcs_vote_extend_success_threshold | 0.6 | 0-1 | !ve (延長投票) の可決閾値 |
-| mcs_vote_extend_vote_time | 30.0 | 5-120 | !ve の投票時間 (秒) |
+| mcs_mapcycle_vote_start_round_threshold | 3 | 0-120 | Round モードでの投票開始残りラウンド数 |
+| mcs_ext_user_vote_threshold | 0.5 | 0-1 | !ext の必要投票率 |
+| mcs_vote_extend_success_threshold | 0.5 | 0-1 | !ve (延長投票) の可決閾値 |
+| mcs_vote_extend_vote_time | 15.0 | 10-60 | !ve の投票時間 (秒) |
 | mcs_map_transition_retry_attempts | 3 | 1-10 | マップ変更リトライ回数 |
 | mcs_map_transition_retry_interval | 30.0 | 5-300 | リトライ間隔 (秒) |
 | mcs_map_transition_fallback_map | de_dust2 | - | リトライ失敗時のフォールバックマップ |
+| mcs_map_transition_delay | 20.0 | 0-60 | ラウンド終了後のマップ変更までの待機秒数。0 で即変更 |
 
 ## RTV
 
@@ -37,7 +38,7 @@
 | mcs_rtv_command_unlock_time_map_extend | 0.0 | 0-1200 | マップ延長後の RTV 解禁秒数 |
 | mcs_rtv_command_unlock_time_map_start | 0.0 | 0-1200 | マップ開始時の RTV 解禁秒数 |
 | mcs_rtv_vote_start_threshold | 0.5 | 0-1 | RTV 可決に必要な投票率 |
-| mcs_rtv_map_change_timing | 3.0 | 0-60 | RTV 成功後のマップ変更までの秒数。0 で即変更 |
+| mcs_rtv_map_change_timing | 20.0 | 0-60 | RTV 成功後のラウンド終了までの秒数。0 で即終了 |
 | mcs_rtv_minimum_requirements | 0 | 0-64 | RTV 開始に必要な最低投票数。0 で無効 |
 | mcs_rtv_broadcast_player_cast | 1 | 0-1 | RTV 投票時に全体通知するか |
 | mcs_rtv_immediate_change_threshold | 0.0 | 0-1 | 投票完了後の RTV 参加率がこの値以上で即時マップ変更。0 = 無効 (常にラウンド終了) |
