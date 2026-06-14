@@ -582,6 +582,17 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
                 return;
             }
 
+            var readOnlyState = _voteState as IMcsReadOnlyVoteState;
+            if (readOnlyState?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
+            {
+                StopCountdownTimer();
+                _countdownUi?.CloseCountdownUiAll();
+                session.CurrentState = McsMapVoteState.NoActiveVote;
+                _voteState.Reset();
+                _voteManager.ClearSession();
+                return;
+            }
+
             int elapsed = (int)(DateTime.UtcNow - _voteStartTime).TotalSeconds;
             int remaining = totalSeconds - elapsed;
 
