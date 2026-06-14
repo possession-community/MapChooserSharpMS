@@ -109,7 +109,19 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _voteState.SetState(McsMapVoteState.Initializing);
 
         int maxElements = _configProvider.PluginConfig.VoteConfig.MaxMenuElements;
-        var candidates = BuildCandidateListAsync(isActivatedByRtv, maxElements).GetAwaiter().GetResult();
+        List<IMapVoteOption> candidates;
+        try
+        {
+            candidates = BuildCandidateListAsync(isActivatedByRtv, maxElements).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to build candidate list for vote");
+            session.CurrentState = McsMapVoteState.NoActiveVote;
+            _voteState.Reset();
+            _voteManager.ClearSession();
+            return McsMapVoteState.NoActiveVote;
+        }
 
         if (candidates.Count < 2)
         {
