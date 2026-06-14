@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.Commands;
 using MapChooserSharpMS.Shared.MapConfig;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,19 +33,32 @@ internal sealed class ReloadMapCfgsCommand(IServiceProvider provider) : McsComma
         PrintMessageToServerOrPlayerChat(client,
             LocalizeWithPluginPrefix(client, "MapConfig.Command.Admin.Reload.Start"));
 
-        try
+        _ = Task.Run(() =>
         {
-            _mapConfigProvider.ReloadConfigs();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Map config reload failed");
-            PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapConfig.Command.Admin.Reload.Failure", ex.Message));
-            return;
-        }
+            try
+            {
+                _mapConfigProvider.ReloadConfigs();
 
-        PrintMessageToServerOrPlayerChat(client,
-            LocalizeWithPluginPrefix(client, "MapConfig.Command.Admin.Reload.Success"));
+                SharedSystem.GetModSharp().InvokeFrameAction(() =>
+                {
+                    if (client is not null && !client.IsValid) return;
+
+                    PrintMessageToServerOrPlayerChat(client,
+                        LocalizeWithPluginPrefix(client, "MapConfig.Command.Admin.Reload.Success"));
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Map config reload failed");
+
+                SharedSystem.GetModSharp().InvokeFrameAction(() =>
+                {
+                    if (client is not null && !client.IsValid) return;
+
+                    PrintMessageToServerOrPlayerChat(client,
+                        LocalizeWithPluginPrefix(client, "MapConfig.Command.Admin.Reload.Failure", ex.Message));
+                });
+            }
+        });
     }
 }
