@@ -587,6 +587,10 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             {
                 StopCountdownTimer();
                 _countdownUi?.CloseCountdownUiAll();
+
+                var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+                _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
+
                 session.CurrentState = McsMapVoteState.NoActiveVote;
                 _voteState.Reset();
                 _voteManager.ClearSession();
