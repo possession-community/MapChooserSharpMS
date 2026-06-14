@@ -421,6 +421,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap);
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
 
-        TransitionToNextMap(0f);
+        float delay = _conVars.TransitionDelay.GetFloat();
+        TransitionToNextMap(delay);
     }
 }
