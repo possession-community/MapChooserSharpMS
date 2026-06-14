@@ -116,6 +116,8 @@
     "MapVote.Broadcast.NotEnoughMapsToStartVote": "マップ投票を開始するために十分なマップが存在しません! サーバー管理者にお問い合わせください!",
     "MapVote.Broadcast.StartingRunoffVote": "どのマップの投票率も {0}% を超えませんでした! 最終投票を開始します!",
     "MapVote.Notification.SpectatorIsExcluded": "観戦者の投票がサーバーにより無効化されているため、この投票には参加できません!",
+    "MapVote.Command.Admin.ForceResetMcs.Usage": "使い方: !forceresetmcs",
+    "MapVote.Broadcast.Admin.ForceResetMcs": "管理者 {lime}{0}{default} が MCS の全状態を強制リセットしました!",
 
     "MapCycle.Command.Notification.NextMap": "次のマップ: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "現在のマップ: {lime}{0}{default}",

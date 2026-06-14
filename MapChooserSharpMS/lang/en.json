@@ -116,6 +116,8 @@
     "MapVote.Broadcast.NotEnoughMapsToStartVote": "There are not enough maps to initiate a vote! Please contact the server admin!",
     "MapVote.Broadcast.StartingRunoffVote": "No maps got over {0}% of votes! Starting runoff vote!",
     "MapVote.Notification.SpectatorIsExcluded": "Spectator voting is disabled on this server, so you cannot participate in this vote!",
+    "MapVote.Command.Admin.ForceResetMcs.Usage": "Usage: !forceresetmcs",
+    "MapVote.Broadcast.Admin.ForceResetMcs": "Admin {lime}{0}{default} force reset all MCS state!",
 
     "MapCycle.Command.Notification.NextMap": "Next map: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "Current map: {lime}{0}{default}",
