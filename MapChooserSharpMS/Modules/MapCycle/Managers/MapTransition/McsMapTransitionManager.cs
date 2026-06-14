@@ -432,21 +432,32 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
         ChangeMapOnNextRoundEnd = true;
 
-        if (TnmsPluginFoundation.Utils.Entity.GameRulesUtil.IsWarmup())
-        {
-            _logger.LogInformation("[MapTransition] Ending warmup before map transition");
-            _sharedSystem.GetModSharp().ServerCommand("mp_warmup_end");
-        }
-
-        var cvm = _sharedSystem.GetConVarManager();
-        cvm.FindConVar("mp_timelimit")?.Set(1);
-        cvm.FindConVar("mp_maxrounds")?.Set(1);
-
         string mapDisplay = ResolveDisplayName(_nextMap);
         for (int i = 0; i < 3; i++)
             BroadcastToAll("MapCycle.Broadcast.MapChanging", mapDisplay);
 
-        _logger.LogInformation("[MapTransition] Forcing round termination for map transition in {Delay}s", terminateDelay);
+        if (TnmsPluginFoundation.Utils.Entity.GameRulesUtil.IsWarmup())
+        {
+            _logger.LogInformation("[MapTransition] Ending warmup before map transition");
+            _sharedSystem.GetModSharp().ServerCommand("mp_warmup_end");
+
+            _sharedSystem.GetModSharp().PushTimer(() =>
+            {
+                ForceTerminateRound(terminateDelay);
+            }, 1.0, GameTimerFlags.StopOnMapEnd);
+            return;
+        }
+
+        ForceTerminateRound(terminateDelay);
+    }
+
+    private void ForceTerminateRound(float terminateDelay)
+    {
+        var cvm = _sharedSystem.GetConVarManager();
+        cvm.FindConVar("mp_timelimit")?.Set(1);
+        cvm.FindConVar("mp_maxrounds")?.Set(1);
+
+        _logger.LogInformation("[MapTransition] Forcing round termination in {Delay}s", terminateDelay);
 
         TnmsPluginFoundation.Utils.Entity.GameRulesUtil.TerminateRound(terminateDelay, RoundEndReason.RoundDraw);
     }
