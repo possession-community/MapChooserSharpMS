@@ -28,7 +28,8 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
       IMcsInternalNominationController,
       IRockTheVoteEventListener,
       IMapVoteEventListener,
-      IClientListener
+      IClientListener,
+      Sharp.Shared.Listeners.IGameListener
 {
     public override string PluginModuleName => "McsMapNominationController";
     public override string ModuleChatPrefix => "Prefix.Nomination";
@@ -102,6 +103,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         _eventManager.RegisterListener<IMapVoteEventListener>(this);
         SharedSystem.GetClientManager().InstallClientListener(this);
+        SharedSystem.GetModSharp().InstallGameListener(this);
 
         AddCommandsUnderNamespace("MapChooserSharpMS.Modules.Nomination.Commands");
     }
@@ -111,6 +113,12 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         _eventManager.RemoveListener<IRockTheVoteEventListener>(this);
         _eventManager.RemoveListener<IMapVoteEventListener>(this);
         SharedSystem.GetClientManager().RemoveClientListener(this);
+        SharedSystem.GetModSharp().RemoveGameListener(this);
+    }
+
+    public void OnGameActivate()
+    {
+        NominationService.ClearNominations();
     }
 
     public void OnMapVoteFinished(IMapVoteFinishedEventParams @params)
@@ -188,7 +196,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
                 break;
 
             case NominationCheckResult.GroupNominationLimitReached:
-                int limit = ((NominationValidateService)NominationValidateService).PerGroupNominationLimit.GetInt32();
+                int limit = ((NominationValidateService)NominationValidateService).PerGroupNominationLimit;
                 PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.GroupLimitReached", limit));
                 break;
 

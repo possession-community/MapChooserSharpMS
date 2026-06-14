@@ -41,4 +41,12 @@ internal interface IMcsInternalMapTransitionManager : IMapTransitionManager
     /// cs_intermission hook in McsMapCycleController.
     /// </summary>
     void ForceEndMatch();
+
+    /// <summary>
+    /// Force-terminates the current round and transitions to the next map
+    /// via the normal OnRoundEnd path. Sets mp_timelimit and mp_maxrounds
+    /// to 1, then calls TerminateRound so the round ends naturally and
+    /// triggers OnRoundEnd → TransitionToNextMap.
+    /// </summary>
+    void TerminateAndTransition(float? terminateDelay = null);
 }

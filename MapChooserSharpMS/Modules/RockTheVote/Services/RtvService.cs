@@ -47,7 +47,8 @@ internal sealed class RtvService(
         if (rtvManager.RtvStatus == RtvStatus.Disabled)
             return RtvExecutionResult.CommandDisabled;
 
-        if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForMapTransition)
+        if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForMapTransition
+            && !(conVars.ImmediateChangeThreshold.GetFloat() > 0f && TransitionManager.IsNextMapConfirmed))
             return RtvExecutionResult.TriggeredWaitingForMapTransition;
         
         if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForVote)
@@ -89,7 +90,7 @@ internal sealed class RtvService(
 
     public RtvExecutionResult AddClientToRtv(int slot)
     {
-        var client = plugin.SharedSystem.GetClientManager().GetGameClient(new PlayerSlot(slot));
+        var client = plugin.SharedSystem.GetClientManager().GetGameClient(new PlayerSlot((byte)slot));
 
         if (client == null)
             return RtvExecutionResult.NotAllowed;
@@ -232,11 +233,9 @@ internal sealed class RtvService(
                 float timing = conVars.MapChangeTimingAfterRtvSuccess.GetFloat();
                 BroadcastToAll("Rtv.Broadcast.ChangeToNextMapImmediately", mapDisplayName, timing);
 
-                var intermissionParams = new McsIntermissionParams(plugin, (PluginModuleBase)controller, nextMap);
-                eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
-
-                transitionManager.ChangeMapOnNextRoundEnd = false;
-                transitionManager.TransitionToNextMap(timing);
+                var internalTransitionManager = ServiceProvider
+                    .GetRequiredService<MapCycle.Managers.MapTransition.Interfaces.IMcsInternalMapTransitionManager>();
+                internalTransitionManager.TerminateAndTransition(timing);
                 break;
         }
     }

@@ -147,16 +147,23 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
             var tcs = new TaskCompletionSource<(bool, IWorkshopFetchResult)>();
             _sharedSystem.GetModSharp().InvokeFrameAction(() =>
             {
-                TrySetNextMap(provision.MapConfig);
-                _logger.LogInformation("Set next map from workshop: {Title} (ID: {Id})", provision.Title, workshopId);
-
-                IWorkshopFetchResult workshopHit = new WorkshopFetchResult
+                try
                 {
-                    ExistenceStatus = ExistenceStatus.FoundInWorkshop,
-                    MapName = provision.MapConfig.MapName,
-                    WorkshopId = workshopId,
-                };
-                tcs.SetResult((true, workshopHit));
+                    TrySetNextMap(provision.MapConfig);
+                    _logger.LogInformation("Set next map from workshop: {Title} (ID: {Id})", provision.Title, workshopId);
+
+                    IWorkshopFetchResult workshopHit = new WorkshopFetchResult
+                    {
+                        ExistenceStatus = ExistenceStatus.FoundInWorkshop,
+                        MapName = provision.MapConfig.MapName,
+                        WorkshopId = workshopId,
+                    };
+                    tcs.SetResult((true, workshopHit));
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
             });
             return await tcs.Task;
         }
@@ -414,6 +421,46 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap);
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
 
-        TransitionToNextMap(0f);
+        float delay = _conVars.TransitionDelay.GetFloat();
+        TransitionToNextMap(delay);
+    }
+
+    public void TerminateAndTransition(float? terminateDelay = null)
+    {
+        if (_nextMap is null)
+            return;
+
+        float delay = terminateDelay ?? _conVars.TransitionDelay.GetFloat();
+
+        ChangeMapOnNextRoundEnd = true;
+
+        string mapDisplay = ResolveDisplayName(_nextMap);
+        for (int i = 0; i < 3; i++)
+            BroadcastToAll("MapCycle.Broadcast.MapChanging", mapDisplay);
+
+        if (TnmsPluginFoundation.Utils.Entity.GameRulesUtil.IsWarmup())
+        {
+            _logger.LogInformation("[MapTransition] Ending warmup before map transition");
+            _sharedSystem.GetModSharp().ServerCommand("mp_warmup_end");
+
+            _sharedSystem.GetModSharp().PushTimer(() =>
+            {
+                ForceTerminateRound(delay);
+            }, 1.0, GameTimerFlags.StopOnMapEnd);
+            return;
+        }
+
+        ForceTerminateRound(delay);
+    }
+
+    private void ForceTerminateRound(float terminateDelay)
+    {
+        var cvm = _sharedSystem.GetConVarManager();
+        cvm.FindConVar("mp_timelimit")?.Set(1);
+        cvm.FindConVar("mp_maxrounds")?.Set(1);
+
+        _logger.LogInformation("[MapTransition] Forcing round termination in {Delay}s", terminateDelay);
+
+        TnmsPluginFoundation.Utils.Entity.GameRulesUtil.TerminateRound(terminateDelay, RoundEndReason.RoundDraw);
     }
 }

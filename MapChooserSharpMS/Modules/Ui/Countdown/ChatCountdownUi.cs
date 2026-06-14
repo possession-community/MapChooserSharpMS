@@ -23,5 +23,8 @@ public class ChatCountdownUi(IServiceProvider provider): IMcsCountdownUi
         }
     }
 
-    public void Close(IGameClient client){}
+    public void Close(IGameClient client)
+    {
+        _isFirstNotificationNotified = false;
+    }
 }

@@ -17,10 +17,10 @@ public interface IMcsNominationData
     /// <summary>
     /// UserID of nomination participants
     /// </summary>
-    public HashSet<int> NominationParticipants { get; }
-    
+    public IReadOnlySet<int> NominationParticipants { get; }
+
     /// <summary>
     /// Is force nominated by admin
     /// </summary>
-    public bool IsForceNominated { get; set; }
+    public bool IsForceNominated { get; }
 }

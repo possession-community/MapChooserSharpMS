@@ -29,7 +29,9 @@ internal abstract class McsCommandBase(IServiceProvider provider) : TnmsAbstract
                 return ValidationFailureResult.SilentAbort();
         }
 
-        return ValidationFailureResult.UseDefaultFallback();
+        PrintMessageToServerOrPlayerChat(context.Client,
+            LocalizeWithPluginPrefix(context.Client, GetUsageTranslationKey()));
+        return ValidationFailureResult.SilentAbort();
     }
 
     protected virtual string GetUsageTranslationKey() => "Common.Validation.Failure";

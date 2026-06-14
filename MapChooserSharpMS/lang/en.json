@@ -116,7 +116,10 @@
     "MapVote.Broadcast.NotEnoughMapsToStartVote": "There are not enough maps to initiate a vote! Please contact the server admin!",
     "MapVote.Broadcast.StartingRunoffVote": "No maps got over {0}% of votes! Starting runoff vote!",
     "MapVote.Notification.SpectatorIsExcluded": "Spectator voting is disabled on this server, so you cannot participate in this vote!",
+    "MapVote.Command.Admin.ForceResetMcs.Usage": "Usage: !forceresetmcs",
+    "MapVote.Broadcast.Admin.ForceResetMcs": "Admin {lime}{0}{default} force reset all MCS state!",
 
+    "MapCycle.Broadcast.MapChanging": "{lightred}Changing map to {lime}{0}{lightred}!",
     "MapCycle.Command.Notification.NextMap": "Next map: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "Current map: {lime}{0}{default}",
     "MapCycle.Command.Notification.TimeLeft": "Time left: {lime}{0}{default}",
@@ -155,6 +158,14 @@
     "MapCycle.Command.Admin.SetGroupCooldown.Usage": "Usage: !setgroupcooldown <GroupName> <Cooldown>",
     "MapCycle.Command.Admin.SetGroupCooldown.Failed": "Failed to update the group cooldown!",
     "MapCycle.Broadcast.Admin.SetGroupCooldown": "Admin {lime}{0}{default} updated group {lime}{1}{default} cooldown to {lime}{2}{default}!",
+    "MapCycle.Command.Admin.SetMapTimedCooldown.Usage": "Usage: !setmaptcd <MapName> <Duration (e.g. 2h, 3d, 1w)>",
+    "MapCycle.Command.Admin.SetMapTimedCooldown.Failed": "Failed to set timed cooldown on the map!",
+    "MapCycle.Command.Admin.SetMapTimedCooldown.InvalidDuration": "Invalid duration! Use format like 2h, 3d, 1w, 1m",
+    "MapCycle.Broadcast.Admin.SetMapTimedCooldown": "Admin {lime}{0}{default} set timed cooldown on {lime}{1}{default} for {lime}{2}{default}!",
+    "MapCycle.Command.Admin.SetGroupTimedCooldown.Usage": "Usage: !setgrouptcd <GroupName> <Duration (e.g. 2h, 3d, 1w)>",
+    "MapCycle.Command.Admin.SetGroupTimedCooldown.Failed": "Failed to set timed cooldown on the group!",
+    "MapCycle.Command.Admin.SetGroupTimedCooldown.InvalidDuration": "Invalid duration! Use format like 2h, 3d, 1w, 1m",
+    "MapCycle.Broadcast.Admin.SetGroupTimedCooldown": "Admin {lime}{0}{default} set timed cooldown on group {lime}{1}{default} for {lime}{2}{default}!",
 
     "MapConfig.Command.Admin.Reload.Start": "Config reload task has been started",
     "MapConfig.Command.Admin.Reload.Success": "Config reload task is successfully completed",
@@ -178,6 +189,8 @@
     "MapCycle.ExtendVote.Notification.ExtendVoteAlreadyInProgress": "An extend vote is already in progress",
     "MapCycle.ExtendVote.Notification.TimeLimitNotActive": "No active time/round limit",
     "MapCycle.ExtendVote.Notification.FailedToInitiateNativeVote": "Failed to initiate vote",
+    "MapCycle.ExtendVote.Broadcast.Passed": "Extend vote {green}passed{default}! The map has been extended.",
+    "MapCycle.ExtendVote.Broadcast.Failed": "Extend vote {lightred}failed{default}. The map will not be extended.",
 
     "MapCycle.ExtCommand.Notification.AlreadyParticipating": "You have already voted for !ext",
     "MapCycle.ExtCommand.Notification.NoUsesLeft": "No !ext uses remaining",
@@ -187,6 +200,7 @@
     "MapCycle.ExtCommand.Notification.Enabled": "!ext has been {green}enabled{default}",
     "MapCycle.ExtCommand.Notification.Disabled": "!ext has been {red}disabled{default}",
     "MapCycle.ExtCommand.Notification.InvalidArgument": "Invalid argument. Usage: !setext <number>",
+    "MapCycle.ExtCommand.Notification.SetUsage": "Usage: !setext <count>",
     "MapCycle.ExtCommand.Notification.SetSuccess": "!ext uses set to {lime}{0}{default}",
 
     "Chat.Notification.MutedDuringVote": "Chat is muted during the map vote!",

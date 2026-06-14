@@ -6,9 +6,11 @@ namespace MapChooserSharpMS.Modules.PluginConfig.Models;
 
 internal class NominationConfig(
     List<McsSupportedMenuType> availableMenuTypes,
-    McsSupportedMenuType currentMenuType)
+    McsSupportedMenuType currentMenuType,
+    int perGroupNominationLimit)
     : IMcsNominationConfig
 {
     public List<McsSupportedMenuType> AvailableMenuTypes { get; } = availableMenuTypes;
     public McsSupportedMenuType CurrentMenuType { get; } = currentMenuType;
+    public int PerGroupNominationLimit { get; } = perGroupNominationLimit;
 }

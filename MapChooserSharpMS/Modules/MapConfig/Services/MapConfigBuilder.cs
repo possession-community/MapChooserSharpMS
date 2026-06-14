@@ -47,6 +47,8 @@ internal static class MapConfigBuilder
             OverridePriority = overrideProps.OverridePriority ?? baseProps.OverridePriority,
             TargetDays = overrideProps.TargetDays ?? baseProps.TargetDays,
             TargetTimeRanges = overrideProps.TargetTimeRanges ?? baseProps.TargetTimeRanges,
+            MapSelectionWeight = overrideProps.MapSelectionWeight ?? baseProps.MapSelectionWeight,
+            ShortGroupName = overrideProps.ShortGroupName ?? baseProps.ShortGroupName,
         };
     }
 

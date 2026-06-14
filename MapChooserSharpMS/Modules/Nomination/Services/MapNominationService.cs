@@ -68,15 +68,15 @@ internal sealed class MapNominationService(
             }
         }
 
-        if (previousNomination != null)
+        if (previousNomination is McsNominationData prevData)
         {
-            previousNomination.NominationParticipants.Remove(nominator.Slot);
+            prevData.Participants.Remove(nominator.Slot);
 
-            if (previousNomination.NominationParticipants.Count <= 0)
+            if (prevData.Participants.Count <= 0)
                 TryRemoveNomination(previousNomination.MapConfig, nominator);
         }
 
-        nomination.NominationParticipants.Add(nominator.Slot);
+        ((McsNominationData)nomination).Participants.Add(nominator.Slot);
 
         nominationController.BroadcastNomination(nominator, mapConfig, isNominationChanged: previousNomination != null);
 
@@ -120,12 +120,12 @@ internal sealed class MapNominationService(
             if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnAdminNomination(adminNominationParam)))
                 return [NominationCheckResult.CancelledByExternalPlugin];
 
-            existing.IsForceNominated = true;
+            ((McsNominationData)existing).IsForceNominated = true;
             nomination = existing;
         }
 
         if (nominator != null)
-            nomination.NominationParticipants.Add(nominator.Slot);
+            ((McsNominationData)nomination).Participants.Add(nominator.Slot);
 
         nominationController.BroadcastAdminNomination(nominator, mapConfig, changedExistingToAdmin: existing != null);
 
@@ -169,12 +169,12 @@ internal sealed class MapNominationService(
 
     private bool TryUnNominateInternal(int slot, IGameClient? client, UnNominateReason reason)
     {
-        IMcsNominationData? participating = null;
+        McsNominationData? participating = null;
         foreach (var nomination in nominationManager.NominatedMaps.Values)
         {
             if (nomination.NominationParticipants.Contains(slot))
             {
-                participating = nomination;
+                participating = nomination as McsNominationData;
                 break;
             }
         }
@@ -182,18 +182,14 @@ internal sealed class MapNominationService(
         if (participating == null)
             return false;
 
-        participating.NominationParticipants.Remove(slot);
+        participating.Participants.Remove(slot);
 
         var unNominateParam = new UnNominateEventParams(
             plugin, (PluginModuleBase)nominationController, participating, slot, reason, client);
 
         eventManager.Fire<INominationEventListener>(evt => evt.OnUnNominate(unNominateParam));
 
-        // Prune the nomination entry when the last participant leaves — but
-        // only for organic nominations. Admin-forced nominations are kept
-        // even with zero participants (they represent an operator decision,
-        // not a player vote).
-        if (participating.NominationParticipants.Count == 0 && !participating.IsForceNominated)
+        if (participating.Participants.Count == 0 && !participating.IsForceNominated)
             TryRemoveNomination(participating.MapConfig);
 
         return true;

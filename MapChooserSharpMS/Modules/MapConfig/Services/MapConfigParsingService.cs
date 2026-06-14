@@ -23,7 +23,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
 
     public IMapConfigParsingResult? ParseConfigs(string configPath)
     {
-        var documents = LoadTomlDocuments(configPath);
+        var documents = LoadTomlDocuments(configPath, Warnings);
         if (documents.Count == 0)
             return null;
 
@@ -718,10 +718,12 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             OverridePriority = source.OverridePriority,
             TargetDays = source.TargetDays is not null ? new List<DayOfWeek>(source.TargetDays) : null,
             TargetTimeRanges = source.TargetTimeRanges is not null ? new List<ITimeRange>(source.TargetTimeRanges) : null,
+            MapSelectionWeight = source.MapSelectionWeight,
+            ShortGroupName = source.ShortGroupName,
         };
     }
 
-    private static List<TomlDocument> LoadTomlDocuments(string configPath)
+    private static List<TomlDocument> LoadTomlDocuments(string configPath, List<string> warnings)
     {
         var documents = new List<TomlDocument>();
         var mapsTomlPath = Path.Combine(configPath, "maps.toml");
@@ -738,8 +740,15 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             var tomlFiles = Directory.GetFiles(configPath, "*.toml", SearchOption.AllDirectories);
             foreach (var file in tomlFiles)
             {
-                var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(file);
-                documents.Add(doc);
+                try
+                {
+                    var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(file);
+                    documents.Add(doc);
+                }
+                catch (Exception ex)
+                {
+                    warnings.Add($"Failed to parse TOML file '{file}': {ex.Message}");
+                }
             }
         }
 

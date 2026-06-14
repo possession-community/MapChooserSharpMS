@@ -16,6 +16,7 @@ internal sealed class MapCycleConVars
     public readonly IConVar TransitionRetryAttempts;
     public readonly IConVar TransitionRetryInterval;
     public readonly IConVar TransitionFallbackMap;
+    public readonly IConVar TransitionDelay;
 
     public MapCycleConVars(IConVarManager cvm)
     {
@@ -63,6 +64,11 @@ internal sealed class MapCycleConVars
             "mcs_map_transition_fallback_map", "de_dust2",
             "Map to change to when all map change retries failed",
             ConVarFlags.None)!;
+
+        TransitionDelay = cvm.CreateConVar(
+            "mcs_map_transition_delay", 20.0F, 0.0F, 60.0F,
+            "Seconds to wait after round end before changing map. 0 = immediate",
+            ConVarFlags.None)!;
     }
 
     public IEnumerable<IConVar> All()
@@ -76,5 +82,6 @@ internal sealed class MapCycleConVars
         yield return TransitionRetryAttempts;
         yield return TransitionRetryInterval;
         yield return TransitionFallbackMap;
+        yield return TransitionDelay;
     }
 }

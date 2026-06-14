@@ -88,40 +88,47 @@ internal sealed class SetNextMapCommand(IServiceProvider provider) : McsCommandB
 
         _ = Task.Run(async () =>
         {
-            var (success, fetchResult) = await transitionManager.TrySetNextMap(workshopId);
-
-            SharedSystem.GetModSharp().InvokeFrameAction(() =>
+            try
             {
-                if (!success)
+                var (success, fetchResult) = await transitionManager.TrySetNextMap(workshopId);
+
+                SharedSystem.GetModSharp().InvokeFrameAction(() =>
                 {
-                    string reason = fetchResult.ExistenceStatus switch
+                    if (!success)
                     {
-                        ExistenceStatus.NotAvailableInWorkshop => "private/deleted",
-                        ExistenceStatus.FailedToFetchHttpError => "HTTP error",
-                        _ => "unknown",
-                    };
-                    Logger.LogWarning("SetNextMap workshop {Id}: {Reason}", workshopId, reason);
+                        string reason = fetchResult.ExistenceStatus switch
+                        {
+                            ExistenceStatus.NotAvailableInWorkshop => "private/deleted",
+                            ExistenceStatus.FailedToFetchHttpError => "HTTP error",
+                            _ => "unknown",
+                        };
+                        Logger.LogWarning("SetNextMap workshop {Id}: {Reason}", workshopId, reason);
 
-                    if (client is null || client.IsValid)
-                    {
-                        PrintMessageToServerOrPlayerChat(client,
-                            LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetNextMap.WorkshopNotAvailable",
-                                workshopId, reason));
+                        if (client is null || client.IsValid)
+                        {
+                            PrintMessageToServerOrPlayerChat(client,
+                                LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetNextMap.WorkshopNotAvailable",
+                                    workshopId, reason));
+                        }
+                        return;
                     }
-                    return;
-                }
 
-                string executorName = client is not null && client.IsValid ? client.Name : "Console";
-                string mapDisplay = fetchResult.MapName ?? workshopId.ToString();
+                    string executorName = client is not null && client.IsValid ? client.Name : "Console";
+                    string mapDisplay = fetchResult.MapName ?? workshopId.ToString();
 
-                PrintLocalizedChatToAll(
-                    "MapCycle.Broadcast.Admin.SetNextMap",
-                    executorName, mapDisplay);
+                    PrintLocalizedChatToAll(
+                        "MapCycle.Broadcast.Admin.SetNextMap",
+                        executorName, mapDisplay);
 
-                Logger.LogInformation(
-                    "Admin {Executor} set next map from workshop: {Map} (Workshop ID: {WorkshopId})",
-                    executorName, mapDisplay, workshopId);
-            });
+                    Logger.LogInformation(
+                        "Admin {Executor} set next map from workshop: {Map} (Workshop ID: {WorkshopId})",
+                        executorName, mapDisplay, workshopId);
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "SetNextMap workshop fetch failed for {Id}", workshopId);
+            }
         });
     }
 }

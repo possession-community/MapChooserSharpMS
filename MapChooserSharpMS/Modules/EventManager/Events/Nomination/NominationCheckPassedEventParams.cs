@@ -7,7 +7,7 @@ using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.EventManager.Events.Nomination;
 
-public class NominationCheckPassedEventParams(
+internal sealed class NominationCheckPassedEventParams(
     TnmsPlugin plugin,
     PluginModuleBase moduleBase,
     IGameClient? nominator = null

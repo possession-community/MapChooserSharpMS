@@ -77,6 +77,7 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
             return;
 
         _cts?.Cancel();
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         Task.Run(() => RunVisibilityCheckAsync(_cts.Token));
     }
@@ -144,7 +145,8 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
             ["TIMESTAMP"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC"),
         };
 
-        Task.Run(() => _webhookService.TrySendAsync(configPath, placeholders));
+        var ct = _cts?.Token ?? CancellationToken.None;
+        Task.Run(() => _webhookService.TrySendAsync(configPath, placeholders, ct), ct);
     }
 
     protected override void OnUnloadModule()
@@ -383,7 +385,7 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
         if (string.IsNullOrWhiteSpace(workshopTitle))
             return $"workshop_{workshopId}";
 
-        string valid = Regex.Replace(workshopTitle, @"[^a-zA-Z0-9_\-.]", "_");
+        string valid = Regex.Replace(workshopTitle, @"[^a-zA-Z0-9_\-]", "_");
 
         if (string.IsNullOrWhiteSpace(valid) || valid.StartsWith('-') || valid.StartsWith('.'))
             valid = "map_" + valid;
