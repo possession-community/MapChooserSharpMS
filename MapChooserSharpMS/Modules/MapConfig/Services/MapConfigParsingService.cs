@@ -23,7 +23,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
 
     public IMapConfigParsingResult? ParseConfigs(string configPath)
     {
-        var documents = LoadTomlDocuments(configPath);
+        var documents = LoadTomlDocuments(configPath, Warnings);
         if (documents.Count == 0)
             return null;
 
@@ -723,7 +723,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
         };
     }
 
-    private static List<TomlDocument> LoadTomlDocuments(string configPath)
+    private static List<TomlDocument> LoadTomlDocuments(string configPath, List<string> warnings)
     {
         var documents = new List<TomlDocument>();
         var mapsTomlPath = Path.Combine(configPath, "maps.toml");
@@ -745,9 +745,9 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
                     var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(file);
                     documents.Add(doc);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // Skip malformed TOML file — other files continue loading
+                    warnings.Add($"Failed to parse TOML file '{file}': {ex.Message}");
                 }
             }
         }
