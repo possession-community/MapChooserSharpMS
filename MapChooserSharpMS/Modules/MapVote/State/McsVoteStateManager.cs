@@ -32,7 +32,5 @@ internal sealed class McsVoteStateManager
     private static bool IsVoting(McsMapVoteState? state)
         => state is McsMapVoteState.Voting
             or McsMapVoteState.RunoffVoting
-            or McsMapVoteState.Initializing
-            or McsMapVoteState.InitializeAccepted
             or McsMapVoteState.Finalizing;
 }
