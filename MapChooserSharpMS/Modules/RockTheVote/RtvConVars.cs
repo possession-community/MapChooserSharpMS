@@ -25,7 +25,7 @@ internal sealed class RtvConVars
         CommandUnlockTimeMapExtend = cvm.CreateConVar("mcs_rtv_command_unlock_time_map_extend", 0.0F, 0.0F, 1200.0F, "Seconds to take unlock RTV command after map is extended in vote", ConVarFlags.None)!;
         CommandUnlockTimeMapStart = cvm.CreateConVar("mcs_rtv_command_unlock_time_map_start", 0.0F, 0.0F, 1200.0F, "Seconds to take unlock RTV command after map started", ConVarFlags.None)!;
         VoteStartThreshold = cvm.CreateConVar("mcs_rtv_vote_start_threshold", 0.5F, 0.0F, 1.0F, "How many percent to require start rtv vote?", ConVarFlags.None)!;
-        MapChangeTimingAfterRtvSuccess = cvm.CreateConVar("mcs_rtv_map_change_timing", 3.0F, 0.0F, 60.0F, "Seconds to change map after RTV is success. Set 0.0 to change immediately", ConVarFlags.None)!;
+        MapChangeTimingAfterRtvSuccess = cvm.CreateConVar("mcs_rtv_map_change_timing", 20.0F, 0.0F, 60.0F, "Seconds to terminate round after RTV is success. Set 0.0 to terminate immediately", ConVarFlags.None)!;
         MinimumRequirements = cvm.CreateConVar("mcs_rtv_minimum_requirements", 0, 0, 64, "Minimum RTV requirements to start RTV vote. Set 0 to disable this requirement", ConVarFlags.None)!;
         BroadcastPlayerCast = cvm.CreateConVar("mcs_rtv_broadcast_player_cast", 1, 0, 1, "Broadcast when a player casts RTV vote", ConVarFlags.None)!;
         ImmediateChangeThreshold = cvm.CreateConVar("mcs_rtv_immediate_change_threshold", 0.0F, 0.0F, 1.0F, "Post-vote RTV ratio to trigger immediate map change. 0 = disabled (always round-end)", ConVarFlags.None)!;

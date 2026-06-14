@@ -66,7 +66,7 @@ internal sealed class MapCycleConVars
             ConVarFlags.None)!;
 
         TransitionDelay = cvm.CreateConVar(
-            "mcs_map_transition_delay", 0.0F, 0.0F, 60.0F,
+            "mcs_map_transition_delay", 20.0F, 0.0F, 60.0F,
             "Seconds to wait after round end before changing map. 0 = immediate",
             ConVarFlags.None)!;
     }
