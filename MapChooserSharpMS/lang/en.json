@@ -197,6 +197,7 @@
     "MapCycle.ExtCommand.Notification.Enabled": "!ext has been {green}enabled{default}",
     "MapCycle.ExtCommand.Notification.Disabled": "!ext has been {red}disabled{default}",
     "MapCycle.ExtCommand.Notification.InvalidArgument": "Invalid argument. Usage: !setext <number>",
+    "MapCycle.ExtCommand.Notification.SetUsage": "Usage: !setext <count>",
     "MapCycle.ExtCommand.Notification.SetSuccess": "!ext uses set to {lime}{0}{default}",
 
     "Chat.Notification.MutedDuringVote": "Chat is muted during the map vote!",

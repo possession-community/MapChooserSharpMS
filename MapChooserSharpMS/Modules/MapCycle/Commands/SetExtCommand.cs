@@ -6,6 +6,7 @@ using Sharp.Shared.Types;
 using MapChooserSharpMS.Modules.Commands;
 using TnmsPluginFoundation.Models.Command;
 using TnmsPluginFoundation.Models.Command.Validators;
+using TnmsPluginFoundation.Models.Command.Validators.RangedValidators;
 
 namespace MapChooserSharpMS.Modules.MapCycle.Commands;
 
@@ -21,18 +22,16 @@ internal sealed class SetExtCommand(IServiceProvider provider) : McsCommandBase(
     protected override ICommandValidator? GetValidator()
         => new CompositeValidator()
             .Add(new PermissionValidator("mcs.admin.command.mapcycle.setext"))
-            .Add(new ArgumentCountValidator(1));
+            .Add(new ArgumentCountValidator(1))
+            .Add(new RangedArgumentValidator<int>(0, int.MaxValue, 1));
+
+    protected override string GetUsageTranslationKey() => "MapCycle.ExtCommand.Notification.SetUsage";
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
         _extendController ??= ServiceProvider.GetRequiredService<IMapCycleExtendController>();
 
-        if (!int.TryParse(commandInfo[1], out int count) || count < 0)
-        {
-            PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapCycle.ExtCommand.Notification.InvalidArgument"));
-            return;
-        }
+        int count = validatedArguments!.GetArgument<int>(1);
 
         _extendController.SetExtCommandUsesLeft(count);
 

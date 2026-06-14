@@ -197,6 +197,7 @@
     "MapCycle.ExtCommand.Notification.Enabled": "!ext が{green}有効化{default}されました",
     "MapCycle.ExtCommand.Notification.Disabled": "!ext が{red}無効化{default}されました",
     "MapCycle.ExtCommand.Notification.InvalidArgument": "不正な引数です。使い方: !setext <数値>",
+    "MapCycle.ExtCommand.Notification.SetUsage": "使い方: !setext <回数>",
     "MapCycle.ExtCommand.Notification.SetSuccess": "!ext の残り回数を {lime}{0}{default} に設定しました",
 
     "Chat.Notification.MutedDuringVote": "投票中はチャットがミュートされています！",
