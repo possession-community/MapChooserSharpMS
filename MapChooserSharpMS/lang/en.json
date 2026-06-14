@@ -119,6 +119,7 @@
     "MapVote.Command.Admin.ForceResetMcs.Usage": "Usage: !forceresetmcs",
     "MapVote.Broadcast.Admin.ForceResetMcs": "Admin {lime}{0}{default} force reset all MCS state!",
 
+    "MapCycle.Broadcast.MapChanging": "{lightred}Changing map to {lime}{0}{lightred}!",
     "MapCycle.Command.Notification.NextMap": "Next map: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "Current map: {lime}{0}{default}",
     "MapCycle.Command.Notification.TimeLeft": "Time left: {lime}{0}{default}",

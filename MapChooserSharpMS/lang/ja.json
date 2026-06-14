@@ -119,6 +119,7 @@
     "MapVote.Command.Admin.ForceResetMcs.Usage": "使い方: !forceresetmcs",
     "MapVote.Broadcast.Admin.ForceResetMcs": "管理者 {lime}{0}{default} が MCS の全状態を強制リセットしました!",
 
+    "MapCycle.Broadcast.MapChanging": "{lightred}マップを {lime}{0}{lightred} に変更します!",
     "MapCycle.Command.Notification.NextMap": "次のマップ: {lime}{0}{default}",
     "MapCycle.Command.Notification.CurrentMap": "現在のマップ: {lime}{0}{default}",
     "MapCycle.Command.Notification.TimeLeft": "残り時間: {lime}{0}{default}",

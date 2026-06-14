@@ -424,4 +424,24 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         float delay = _conVars.TransitionDelay.GetFloat();
         TransitionToNextMap(delay);
     }
+
+    public void TerminateAndTransition(float terminateDelay = 0f)
+    {
+        if (_nextMap is null)
+            return;
+
+        ChangeMapOnNextRoundEnd = true;
+
+        var cvm = _sharedSystem.GetConVarManager();
+        cvm.FindConVar("mp_timelimit")?.Set(1);
+        cvm.FindConVar("mp_maxrounds")?.Set(1);
+
+        string mapDisplay = ResolveDisplayName(_nextMap);
+        for (int i = 0; i < 3; i++)
+            BroadcastToAll("MapCycle.Broadcast.MapChanging", mapDisplay);
+
+        _logger.LogInformation("[MapTransition] Forcing round termination for map transition in {Delay}s", terminateDelay);
+
+        TnmsPluginFoundation.Utils.Entity.GameRulesUtil.TerminateRound(terminateDelay, RoundEndReason.RoundDraw);
+    }
 }

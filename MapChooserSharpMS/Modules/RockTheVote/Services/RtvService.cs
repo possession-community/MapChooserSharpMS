@@ -233,11 +233,9 @@ internal sealed class RtvService(
                 float timing = conVars.MapChangeTimingAfterRtvSuccess.GetFloat();
                 BroadcastToAll("Rtv.Broadcast.ChangeToNextMapImmediately", mapDisplayName, timing);
 
-                var intermissionParams = new McsIntermissionParams(plugin, (PluginModuleBase)controller, nextMap);
-                eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
-
-                transitionManager.ChangeMapOnNextRoundEnd = false;
-                transitionManager.TransitionToNextMap(timing);
+                var internalTransitionManager = ServiceProvider
+                    .GetRequiredService<MapCycle.Managers.MapTransition.Interfaces.IMcsInternalMapTransitionManager>();
+                internalTransitionManager.TerminateAndTransition(timing);
                 break;
         }
     }
