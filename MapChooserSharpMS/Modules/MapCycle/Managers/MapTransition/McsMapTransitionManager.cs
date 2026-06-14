@@ -432,6 +432,12 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
         ChangeMapOnNextRoundEnd = true;
 
+        if (TnmsPluginFoundation.Utils.Entity.GameRulesUtil.IsWarmup())
+        {
+            _logger.LogInformation("[MapTransition] Ending warmup before map transition");
+            _sharedSystem.GetModSharp().ServerCommand("mp_warmup_end");
+        }
+
         var cvm = _sharedSystem.GetConVarManager();
         cvm.FindConVar("mp_timelimit")?.Set(1);
         cvm.FindConVar("mp_maxrounds")?.Set(1);
