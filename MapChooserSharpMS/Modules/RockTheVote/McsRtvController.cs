@@ -195,7 +195,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         _eventManager.RemoveListener(listener);
     }
 
-    internal void ResetRtvState()
+    public void ResetRtvState()
     {
         StopCooldownTimer();
         _rtvManager.ForceReset();

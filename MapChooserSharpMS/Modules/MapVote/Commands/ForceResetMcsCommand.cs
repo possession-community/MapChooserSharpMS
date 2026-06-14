@@ -1,8 +1,6 @@
 using System;
 using MapChooserSharpMS.Modules.Commands;
-using MapChooserSharpMS.Shared.MapVote.Services;
-using MapChooserSharpMS.Shared.Nomination.Services;
-using MapChooserSharpMS.Shared.RockTheVote.Services;
+using MapChooserSharpMS.Modules.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared.Objects;
@@ -15,13 +13,11 @@ namespace MapChooserSharpMS.Modules.MapVote.Commands;
 internal sealed class ForceResetMcsCommand(IServiceProvider provider) : McsCommandBase(provider)
 {
     public override string CommandName => "forceresetmcs";
-    public override string CommandDescription => "Admin: force reset all MCS state (vote, RTV, nominations)";
+    public override string CommandDescription => "Admin: force reset all MCS state (vote, RTV, nominations, extend, next map)";
     public override TnmsCommandRegistrationType CommandRegistrationType =>
         TnmsCommandRegistrationType.Client | TnmsCommandRegistrationType.Server;
 
-    private IMapVoteControllingService _voteService = null!;
-    private IRtvService _rtvService = null!;
-    private IMapNominationService _nominationService = null!;
+    private McsStateResettingService _resettingService = null!;
 
     protected override ICommandValidator? GetValidator()
         => new PermissionValidator("mcs.admin.command.mapvote.forceresetmcs");
@@ -30,13 +26,9 @@ internal sealed class ForceResetMcsCommand(IServiceProvider provider) : McsComma
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
-        _voteService ??= ServiceProvider.GetRequiredService<IMapVoteControllingService>();
-        _rtvService ??= ServiceProvider.GetRequiredService<IRtvService>();
-        _nominationService ??= ServiceProvider.GetRequiredService<IMapNominationService>();
+        _resettingService ??= ServiceProvider.GetRequiredService<McsStateResettingService>();
 
-        _voteService.ForceResetVote();
-        _rtvService.EnableRtvCommand(silently: true);
-        _nominationService.ClearNominations();
+        _resettingService.ForceResetAll();
 
         string executorName = client?.Name ?? "Console";
         PrintLocalizedChatToAll("MapVote.Broadcast.Admin.ForceResetMcs", executorName);

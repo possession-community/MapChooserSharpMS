@@ -75,6 +75,7 @@ public sealed class MapChooserSharpMs(
 
     protected override void LateRegisterPluginServices(IServiceCollection collection, IServiceProvider provider)
     {
+        collection.AddSingleton(sp => new Modules.Services.McsStateResettingService(sp, Logger));
         var nominationController = provider.GetRequiredService<Modules.Nomination.Interfaces.IMcsInternalNominationController>();
         var mapVoteController = provider.GetRequiredService<IMcsInternalVoteController>();
         var rtvController = provider.GetRequiredService<Modules.RockTheVote.Interfaces.IMcsInternalRtvController>();

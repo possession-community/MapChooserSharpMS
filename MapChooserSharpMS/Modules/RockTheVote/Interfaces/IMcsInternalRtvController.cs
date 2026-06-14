@@ -12,4 +12,6 @@ public interface IMcsInternalRtvController: IMcsRtvController
     /// controller's localization helpers that live on PluginModuleBase.
     /// </summary>
     void NotifyAdminCommandResult(IGameClient? client, string translationKey);
+
+    void ResetRtvState();
 }
