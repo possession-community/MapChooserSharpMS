@@ -1,26 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
-using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
-using MapChooserSharpMS.Modules.Nomination.Models;
-using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
-using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.Nomination;
-using Sharp.Shared.Objects;
 
 namespace MapChooserSharpMS.Modules.Nomination.Managers;
 
 internal sealed class InternalNominationManager: IMcsInternalNominationManager
 {
-    private readonly Dictionary<string, IMcsNominationData> _internalNominations = new();
-    
+    private readonly ConcurrentDictionary<string, IMcsNominationData> _internalNominations = new();
+
     public IReadOnlyDictionary<string, IMcsNominationData> NominatedMaps => _internalNominations;
 
     public bool ClearNominations()
     {
-        if (!_internalNominations.Any())
+        if (_internalNominations.IsEmpty)
             return false;
-        
+
         _internalNominations.Clear();
         return true;
     }
@@ -32,6 +28,6 @@ internal sealed class InternalNominationManager: IMcsInternalNominationManager
 
     public bool RemoveNomination(IMcsNominationData nominationData)
     {
-        return _internalNominations.Remove(nominationData.MapConfig.MapName);
+        return _internalNominations.TryRemove(nominationData.MapConfig.MapName, out _);
     }
 }
