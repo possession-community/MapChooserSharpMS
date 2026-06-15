@@ -74,5 +74,5 @@ RunoffVoteCountdownSound1 = ""
 | MaxVoteElements | int | 5 | 投票メニューに表示するマップ数 (Extend/DontChange 含む) |
 | ShouldPrintVoteToChat | bool | true | プレイヤーが投票した際にチャットに表示するか |
 | ShouldPrintVoteRemainingTime | bool | true | 投票中に残り時間をチャットに表示するか |
-| CountdownUiType | enum | CenterHtml | 投票開始前カウントダウンの表示方式。`None` / `CenterHud` / `CenterAlert` / `CenterHtml` / `Chat` |
+| CountdownUiType | enum ([Flags]) | CenterHtml | 投票開始前カウントダウンの表示方式。`None` / `CenterHud` / `CenterAlert` / `CenterHtml` / `Chat`。カンマ区切りで複数指定可 (例: `"CenterHtml, Chat"`) |
 | SoundFile | string | "" | .vsndevts ファイルパス (precache 用)。他プラグインで済んでいれば空欄可 |

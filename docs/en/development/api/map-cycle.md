@@ -93,8 +93,8 @@ Manages map transitions: setting, confirming, and executing the next map.
 
 | Property | Type | Description |
 |---|---|---|
-| `NextMap` | `IMapConfig?` | Next map configuration. `null` until a next map is confirmed |
-| `CurrentMap` | `IMapConfig?` | Current map configuration. `null` if MCS has no config for the current map |
+| `NextMap` | `IMapInformation?` | Next map information including nominator metadata. `null` until a next map is confirmed |
+| `CurrentMap` | `IMapInformation?` | Current map information. `null` if MCS has no config for the current map |
 | `IsNextMapConfirmed` | `bool` | Whether the next map is confirmed |
 | `ChangeMapOnNextRoundEnd` | `bool` (get/set) | When `true`, the map transitions to the next map at round end |
 
@@ -102,11 +102,35 @@ Manages map transitions: setting, confirming, and executing the next map.
 
 | Method | Return Type | Description |
 |---|---|---|
-| `TrySetNextMap(IMapConfig)` | `bool` | Set the next map from a given `IMapConfig` |
+| `TrySetNextMap(IMapInformation)` | `bool` | Set the next map with full metadata (nominator info, etc.) |
+| `TrySetNextMap(IMapConfig)` | `bool` | Set the next map from a given `IMapConfig` (no nominator metadata) |
 | `TrySetNextMap(string)` | `bool` | Look up a map by name and set it as the next map |
 | `TrySetNextMap(long)` | `Task<(bool Success, IWorkshopFetchResult FetchResult)>` | Set the next map by Workshop ID. Searches in-memory config first, then falls back to Steam Workshop HTTP fetch |
 | `TryRemoveNextMap()` | `bool` | Remove the confirmed next map |
 | `TransitionToNextMap(float seconds)` | `void` | Initiate a map change with the given delay in seconds. Silently does nothing if no next map is set |
+
+### IMapInformation
+
+A wrapper interface that pairs a map config with contextual metadata such as who nominated it. `IMapTransitionManager.NextMap` and `CurrentMap` return this type.
+
+| Property | Type | Description |
+|---|---|---|
+| `MapConfig` | `IMapConfig` | The map configuration data |
+| `NominatorSteamIds` | `IReadOnlyList<ulong>` | SteamIDs of players who nominated this map (in nomination order). Empty for admin-set, random pick, or API-set maps |
+
+Create instances using the `MapInformation.For(IMapConfig)` builder:
+
+```csharp
+var info = MapInformation.For(mapConfig)
+    .WithNominator(steamId)       // single nominator
+    .Build();
+
+var info2 = MapInformation.For(mapConfig)
+    .WithNominators(steamIdList)  // multiple nominators
+    .Build();
+
+transition.TrySetNextMap(info);
+```
 
 ---
 

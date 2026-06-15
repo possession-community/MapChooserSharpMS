@@ -9,10 +9,12 @@ Access via `IMapChooserSharpShared.McsMapVoteController`.
 
 ## IMcsMapVoteController
 
-Public facade for the map vote module. Write operations for voting are delegated to individual services and managers; this interface exposes only event listener registration and winner threshold customization.
+Public facade for the map vote module. Provides access to vote state, the vote controlling service, event listener registration, and winner threshold customization.
 
 | Member | Type | Description |
 |---|---|---|
+| `VoteState` | `IMcsReadOnlyVoteState` | Read-only view of the current vote state |
+| `MapVoteControllingService` | `IMapVoteControllingService` | Service for initiating, cancelling, and force-resetting votes |
 | `InstallEventListener(IMapVoteEventListener)` | `void` | Register a map vote event listener |
 | `RemoveEventListener(IMapVoteEventListener)` | `void` | Unregister a listener |
 | `CustomWinnerThresholdProvider` | `Func<float>?` | External plugin override for the winner threshold (see below) |

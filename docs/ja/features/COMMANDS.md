@@ -7,7 +7,7 @@
 
 | コマンド | エイリアス | 説明 |
 |---|---|---|
-| !nominate \<map\> | - | マップをノミネートする。引数なしで全マップ一覧、部分一致で複数ヒット時はメニュー表示 |
+| !nominate \<map\> | !nom | マップをノミネートする。引数なしで全マップ一覧、部分一致で複数ヒット時はメニュー表示 |
 | !nomlist | - | 現在のノミネーション一覧を表示。`!nomlist full` で管理者はノミネーター名表示 |
 | !rtv | チャット "rtv" | Rock The Vote に投票する |
 | !unrtv | - | RTV 投票を取り消す |
@@ -31,7 +31,7 @@
 | !setnextmap \<map/workshopId\> | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定 (Workshop ID も可) |
 | !removenextmap | mcs.admin.command.mapcycle.removenextmap | 次のマップ設定を解除 |
 | !extend \<amount\> | mcs.admin.command.mapcycle.extend | マップの時間/ラウンドを延長 (マイナスで短縮) |
-| !voteextend \<minutes\> | mcs.admin.command.mapcycle.voteextend | 延長投票 (NVM YesNo 投票) を開始 |
+| !voteextend \<minutes\> | mcs.admin.command.mapcycle.voteextend | 延長投票 (NVM YesNo 投票) を開始。エイリアス: `!ve` |
 | !setmapcooldown \<map\> \<cd\> | mcs.admin.command.mapcycle.setmapcooldown | マップのクールダウン (回数) を設定。エイリアス: `!setmapcd` |
 | !setgroupcooldown \<group\> \<cd\> | mcs.admin.command.mapcycle.setgroupcooldown | グループのクールダウン (回数) を設定。エイリアス: `!setgroupcd` |
 | !setmaptcd \<map\> \<duration\> | mcs.admin.command.mapcycle.setmaptcd | マップの時限クールダウンを設定 (例: 2h, 3d, 1w) |

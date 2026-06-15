@@ -1,0 +1,54 @@
+# Command List
+
+All commands are registered with the `ms_` prefix (e.g. `ms_nominate`).
+In chat, `!nominate` / `css_nominate` can also be used.
+
+## Player Commands
+
+| Command | Alias | Description |
+|---|---|---|
+| !nominate \<map\> | !nom | Nominate a map. Without arguments, shows the full map list. Partial match with multiple hits shows a menu |
+| !nomlist | - | Show the current nomination list. `!nomlist full` shows nominator names for admins |
+| !rtv | chat "rtv" | Vote for Rock The Vote |
+| !unrtv | - | Cancel your RTV vote |
+| !ext | - | Vote to extend the current map (RTV-style counting) |
+| !timeleft | chat "timeleft" | Show remaining time/rounds |
+| !nextmap | chat "nextmap" | Show the next map |
+| !currentmap | chat "currentmap" | Show the current map |
+| !mapinfo \<map\> | - | Show map information. Without arguments, shows the current map |
+| !extends | - | Show remaining extend count |
+| !thetime | chat "thetime" | Show the current server time |
+
+## Admin Commands
+
+| Command | Permission Node | Description |
+|---|---|---|
+| !nominate_addmap \<map\> | mcs.admin.command.nomination.addmap | Add a map as an admin nomination |
+| !nominate_addwsmap \<workshopId\> | mcs.admin.command.nomination.addwsmap | Add a map as an admin nomination by Workshop ID (fetches from API even if not in config) |
+| !nominate_removemap \<map\> | mcs.admin.command.nomination.removemap | Remove a map from nominations |
+| !map \<map\> | mcs.admin.command.mapcycle.map | Immediately change to the specified map |
+| !wsmap \<workshopId\> | mcs.admin.command.mapcycle.wsmap | Immediately change to a map by Workshop ID (fetches from API even if not in config) |
+| !setnextmap \<map/workshopId\> | mcs.admin.command.mapcycle.setnextmap | Set the next map (Workshop ID also accepted) |
+| !removenextmap | mcs.admin.command.mapcycle.removenextmap | Remove the next map setting |
+| !extend \<amount\> | mcs.admin.command.mapcycle.extend | Extend the map's time/rounds (negative values to shorten) |
+| !voteextend \<minutes\> | mcs.admin.command.mapcycle.voteextend | Start an extend vote (NVM YesNo vote). Alias: `!ve` |
+| !setmapcooldown \<map\> \<cd\> | mcs.admin.command.mapcycle.setmapcooldown | Set a map's cooldown (count). Alias: `!setmapcd` |
+| !setgroupcooldown \<group\> \<cd\> | mcs.admin.command.mapcycle.setgroupcooldown | Set a group's cooldown (count). Alias: `!setgroupcd` |
+| !setmaptcd \<map\> \<duration\> | mcs.admin.command.mapcycle.setmaptcd | Set a map's timed cooldown (e.g. 2h, 3d, 1w) |
+| !setgrouptcd \<group\> \<duration\> | mcs.admin.command.mapcycle.setgrouptcd | Set a group's timed cooldown (e.g. 2h, 3d, 1w) |
+| !forceresetmcs | mcs.admin.command.mapvote.forceresetmcs | Force reset all MCS state (vote/RTV/nominations) |
+| !reloadmapcfgs | mcs.admin.command.mapconfig.reloadmapcfgs | Reload map configs |
+| !forcertv | mcs.admin.command.rtv.forcertv | Force trigger RTV |
+| !enablertv | mcs.admin.command.rtv.enablertv | Enable RTV |
+| !disablertv | mcs.admin.command.rtv.disablertv | Disable RTV |
+| !enableext | mcs.admin.command.mapcycle.enableext | Enable !ext |
+| !disableext | mcs.admin.command.mapcycle.disableext | Disable !ext |
+| !setext \<count\> | mcs.admin.command.mapcycle.setext | Set the remaining !ext count |
+
+## Permission Nodes (Nomination)
+
+| Node | Description |
+|---|---|
+| mcs.nominate.map.deny.\<map\> | Deny nomination of a specific map (exact match) |
+| mcs.nominate.group.deny.\<group\> | Deny nomination of a specific group (exact match) |
+| mcs.admin.command.nomination.nomlist.verbose | Show nominator names with !nomlist full |
