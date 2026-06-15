@@ -144,6 +144,11 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             var groupProps = TomlPropertyMapper.ExtractProperties(node);
             var mergedProps = MapConfigBuilder.MergeProperties(defaultProps, groupProps);
 
+            mergedProps.Cooldown = groupProps.Cooldown;
+            mergedProps.CooldownDateTime = groupProps.CooldownDateTime;
+            mergedProps.NominationCooldown = groupProps.NominationCooldown;
+            mergedProps.NominationCooldownDateTime = groupProps.NominationCooldownDateTime;
+
             // Build extra: merge default → group extras
             var extraBuilder = new ExtraConfigBuilder().Merge(defaultExtra);
             if (TryGetSubNode(node, "extra", out var extraNode))
@@ -290,12 +295,25 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
 
             // Merge: default → group base → override
             var mergedProps = CloneProperties(defaultProps);
+            int? groupBaseCooldown = null;
+            string? groupBaseCooldownDateTime = null;
+            int? groupBaseNomCooldown = null;
+            string? groupBaseNomCooldownDateTime = null;
             if (FindSection(allSections, TomlSectionType.GroupSetting, groupName, isGroup: true, out var groupSection))
             {
                 var groupRawProps = TomlPropertyMapper.ExtractProperties(groupSection);
+                groupBaseCooldown = groupRawProps.Cooldown;
+                groupBaseCooldownDateTime = groupRawProps.CooldownDateTime;
+                groupBaseNomCooldown = groupRawProps.NominationCooldown;
+                groupBaseNomCooldownDateTime = groupRawProps.NominationCooldownDateTime;
                 mergedProps = MapConfigBuilder.MergeProperties(mergedProps, groupRawProps);
             }
             mergedProps = MapConfigBuilder.MergeProperties(mergedProps, overrideProps);
+
+            mergedProps.Cooldown = overrideProps.Cooldown ?? groupBaseCooldown;
+            mergedProps.CooldownDateTime = overrideProps.CooldownDateTime ?? groupBaseCooldownDateTime;
+            mergedProps.NominationCooldown = overrideProps.NominationCooldown ?? groupBaseNomCooldown;
+            mergedProps.NominationCooldownDateTime = overrideProps.NominationCooldownDateTime ?? groupBaseNomCooldownDateTime;
 
             // Build extra for override
             var extraBuilder = new ExtraConfigBuilder().Merge(baseGroupConfig.ExtraConfiguration);

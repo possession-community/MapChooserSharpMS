@@ -211,6 +211,62 @@ public class GroupConfigPropertyTests
     }
 
     // ========================================================================
+    // Group CooldownConfig must NOT inherit default's Cooldown
+    // ========================================================================
+
+    [Fact]
+    public void GroupCooldown_DoesNotInheritDefault_WhenGroupDoesNotSpecify()
+    {
+        var doc = TomlTestHelper.LoadToml("60_group_cooldown_no_inherit_default.toml");
+        var result = _service.ParseConfigsFromDocument(doc);
+        Assert.NotNull(result);
+
+        var easyGroup = result!.MapGroupSettings["Easy"]
+            .First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
+
+        Assert.Equal(0, easyGroup.CooldownConfig.ConfigCooldown);
+        Assert.Equal(0, easyGroup.CooldownConfig.ConfigNominationCooldown);
+    }
+
+    [Fact]
+    public void GroupCooldown_UsesGroupValue_WhenGroupSpecifies()
+    {
+        var doc = TomlTestHelper.LoadToml("60_group_cooldown_no_inherit_default.toml");
+        var result = _service.ParseConfigsFromDocument(doc);
+        Assert.NotNull(result);
+
+        var hardGroup = result!.MapGroupSettings["Hard"]
+            .First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
+
+        Assert.Equal(10, hardGroup.CooldownConfig.ConfigCooldown);
+        Assert.Equal(2, hardGroup.CooldownConfig.ConfigNominationCooldown);
+    }
+
+    [Fact]
+    public void GroupCooldown_MapStillInheritsDefault()
+    {
+        var doc = TomlTestHelper.LoadToml("60_group_cooldown_no_inherit_default.toml");
+        var result = _service.ParseConfigsFromDocument(doc);
+        Assert.NotNull(result);
+
+        var easyMap = result!.MapConfigsNameMapping["ze_easy_map"].First().MapConfig;
+        Assert.Equal(40, easyMap.CooldownConfig.ConfigCooldown);
+    }
+
+    [Fact]
+    public void GroupCooldown_MapGroupHasZeroCooldown_WhenGroupUnspecified()
+    {
+        var doc = TomlTestHelper.LoadToml("60_group_cooldown_no_inherit_default.toml");
+        var result = _service.ParseConfigsFromDocument(doc);
+        Assert.NotNull(result);
+
+        var easyMap = result!.MapConfigsNameMapping["ze_easy_map"].First().MapConfig;
+        var easyGroupOnMap = easyMap.GroupSettings.First(g => g.GroupName == "Easy");
+
+        Assert.Equal(0, easyGroupOnMap.CooldownConfig.ConfigCooldown);
+    }
+
+    // ========================================================================
     // MergeProperties: NominationLimit merges correctly
     // ========================================================================
 

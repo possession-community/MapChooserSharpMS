@@ -1,0 +1,20 @@
+[MapChooserSharpSettings.Default]
+Cooldown = 40
+CooldownDateTime = "2d"
+NominationCooldown = 5
+NominationCooldownDateTime = "1d"
+
+[MapChooserSharpSettings.Groups.Easy]
+MaxExtends = 1
+
+[MapChooserSharpSettings.Groups.Hard]
+Cooldown = 10
+CooldownDateTime = "3d"
+NominationCooldown = 2
+NominationCooldownDateTime = "12h"
+
+[ze_easy_map]
+GroupSettings = ["Easy"]
+
+[ze_hard_map]
+GroupSettings = ["Hard"]
