@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.Commands;
 using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Modules.MapConfig.Services;
@@ -55,19 +56,21 @@ internal sealed class SetGroupTimedCooldownCommand(IServiceProvider provider) : 
         }
 
         string resolvedGroupName = groupVariants.First().GroupConfig.GroupName;
-
-        if (!_cooldownCommandService.SetGroupTimedCooldown(resolvedGroupName, duration))
-        {
-            PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetGroupTimedCooldown.Failed"));
-            return;
-        }
-
         string executorName = client?.Name ?? "Console";
 
-        PrintLocalizedChatToAll("MapCycle.Broadcast.Admin.SetGroupTimedCooldown", executorName, resolvedGroupName, durationStr);
-        Logger.LogInformation(
-            "Admin {Executor} set timed cooldown on group {Group} for {Duration}",
-            executorName, resolvedGroupName, duration);
+        _ = Task.Run(async () =>
+        {
+            if (!await _cooldownCommandService.SetGroupTimedCooldown(resolvedGroupName, duration))
+            {
+                PrintMessageToServerOrPlayerChat(client,
+                    LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetGroupTimedCooldown.Failed"));
+                return;
+            }
+
+            PrintLocalizedChatToAll("MapCycle.Broadcast.Admin.SetGroupTimedCooldown", executorName, resolvedGroupName, durationStr);
+            Logger.LogInformation(
+                "Admin {Executor} set timed cooldown on group {Group} for {Duration}",
+                executorName, resolvedGroupName, duration);
+        });
     }
 }

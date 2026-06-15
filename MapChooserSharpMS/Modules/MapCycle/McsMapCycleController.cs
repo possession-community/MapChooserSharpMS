@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
@@ -7,6 +8,7 @@ using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
 using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
+using Wuling.Abstract;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapCycle;
@@ -186,9 +188,41 @@ internal sealed class McsMapCycleController
             .GetRequiredSharpModuleInterface<INativeVoteManager>(INativeVoteManager.ModSharpModuleIdentity)
             .Instance;
 
+        InitializeCooldownPersistence();
+
         _eventManager.RegisterListener<IMapVoteEventListener>(this);
 
         AddCommandsUnderNamespace("MapChooserSharpMS.Modules.MapCycle.Commands");
+    }
+
+    private void InitializeCooldownPersistence()
+    {
+        var wulingModule = SharedSystem.GetSharpModuleManager()
+            .GetOptionalSharpModuleInterface<IWuling>(IWuling.Identity);
+
+        if (wulingModule?.Instance is not { } wuling)
+        {
+            Logger.LogInformation("[MapCycle] Wuling not available — cooldown persistence disabled");
+            return;
+        }
+
+        var surreal = wuling.Surreal;
+        var persistence = new SurrealCooldownRepository(surreal, Logger, Plugin.ModuleDirectory);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await persistence.EnsureSchemasAsync();
+                _cooldownLifecycleService.SetPersistence(persistence);
+                _cooldownCommandService.SetPersistence(persistence);
+                Logger.LogInformation("[MapCycle] Cooldown persistence initialized via Wuling SurrealDB");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "[MapCycle] Failed to initialize cooldown persistence — falling back to in-memory only");
+            }
+        });
     }
 
     protected override void OnUnloadModule()
@@ -298,7 +332,14 @@ internal sealed class McsMapCycleController
     {
         TearDownCurrentMap();
 
-        _cooldownLifecycleService?.DecrementAllCooldowns();
+        _ = Task.Run(async () =>
+        {
+            await _cooldownLifecycleService.LoadFromDatabaseAsync();
+            SharedSystem.GetModSharp().InvokeFrameAction(() =>
+            {
+                _cooldownLifecycleService.DecrementAllCooldowns();
+            });
+        });
 
         var currentMapName = SharedSystem.GetModSharp().GetMapName() ?? string.Empty;
         _mapTransitionManager.SetCurrentMap(currentMapName);

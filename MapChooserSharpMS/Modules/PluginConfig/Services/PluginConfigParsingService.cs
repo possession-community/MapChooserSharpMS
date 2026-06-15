@@ -47,23 +47,7 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         if (string.IsNullOrWhiteSpace(steamWebApiKey))
             steamWebApiKey = System.Environment.GetEnvironmentVariable("STEAM_WEB_API_KEY") ?? "";
 
-        var sqlConfig = ParseSqlConfig(generalNode);
-
-        return new GeneralConfig(shouldUseAlias, verboseCooldown, workshopCollectionIds, shouldAutoFix, sqlConfig, rtvBehaviour, steamWebApiKey);
-    }
-
-    private SqlConfig ParseSqlConfig(TomlDocumentNode generalNode)
-    {
-        var sqlNode = TryGetSection(generalNode, "Sql"u8);
-
-        var dbType = GetEnum(sqlNode, "Type"u8, McsSupportedSqlType.Sqlite);
-        string databaseName = GetString(sqlNode, "DatabaseName"u8, "MapChooserSharp.db");
-        string host = GetString(sqlNode, "Address"u8, "");
-        string port = GetString(sqlNode, "Port"u8, "");
-        string user = GetString(sqlNode, "User"u8, "");
-        string password = GetString(sqlNode, "Password"u8, "");
-
-        return new SqlConfig(host, port, databaseName, user, ref password, dbType);
+        return new GeneralConfig(shouldUseAlias, verboseCooldown, workshopCollectionIds, shouldAutoFix, rtvBehaviour, steamWebApiKey);
     }
 
     private McsMapCycleConfig ParseMapCycleConfig(TomlDocumentNode root)

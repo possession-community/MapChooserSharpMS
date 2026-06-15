@@ -31,5 +31,9 @@
     <Folder Include="Modules\MapCycle\Managers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="surql\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   
 </Project>

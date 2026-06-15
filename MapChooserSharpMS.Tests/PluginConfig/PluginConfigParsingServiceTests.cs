@@ -27,13 +27,6 @@ public class PluginConfigParsingServiceTests
         Assert.Equal(RtvMapChangeBehaviourType.Cs2EndMatchScreen, config.GeneralConfig.RtvMapChangeBehaviour);
         Assert.Equal(["3070257939", "1234567890"], config.GeneralConfig.WorkshopCollectionIds);
 
-        // SQL
-        Assert.Equal(McsSupportedSqlType.MySQL, config.GeneralConfig.SqlConfig.DataBaseType);
-        Assert.Equal("MapChooserSharpTest.db", config.GeneralConfig.SqlConfig.DatabaseName);
-        Assert.Equal("localhost", config.GeneralConfig.SqlConfig.Host);
-        Assert.Equal("3306", config.GeneralConfig.SqlConfig.Port);
-        Assert.Equal("root", config.GeneralConfig.SqlConfig.UserName);
-
         // MapCycle
         Assert.Equal(5, config.MapCycleConfig.FallbackDefaultMaxExtends);
         Assert.Equal(2, config.MapCycleConfig.FallbackMaxExtCommandUses);
@@ -78,13 +71,6 @@ public class PluginConfigParsingServiceTests
         Assert.Empty(config.GeneralConfig.WorkshopCollectionIds);
         Assert.True(config.GeneralConfig.ShouldAutoFixMapName);
         Assert.Equal(RtvMapChangeBehaviourType.ImmediatelyWithTime, config.GeneralConfig.RtvMapChangeBehaviour);
-
-        // SQL defaults
-        Assert.Equal(McsSupportedSqlType.Sqlite, config.GeneralConfig.SqlConfig.DataBaseType);
-        Assert.Equal("MapChooserSharp.db", config.GeneralConfig.SqlConfig.DatabaseName);
-        Assert.Equal("", config.GeneralConfig.SqlConfig.Host);
-        Assert.Equal("", config.GeneralConfig.SqlConfig.Port);
-        Assert.Equal("", config.GeneralConfig.SqlConfig.UserName);
 
         // MapCycle defaults
         Assert.Equal(3, config.MapCycleConfig.FallbackDefaultMaxExtends);
@@ -172,36 +158,6 @@ public class PluginConfigParsingServiceTests
         var doc = TomlTestHelper.LoadToml("PluginConfig/03_invalid_execution_type.toml");
         var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(McsMapConfigExecutionType.ExactMatch, config.MapCycleConfig.MapConfigExecutionType);
-    }
-
-    [Fact]
-    public void ParseConfigFromDocument_SqlType_ParsesCorrectly()
-    {
-        var cases = new (string Value, McsSupportedSqlType Expected)[]
-        {
-            ("Sqlite", McsSupportedSqlType.Sqlite),
-            ("sqlite", McsSupportedSqlType.Sqlite),
-            ("MySQL", McsSupportedSqlType.MySQL),
-            ("PostgreSQL", McsSupportedSqlType.PostgreSQL),
-        };
-
-        foreach (var (value, expected) in cases)
-        {
-            var toml = $"""
-                [General.Sql]
-                Type = "{value}"
-                """;
-            var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
-            Assert.Equal(expected, config.GeneralConfig.SqlConfig.DataBaseType);
-        }
-    }
-
-    [Fact]
-    public void ParseConfigFromDocument_InvalidSqlType_FallsBackToSqlite()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/04_invalid_sql_type.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsSupportedSqlType.Sqlite, config.GeneralConfig.SqlConfig.DataBaseType);
     }
 
     #endregion
@@ -332,25 +288,6 @@ public class PluginConfigParsingServiceTests
 
     #endregion
 
-    #region SQL Config
-
-    [Fact]
-    public void ParseConfigFromDocument_SqlConfig_FullyParsed()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/12_sql_full.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        var sql = config.GeneralConfig.SqlConfig;
-
-        Assert.Equal(McsSupportedSqlType.PostgreSQL, sql.DataBaseType);
-        Assert.Equal("my_db", sql.DatabaseName);
-        Assert.Equal("192.168.1.1", sql.Host);
-        Assert.Equal("5432", sql.Port);
-        Assert.Equal("admin", sql.UserName);
-        // Password is stored as SecureString, verify it's not null
-        Assert.NotNull(sql.Password);
-    }
-
-    #endregion
 
     #region VoteSoundConfig .vsndevts Validation
 

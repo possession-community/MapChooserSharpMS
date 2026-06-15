@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.MapConfig.Models;
+using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle.Services;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,7 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
 {
     private readonly ILogger _logger;
     private readonly IMcsMapConfigProvider _mapConfigProvider;
+    private ICooldownPersistence _persistence = NullCooldownPersistence.Instance;
 
     internal McsMapCooldownCommandService(ILogger logger, IMcsMapConfigProvider mapConfigProvider)
     {
@@ -18,27 +20,32 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
         _mapConfigProvider = mapConfigProvider;
     }
 
-    public Task<bool> SetCooldown(IMapConfig mapConfig, int cooldown)
+    internal void SetPersistence(ICooldownPersistence persistence)
+    {
+        _persistence = persistence;
+    }
+
+    public async Task<bool> SetCooldown(IMapConfig mapConfig, int cooldown)
     {
         if (mapConfig.CooldownConfig is not CooldownConfig cc)
-            return Task.FromResult(false);
+            return false;
 
         cc.CurrentCooldown = cooldown;
 
+        try
+        {
+            await _persistence.SaveMapCooldownAsync(mapConfig.MapName, BuildMapRecord(cc));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Cooldown] Write-through failed for SetCooldown: {Map}", mapConfig.MapName);
+        }
+
         _logger.LogInformation("[Cooldown] SetCooldown: {Map} = {Count}", mapConfig.MapName, cooldown);
-        return Task.FromResult(true);
+        return true;
     }
 
-    /// <summary>
-    /// Sets the current cooldown for a group by name, on every override
-    /// variant of that group. Maps reference the parsed group config
-    /// instances directly, so this propagates to all maps in the group.
-    /// Internal-only until cooldown persistence lands (group cooldowns are
-    /// not on the public surface yet); name-keyed so the future DB layer can
-    /// persist by group name.
-    /// </summary>
-    /// <returns>False when the group is unknown or nothing could be set.</returns>
-    internal bool SetGroupCooldown(string groupName, int cooldown)
+    internal async Task<bool> SetGroupCooldown(string groupName, int cooldown)
     {
         if (!_mapConfigProvider.GetGroupSettings().TryGetValue(groupName, out var groupVariants)
             || groupVariants.Count == 0)
@@ -47,6 +54,7 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
         }
 
         bool anySet = false;
+        CooldownConfig? lastCc = null;
 
         foreach (var variant in groupVariants)
         {
@@ -55,26 +63,47 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
 
             cc.CurrentCooldown = cooldown;
             anySet = true;
+            lastCc = cc;
         }
 
-        if (anySet)
+        if (anySet && lastCc is not null)
+        {
+            try
+            {
+                await _persistence.SaveGroupCooldownAsync(groupName, BuildGroupRecord(lastCc));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[Cooldown] Write-through failed for SetGroupCooldown: {Group}", groupName);
+            }
+
             _logger.LogInformation("[Cooldown] SetGroupCooldown: {Group} = {Count}", groupName, cooldown);
+        }
 
         return anySet;
     }
 
-    public Task<bool> SetTimedCooldown(IMapConfig mapConfig, TimeSpan cooldown)
+    public async Task<bool> SetTimedCooldown(IMapConfig mapConfig, TimeSpan cooldown)
     {
         if (mapConfig.CooldownConfig is not CooldownConfig cc)
-            return Task.FromResult(false);
+            return false;
 
         cc.TimedCooldownEndUtc = DateTime.UtcNow + cooldown;
 
+        try
+        {
+            await _persistence.SaveMapCooldownAsync(mapConfig.MapName, BuildMapRecord(cc));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Cooldown] Write-through failed for SetTimedCooldown: {Map}", mapConfig.MapName);
+        }
+
         _logger.LogInformation("[Cooldown] SetTimedCooldown: {Map} until {Until}", mapConfig.MapName, cc.TimedCooldownEndUtc);
-        return Task.FromResult(true);
+        return true;
     }
 
-    internal bool SetGroupTimedCooldown(string groupName, TimeSpan cooldown)
+    internal async Task<bool> SetGroupTimedCooldown(string groupName, TimeSpan cooldown)
     {
         if (!_mapConfigProvider.GetGroupSettings().TryGetValue(groupName, out var groupVariants)
             || groupVariants.Count == 0)
@@ -84,6 +113,7 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
 
         bool anySet = false;
         var endUtc = DateTime.UtcNow + cooldown;
+        CooldownConfig? lastCc = null;
 
         foreach (var variant in groupVariants)
         {
@@ -92,10 +122,22 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
 
             cc.TimedCooldownEndUtc = endUtc;
             anySet = true;
+            lastCc = cc;
         }
 
-        if (anySet)
+        if (anySet && lastCc is not null)
+        {
+            try
+            {
+                await _persistence.SaveGroupCooldownAsync(groupName, BuildGroupRecord(lastCc));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[Cooldown] Write-through failed for SetGroupTimedCooldown: {Group}", groupName);
+            }
+
             _logger.LogInformation("[Cooldown] SetGroupTimedCooldown: {Group} until {Until}", groupName, endUtc);
+        }
 
         return anySet;
     }
@@ -110,14 +152,45 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
         return SetCooldown(mapConfig, 0);
     }
 
-    public Task<bool> ClearTimedCooldown(IMapConfig mapConfig)
+    public async Task<bool> ClearTimedCooldown(IMapConfig mapConfig)
     {
         if (mapConfig.CooldownConfig is not CooldownConfig cc)
-            return Task.FromResult(false);
+            return false;
 
         cc.TimedCooldownEndUtc = DateTime.MinValue;
 
+        try
+        {
+            await _persistence.SaveMapCooldownAsync(mapConfig.MapName, BuildMapRecord(cc));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Cooldown] Write-through failed for ClearTimedCooldown: {Map}", mapConfig.MapName);
+        }
+
         _logger.LogInformation("[Cooldown] ClearTimedCooldown: {Map}", mapConfig.MapName);
-        return Task.FromResult(true);
+        return true;
+    }
+
+    private static CooldownRecord BuildMapRecord(CooldownConfig cc)
+    {
+        return new CooldownRecord(
+            Cooldown: cc.CurrentCooldown,
+            TimedCooldownEnd: cc.TimedCooldownEndUtc,
+            LastPlayedAt: cc.LastPlayedAt,
+            NomCooldown: cc.CurrentNominationCooldown,
+            NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
+            LastNominatedAt: DateTime.MinValue);
+    }
+
+    private static CooldownRecord BuildGroupRecord(CooldownConfig cc)
+    {
+        return new CooldownRecord(
+            Cooldown: cc.CurrentCooldown,
+            TimedCooldownEnd: cc.TimedCooldownEndUtc,
+            LastPlayedAt: cc.LastPlayedAt,
+            NomCooldown: cc.CurrentNominationCooldown,
+            NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
+            LastNominatedAt: DateTime.MinValue);
     }
 }
