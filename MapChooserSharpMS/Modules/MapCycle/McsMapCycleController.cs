@@ -126,6 +126,7 @@ internal sealed class McsMapCycleController
         services.AddSingleton<McsExtCommandService>(_ => _extCommandService);
         services.AddSingleton<McsMapCooldownLifecycleService>(_ => _cooldownLifecycleService);
         services.AddSingleton<McsMapCooldownCommandService>(_ => _cooldownCommandService);
+        services.AddSingleton<IMapCooldownQueryService>(_ => _cooldownQueryService);
     }
 
     protected override void OnInitialize()

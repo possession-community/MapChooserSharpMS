@@ -5,6 +5,7 @@ using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
+using MapChooserSharpMS.Shared.MapCycle.Services;
 using MapChooserSharpMS.Shared.Nomination.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
@@ -24,6 +25,7 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
     private IMcsMapConfigProvider _mapConfigProvider = null!;
     private INominationValidateService _nominationValidateService = null!;
     private IInternalEventManager _eventManager = null!;
+    private IMapCooldownQueryService _cooldownQueryService = null!;
 
     protected override void ExecuteCommand(IGameClient? client, StringCommand commandInfo, ValidatedArguments? validatedArguments)
     {
@@ -34,6 +36,7 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _nominationValidateService ??= ServiceProvider.GetRequiredService<INominationValidateService>();
         _eventManager ??= ServiceProvider.GetRequiredService<IInternalEventManager>();
+        _cooldownQueryService ??= ServiceProvider.GetRequiredService<IMapCooldownQueryService>();
 
         IMapConfig? mapConfig;
         if (commandInfo.ArgCount < 1)
@@ -83,9 +86,25 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
         if (mapConfig.NominationConfig.MinPlayers > 0)
             Print(client, "MapCycle.Command.Notification.MapInfo.MinPlayers", mapConfig.NominationConfig.MinPlayers);
 
-        int highestCooldown = _mapConfigProvider.ToolingService.GetHighestCooldown(mapConfig);
-        if (highestCooldown > 0)
-            Print(client, "MapCycle.Command.Notification.MapInfo.Cooldown", highestCooldown);
+        var cooldownDetails = _cooldownQueryService.GetCurrentCooldowns(mapConfig);
+        bool hasCount = cooldownDetails.HighestCooldownCount > 0;
+        bool hasTimed = cooldownDetails.LongestTimedCooldown > DateTime.UtcNow;
+
+        if (hasCount && hasTimed)
+        {
+            string timedStr = cooldownDetails.LongestTimedCooldown.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
+            Print(client, "MapCycle.Command.Notification.MapInfo.CooldownWithTimed",
+                cooldownDetails.HighestCooldownCount, timedStr);
+        }
+        else if (hasCount)
+        {
+            Print(client, "MapCycle.Command.Notification.MapInfo.Cooldown", cooldownDetails.HighestCooldownCount);
+        }
+        else if (hasTimed)
+        {
+            string timedStr = cooldownDetails.LongestTimedCooldown.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
+            Print(client, "MapCycle.Command.Notification.MapInfo.TimedCooldown", timedStr);
+        }
 
         var checkResults = _nominationValidateService.PlayerCanNominateMap(client, mapConfig);
         string canNominate = checkResults.Count == 0

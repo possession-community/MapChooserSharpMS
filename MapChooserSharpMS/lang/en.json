@@ -138,7 +138,9 @@
     "MapCycle.Command.Notification.MapInfo.AllowedTimeRanges": "Time ranges can be play: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.MaxPlayers": "Max Players: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.MinPlayers": "Min Players: {lime}{0}{default}",
-    "MapCycle.Command.Notification.MapInfo.Cooldown": "Cooldown: {lime}{0}{default}",
+    "MapCycle.Command.Notification.MapInfo.Cooldown": "Cooldown: {lime}{0} maps{default}",
+    "MapCycle.Command.Notification.MapInfo.TimedCooldown": "Cooldown: {lime}Restricted until {0}{default}",
+    "MapCycle.Command.Notification.MapInfo.CooldownWithTimed": "Cooldown: {lime}{0} maps{default} and Restricted until {lime}{1}{default}",
     "MapCycle.Command.Notification.MapInfo.YouCanNominate": "You can nominate: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.NotAvailable": "No map info available for this map",
 
