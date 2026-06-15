@@ -21,29 +21,29 @@
 
 ## 管理者コマンド
 
-| コマンド | 権限ノード | 説明 |
-|---|---|---|
-| !nominate_addmap \<map\> | mcs.admin.command.nomination.addmap | マップを管理者ノミネーションとして追加 |
-| !nominate_addwsmap \<workshopId\> | mcs.admin.command.nomination.addwsmap | Workshop ID でマップを管理者ノミネーション追加 (config 未登録でも API フェッチ) |
-| !nominate_removemap \<map\> | mcs.admin.command.nomination.removemap | ノミネーションからマップを削除 |
-| !map \<map\> | mcs.admin.command.mapcycle.map | マップへ即時変更 |
-| !wsmap \<workshopId\> | mcs.admin.command.mapcycle.wsmap | Workshop ID でマップへ即時変更 (config 未登録でも API フェッチ) |
-| !setnextmap \<map/workshopId\> | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定 (Workshop ID も可) |
-| !removenextmap | mcs.admin.command.mapcycle.removenextmap | 次のマップ設定を解除 |
-| !extend \<amount\> | mcs.admin.command.mapcycle.extend | マップの時間/ラウンドを延長 (マイナスで短縮) |
-| !voteextend \<minutes\> | mcs.admin.command.mapcycle.voteextend | 延長投票 (NVM YesNo 投票) を開始。エイリアス: `!ve` |
-| !setmapcooldown \<map\> \<cd\> | mcs.admin.command.mapcycle.setmapcooldown | マップのクールダウン (回数) を設定。エイリアス: `!setmapcd` |
-| !setgroupcooldown \<group\> \<cd\> | mcs.admin.command.mapcycle.setgroupcooldown | グループのクールダウン (回数) を設定。エイリアス: `!setgroupcd` |
-| !setmaptcd \<map\> \<duration\> | mcs.admin.command.mapcycle.setmaptcd | マップの時限クールダウンを設定 (例: 2h, 3d, 1w) |
-| !setgrouptcd \<group\> \<duration\> | mcs.admin.command.mapcycle.setgrouptcd | グループの時限クールダウンを設定 (例: 2h, 3d, 1w) |
-| !forceresetmcs | mcs.admin.command.mapvote.forceresetmcs | MCS の全状態を強制リセット (投票/RTV/ノミネーション) |
-| !reloadmapcfgs | mcs.admin.command.mapconfig.reloadmapcfgs | マップ config をリロード |
-| !forcertv | mcs.admin.command.rtv.forcertv | 強制的に RTV を発動 |
-| !enablertv | mcs.admin.command.rtv.enablertv | RTV を有効化 |
-| !disablertv | mcs.admin.command.rtv.disablertv | RTV を無効化 |
-| !enableext | mcs.admin.command.mapcycle.enableext | !ext を有効化 |
-| !disableext | mcs.admin.command.mapcycle.disableext | !ext を無効化 |
-| !setext \<count\> | mcs.admin.command.mapcycle.setext | !ext の残り回数を設定 |
+| コマンド | エイリアス | 権限ノード | 説明 |
+|---|---|---|---|
+| !nominate_addmap \<map\> | - | mcs.admin.command.nomination.addmap | マップを管理者ノミネーションとして追加 |
+| !nominate_addwsmap \<workshopId\> | - | mcs.admin.command.nomination.addwsmap | Workshop ID でマップを管理者ノミネーション追加 (config 未登録でも API フェッチ) |
+| !nominate_removemap \<map\> | - | mcs.admin.command.nomination.removemap | ノミネーションからマップを削除 |
+| !map \<map\> | - | mcs.admin.command.mapcycle.map | マップへ即時変更 |
+| !wsmap \<workshopId\> | - | mcs.admin.command.mapcycle.wsmap | Workshop ID でマップへ即時変更 (config 未登録でも API フェッチ) |
+| !setnextmap \<map/workshopId\> | - | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定 (Workshop ID も可) |
+| !removenextmap | - | mcs.admin.command.mapcycle.removenextmap | 次のマップ設定を解除 |
+| !extend \<amount\> | - | mcs.admin.command.mapcycle.extend | マップの時間/ラウンドを延長 (マイナスで短縮) |
+| !voteextend \<minutes\> | !ve | mcs.admin.command.mapcycle.voteextend | 延長投票 (NVM YesNo 投票) を開始 |
+| !setmapcooldown \<map\> \<cd\> | !setmapcd | mcs.admin.command.mapcycle.setmapcooldown | マップのクールダウン (回数) を設定 |
+| !setgroupcooldown \<group\> \<cd\> | !setgroupcd | mcs.admin.command.mapcycle.setgroupcooldown | グループのクールダウン (回数) を設定 |
+| !setmaptcd \<map\> \<duration\> | - | mcs.admin.command.mapcycle.setmaptcd | マップの時限クールダウンを設定 (例: 2h, 3d, 1w) |
+| !setgrouptcd \<group\> \<duration\> | - | mcs.admin.command.mapcycle.setgrouptcd | グループの時限クールダウンを設定 (例: 2h, 3d, 1w) |
+| !forceresetmcs | - | mcs.admin.command.mapvote.forceresetmcs | MCS の全状態を強制リセット (投票/RTV/ノミネーション) |
+| !reloadmapcfgs | - | mcs.admin.command.mapconfig.reloadmapcfgs | マップ config をリロード |
+| !forcertv | - | mcs.admin.command.rtv.forcertv | 強制的に RTV を発動 |
+| !enablertv | - | mcs.admin.command.rtv.enablertv | RTV を有効化 |
+| !disablertv | - | mcs.admin.command.rtv.disablertv | RTV を無効化 |
+| !enableext | - | mcs.admin.command.mapcycle.enableext | !ext を有効化 |
+| !disableext | - | mcs.admin.command.mapcycle.disableext | !ext を無効化 |
+| !setext \<count\> | - | mcs.admin.command.mapcycle.setext | !ext の残り回数を設定 |
 
 ## 権限ノード (Nomination)
 
