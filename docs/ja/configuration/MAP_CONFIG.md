@@ -144,10 +144,7 @@ OnlyNomination = true
 
 ### 4. 一部の例外
 
-以下に例示する値は上書きではなく統合されます。
-- AllowedSteamIds
-- DisallowedSteamIds
-- Extra設定
+Extra設定は上書きではなく統合されます。
 
 ---
 
@@ -158,7 +155,6 @@ OnlyNomination = true
 ```toml
 [MapChooserSharpSettings.Groups.Group1]
 MinPlayers = 0
-AllowedSteamIds = [123012301230]
 
 [MapChooserSharpSettings.Groups.Group1.extra.shop]
 cost = 100
@@ -168,8 +164,6 @@ cost = 100
 ```toml
 [MapChooserSharpSettings.Groups.Group2]
 MinPlayers = 32
-AllowedSteamIds = [123456789]
-DisallowedSteamIds = [987654321]
 
 [MapChooserSharpSettings.Groups.Group2.extra.AnotherShop]
 cost = 999
@@ -180,8 +174,6 @@ cost = 999
 ```toml
 [ze_example_xyz]
 MinPlayers = 40
-AllowedSteamIds = [0]
-DisallowedSteamIds = [0]
 GroupSettings = ["Group1", "Group2"]
 
 [ze_example_xyz.extra.ExternalShop]
@@ -193,8 +185,6 @@ cost = 10000
 ```toml
 [ze_example_xyz]
 MinPlayers = 40
-AllowedSteamIds = [0, 123012301230, 123456789]
-DisallowedSteamIds = [0, 987654321]
 
 [ze_example_xyz.extra.ExternalShop]
 cost = 10000
@@ -361,33 +351,45 @@ DaySettingsセクションでは、以下のオーバーライド制御用プロ
 
 ## 設定値の詳細
 
-```
+```toml
 [ze_example_abc]
 MapNameAlias = "ze example a b c"
 MapDescription = "This map contains a jump scare"
 IsDisabled = false
 WorkshopId = 1234567891234
 OnlyNomination = false
+MapSelectionWeight = 1
 Cooldown = 60
 CooldownDateTime = "2d"
+NominationCooldown = 0
+NominationCooldownDateTime = ""
 MaxExtends = 3
 MaxExtCommandUses = 1
 ExtendTimePerExtends = 15
 MapTime = 20
 ExtendRoundsPerExtends = 5
 MapRounds = 10
-RequiredPermissions = ["css/generic"]
-RestrictToAllowedUsersOnly = false
-AllowedSteamIds = [76561198815323852]
-DisallowedSteamIds = [76561198815323852]
 MaxPlayers = 64
 MinPlayers = 10
 ProhibitAdminNomination = false
 DaysAllowed = ["wednesday", "monday"]
 AllowedTimeRanges = ["10:00-12:00", "20:00-22:00", "22:00-03:00"]
+GroupSettings = ["HardZeMap"]
 
 [ze_example_abc.extra.shop]
 cost = 100
+```
+
+グループ設定の例:
+
+```toml
+[MapChooserSharpSettings.Groups.HardZeMap]
+ShortGroupName = "HD"
+NominationLimit = 3
+CooldownOverride = 30
+Cooldown = 15
+MinPlayers = 16
+OnlyNomination = true
 ```
 
 ## マップ全般
@@ -418,6 +420,10 @@ cost = 100
 ノミネート限定にするか否かを指定します。
 ここで有効化された場合、投票でのランダムマップ選択にも選ばれません。
 
+### MapSelectionWeight
+
+ランダムマップ選択時の重み付けです。値が大きいほど選ばれやすくなります。デフォルトは `1` です。`0` にすると選ばれなくなります（`OnlyNomination` と同等）。
+
 ### Cooldown
 
 マップがプレイされた後に適用されるクールダウンを指定します。
@@ -433,9 +439,17 @@ cost = 100
 
 通常のクールダウンに加えて適用される、時間ベースのクールダウンです。指定した時間が経過するまでクールダウン状態が解除されません。
 
-使用できるサフィックス: `"d"`（日）、`"m"`（月）。適用しない場合は空欄にしてください。
+使用できるサフィックス: `"h"`（時間）、`"d"`（日）、`"w"`（週）、`"m"`（月=30日）。適用しない場合は空欄にしてください。
 
 例: `CooldownDateTime = "2d"` は2日間のクールダウン。
+
+### NominationCooldown
+
+マップがノミネーション候補として消費された後に適用されるノミネーション専用クールダウン (回数ベース) です。通常の `Cooldown` とは独立して動作します。デフォルトは `0`（無効）。
+
+### NominationCooldownDateTime
+
+ノミネーション専用の時間ベースクールダウンです。`CooldownDateTime` と同じサフィックスが使えます。
 
 ### MaxExtends
 
@@ -463,24 +477,6 @@ cost = 100
 
 ## ノミネート関連
 
-### RequiredPermissions
-
-ノミネートに必要な権限を指定します。
-複数指定すると、指定された権限のどれかを持っていればノミネート可能になります。
-
-### RestrictToAllowedUsersOnly
-
-有効化された場合AllowedSteamIdsに含まれているユーザーのみがノミネート出来るように制限します。
-
-### AllowedSteamIds
-
-このリストに含まれているユーザーは、すべての権限設定を回避してノミネートが可能になります。
-追加するにはSteamID 64を指定します。
-
-### DisallowedSteamIds
-
-このリストに含まれているユーザーは、どのような形であってもノミネートが不可能になります。
-
 ### MaxPlayers
 
 サーバー内の人数がこの数値より大きい場合ノミネートができなくなります。
@@ -507,6 +503,30 @@ cost = 100
 
 `AllowedTimeRanges = ["10:00-12:00", "22:00-03:00"]` は 10:00 - 12:00 か 22:00 - 03:00 の間にのみノミネートが可能になります。
 
+## グループ専用設定
+
+以下の設定はグループ設定 (`[MapChooserSharpSettings.Groups.<GroupName>]`) でのみ使用できます。
+
+### ShortGroupName
+
+投票画面等でグループ名の短縮表示に使用されるタグです。最大4文字。
+
+例: `ShortGroupName = "HD"`
+
+### NominationLimit
+
+このグループからノミネートできるマップの最大数です。`0` の場合は無制限です。デフォルトは `0`。
+
+グループごとに異なる制限を設定できます。例えば、HardGroup は最大2マップ、EasyGroup は最大5マップという設定が可能です。
+
+```toml
+[MapChooserSharpSettings.Groups.HardGroup]
+NominationLimit = 2
+
+[MapChooserSharpSettings.Groups.EasyGroup]
+NominationLimit = 5
+```
+
 ### Extra 設定
 
-[MCS API ドキュメント](../../development/USING_MCS_API.md) を確認してください。
+[MCS API ドキュメント](../development/USING_MCS_API.md) を確認してください。
