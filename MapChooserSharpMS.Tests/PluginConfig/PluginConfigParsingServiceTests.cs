@@ -1,8 +1,6 @@
-using System.Collections.Generic;
 using MapChooserSharp.Modules.MapVote.Countdown;
 using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using MapChooserSharpMS.Modules.PluginConfig.Services;
-using MapChooserSharpMS.Modules.Ui.Menu;
 using MapChooserSharpMS.Tests.Helpers;
 using Xunit;
 
@@ -38,7 +36,6 @@ public class PluginConfigParsingServiceTests
         Assert.Equal("Custom/groups/", config.MapCycleConfig.GroupConfigDirectoryPath);
 
         // MapVote
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
         Assert.Equal(8, config.VoteConfig.MaxMenuElements);
         Assert.False(config.VoteConfig.ShouldPrintVoteToChat);
         Assert.False(config.VoteConfig.ShouldPrintVoteRemainingTime);
@@ -51,8 +48,6 @@ public class PluginConfigParsingServiceTests
         Assert.Equal("vote_finish", config.VoteConfig.VoteSoundConfig.InitialVoteSounds.VoteFinishSound);
         Assert.Equal("runoff_countdown_start", config.VoteConfig.VoteSoundConfig.RunoffVoteSounds.VoteCountdownStartSound);
 
-        // Nomination
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
     }
 
     #endregion
@@ -83,7 +78,6 @@ public class PluginConfigParsingServiceTests
         Assert.Equal("groups/", config.MapCycleConfig.GroupConfigDirectoryPath);
 
         // MapVote defaults
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
         Assert.Equal(5, config.VoteConfig.MaxMenuElements);
         Assert.True(config.VoteConfig.ShouldPrintVoteToChat);
         Assert.True(config.VoteConfig.ShouldPrintVoteRemainingTime);
@@ -93,9 +87,6 @@ public class PluginConfigParsingServiceTests
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath);
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.InitialVoteSounds.VoteCountdownStartSound);
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.RunoffVoteSounds.VoteCountdownStartSound);
-
-        // Nomination defaults
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
     }
 
     #endregion
@@ -162,23 +153,7 @@ public class PluginConfigParsingServiceTests
 
     #endregion
 
-    #region MenuType / CountdownUiType
-
-    [Fact]
-    public void ParseConfigFromDocument_MenuType_Default_Parsed()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/05_menu_type_default.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
-    }
-
-    [Fact]
-    public void ParseConfigFromDocument_InvalidMenuType_FallsBackToDefault()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/06_invalid_menu_type.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
-    }
+    #region CountdownUiType
 
     [Theory]
     [InlineData("None", McsCountdownUiType.None)]
@@ -202,14 +177,6 @@ public class PluginConfigParsingServiceTests
         var doc = TomlTestHelper.LoadToml("PluginConfig/07_invalid_countdown_ui.toml");
         var config = _service.ParseConfigFromDocument(doc);
         Assert.Equal(McsCountdownUiType.CenterHtml, config.VoteConfig.CurrentCountdownUiType);
-    }
-
-    [Fact]
-    public void ParseConfigFromDocument_NominationMenuType_Default()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/08_nomination_menu_type.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
     }
 
     #endregion
@@ -317,23 +284,6 @@ public class PluginConfigParsingServiceTests
 
     #endregion
 
-    #region AvailableMenuTypes
-
-    [Fact]
-    public void ParseConfigFromDocument_AvailableMenuTypes_ContainsDefault()
-    {
-        var doc = TomlTestHelper.ParseToml("");
-        var config = _service.ParseConfigFromDocument(doc);
-
-        Assert.Single(config.VoteConfig.AvailableMenuTypes);
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.AvailableMenuTypes[0]);
-
-        Assert.Single(config.NominationConfig.AvailableMenuTypes);
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.AvailableMenuTypes[0]);
-    }
-
-    #endregion
-
     #region Partial Config
 
     [Fact]
@@ -347,7 +297,6 @@ public class PluginConfigParsingServiceTests
         // Other sections should still have defaults
         Assert.Equal(3, config.MapCycleConfig.FallbackDefaultMaxExtends);
         Assert.Equal(5, config.VoteConfig.MaxMenuElements);
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
     }
 
     [Fact]

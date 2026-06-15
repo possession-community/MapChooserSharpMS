@@ -9,8 +9,6 @@ using MapChooserSharp.Modules.MapVote.Countdown;
 using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Modules.PluginConfig.Models;
-using MapChooserSharpMS.Modules.Ui.Menu;
-
 namespace MapChooserSharpMS.Modules.PluginConfig.Services;
 
 internal sealed class PluginConfigParsingService : IPluginConfigParsingService
@@ -74,7 +72,6 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
     {
         var voteNode = TryGetSection(root, "MapVote"u8);
 
-        var menuType = GetEnum(voteNode, "MenuType"u8, McsSupportedMenuType.Default);
         int maxVoteElements = GetInt(voteNode, "MaxVoteElements"u8, 5);
         bool shouldPrintVote = GetBool(voteNode, "ShouldPrintVoteToChat"u8, true);
         bool shouldPrintRemaining = GetBool(voteNode, "ShouldPrintVoteRemainingTime"u8, true);
@@ -82,11 +79,7 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
 
         var voteSoundConfig = ParseVoteSoundConfig(voteNode);
 
-        // AvailableMenuTypes is hardcoded to [Default]
-        var availableMenuTypes = new List<McsSupportedMenuType> { McsSupportedMenuType.Default };
-
         return new VoteConfig(
-            availableMenuTypes, menuType,
             maxVoteElements, shouldPrintVote, shouldPrintRemaining,
             voteSoundConfig, countdownUiType);
     }
@@ -121,12 +114,7 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
 
     private NominationConfig ParseNominationConfig(TomlDocumentNode root)
     {
-        var nominationNode = TryGetSection(root, "Nomination"u8);
-
-        var menuType = GetEnum(nominationNode, "MenuType"u8, McsSupportedMenuType.Default);
-        var availableMenuTypes = new List<McsSupportedMenuType> { McsSupportedMenuType.Default };
-
-        return new NominationConfig(availableMenuTypes, menuType);
+        return new NominationConfig();
     }
 
     #region Helpers
