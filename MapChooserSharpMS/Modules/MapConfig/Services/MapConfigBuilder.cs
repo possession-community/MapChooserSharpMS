@@ -49,6 +49,7 @@ internal static class MapConfigBuilder
             TargetTimeRanges = overrideProps.TargetTimeRanges ?? baseProps.TargetTimeRanges,
             MapSelectionWeight = overrideProps.MapSelectionWeight ?? baseProps.MapSelectionWeight,
             ShortGroupName = overrideProps.ShortGroupName ?? baseProps.ShortGroupName,
+            NominationLimit = overrideProps.NominationLimit ?? baseProps.NominationLimit,
         };
     }
 
@@ -108,6 +109,7 @@ internal static class MapConfigBuilder
             GroupName: groupName,
             ShortGroupName: shortName,
             MapCooldownOverride: props.CooldownOverride ?? 0,
+            NominationLimit: props.NominationLimit ?? 0,
             IsDisabled: props.IsDisabled ?? false,
             MaxExtends: props.MaxExtends ?? 3,
             MaxExtCommandUses: props.MaxExtCommandUses ?? 1,

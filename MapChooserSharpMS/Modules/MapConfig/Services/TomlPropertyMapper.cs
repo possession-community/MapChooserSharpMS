@@ -45,6 +45,9 @@ internal sealed class ParsedProperties
     public List<DayOfWeek>? DaysAllowed { get; set; }
     public List<ITimeRange>? AllowedTimeRanges { get; set; }
 
+    // Group-specific nomination
+    public int? NominationLimit { get; set; }
+
     // Group display
     public string? ShortGroupName { get; set; }
 
@@ -99,6 +102,7 @@ internal static class TomlPropertyMapper
         "CooldownDateTime",
         "NominationCooldown",
         "NominationCooldownDateTime",
+        "NominationLimit",
     };
 
     public static ParsedProperties ExtractProperties(TomlDocumentNode node)
@@ -239,6 +243,11 @@ internal static class TomlPropertyMapper
             case "NominationCooldownDateTime":
                 if (valueNode.TryGetString(out var ncdDt))
                     props.NominationCooldownDateTime = ncdDt;
+                break;
+
+            case "NominationLimit":
+                if (valueNode.TryGetInt64(out var nomLimit))
+                    props.NominationLimit = Math.Max(0, (int)nomLimit);
                 break;
 
             // Override properties

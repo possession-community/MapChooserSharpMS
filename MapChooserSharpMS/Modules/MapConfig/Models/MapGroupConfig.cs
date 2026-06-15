@@ -6,6 +6,7 @@ internal sealed record MapGroupConfig(
     string GroupName,
     string ShortGroupName,
     int MapCooldownOverride,
+    int NominationLimit,
     bool IsDisabled,
     int MaxExtends,
     int MaxExtCommandUses,

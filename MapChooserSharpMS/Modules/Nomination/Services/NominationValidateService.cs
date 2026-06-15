@@ -13,7 +13,6 @@ using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
 using MapChooserSharpMS.Shared.Nomination.Services;
-using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
 using System.Threading.Tasks;
@@ -30,18 +29,14 @@ internal sealed class NominationValidateService
     private readonly IMcsInternalNominationController _nominationController;
     private readonly IMapTransitionManager _mapTransitionManager;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IMcsPluginConfigProvider _configProvider;
 
-    public int PerGroupNominationLimit => _configProvider.PluginConfig.NominationConfig.PerGroupNominationLimit;
-
-    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager, IMcsPluginConfigProvider configProvider):base(serviceProvider)
+    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager):base(serviceProvider)
     {
         _nominationManager  = nominationManager;
         _eventManager = internalEventManager;
         _nominationController = nominationController;
         _mapTransitionManager = mapTransitionManager;
         _serviceProvider = serviceProvider;
-        _configProvider = configProvider;
     }
 
     public IReadOnlyList<NominationCheckResult> PlayerCanNominateMap(IGameClient client, IMapConfig mapConfig)
@@ -374,7 +369,17 @@ internal sealed class NominationValidateService
 
     public bool HasReachedGroupNominationLimit(IMapConfig mapConfig)
     {
-        if (PerGroupNominationLimit == 0)
+        bool anyGroupHasLimit = false;
+        foreach (IMapGroupConfig g in mapConfig.GroupSettings)
+        {
+            if (g.NominationLimit > 0)
+            {
+                anyGroupHasLimit = true;
+                break;
+            }
+        }
+
+        if (!anyGroupHasLimit)
             return false;
 
         Dictionary<string, int> groupsNominatedCount = new(StringComparer.OrdinalIgnoreCase);
@@ -382,10 +387,8 @@ internal sealed class NominationValidateService
         {
             foreach (IMapGroupConfig groupSetting in data.Value.MapConfig.GroupSettings)
             {
-                if (!groupsNominatedCount.TryGetValue(groupSetting.GroupName, out int count))
-                {
-                    groupsNominatedCount.Add(groupSetting.GroupName, 0);
-                }
+                if (!groupsNominatedCount.TryGetValue(groupSetting.GroupName, out _))
+                    groupsNominatedCount[groupSetting.GroupName] = 0;
 
                 groupsNominatedCount[groupSetting.GroupName]++;
             }
@@ -393,8 +396,9 @@ internal sealed class NominationValidateService
 
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
-            if (groupsNominatedCount.TryGetValue(groupSetting.GroupName, out int count)
-                && count >= PerGroupNominationLimit)
+            if (groupSetting.NominationLimit > 0
+                && groupsNominatedCount.TryGetValue(groupSetting.GroupName, out int count)
+                && count >= groupSetting.NominationLimit)
                 return true;
         }
 

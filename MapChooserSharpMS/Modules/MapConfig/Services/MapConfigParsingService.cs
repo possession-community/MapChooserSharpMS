@@ -720,6 +720,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             TargetTimeRanges = source.TargetTimeRanges is not null ? new List<ITimeRange>(source.TargetTimeRanges) : null,
             MapSelectionWeight = source.MapSelectionWeight,
             ShortGroupName = source.ShortGroupName,
+            NominationLimit = source.NominationLimit,
         };
     }
 
