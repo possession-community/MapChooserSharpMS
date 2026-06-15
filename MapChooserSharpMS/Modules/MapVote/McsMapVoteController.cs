@@ -46,6 +46,7 @@ internal sealed class McsMapVoteController
     private MapVoteControllingService _controllingService = null!;
     private ClientVoteHandlingService _clientVoteService = null!;
 
+    public IMcsReadOnlyVoteState VoteState => (IMcsReadOnlyVoteState)_voteState;
     public IVoteControllingManager MapVoteManager => _voteManager;
     public IMapVoteControllingService MapVoteControllingService => _controllingService;
     public IClientVoteHandlingService ClientVoteHandlingService => _clientVoteService;

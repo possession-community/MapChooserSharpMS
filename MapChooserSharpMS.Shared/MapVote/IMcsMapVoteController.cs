@@ -1,18 +1,24 @@
 ﻿using System;
 using MapChooserSharpMS.Shared.Events.MapVote;
+using MapChooserSharpMS.Shared.MapVote.Services;
 
 namespace MapChooserSharpMS.Shared.MapVote;
 
 /// <summary>
-/// Public MapVoteController API. Kept deliberately thin: read-only vote
-/// state lives on <see cref="IMcsMainVoteState"/> (and
-/// <see cref="IMcsExtendVoteState"/> for the extend vote) so consumers that
-/// only query state depend on those narrower interfaces. Writable internals
-/// (managers, controlling service, client-vote handling service) live on
-/// the internal controller and are not exposed here.
+/// Public MapVoteController API.
 /// </summary>
 public interface IMcsMapVoteController
 {
+    /// <summary>
+    /// Read-only view of the current vote state.
+    /// </summary>
+    IMcsReadOnlyVoteState VoteState { get; }
+
+    /// <summary>
+    /// Service for initiating, cancelling, and force-resetting votes.
+    /// </summary>
+    IMapVoteControllingService MapVoteControllingService { get; }
+
     void InstallEventListener(IMapVoteEventListener listener);
 
     void RemoveEventListener(IMapVoteEventListener listener);
