@@ -47,6 +47,7 @@
     "Rtv.Notification.Admin.Enable.Failure": "Failed to enable RTV",
     "Rtv.Notification.Admin.Disable.Success": "RTV has been {red}disabled{default}",
     "Rtv.Notification.Admin.Disable.Failure": "Failed to disable RTV",
+    "Rtv.Notification.Admin.ForceRtv.AlreadyTriggered": "RTV has already been triggered",
     "Rtv.Broadcast.VoteTriggered": "RTV has passed! Starting map vote...",
     "Rtv.Broadcast.ChangeOnRoundEnd": "RTV passed! Changing to {lime}{0}{default} at round end",
     "Rtv.Broadcast.ChangeToNextMapImmediately": "Rock The Vote is spoken! Changing to {lime}{0}{default} in {lime}{1}{default} seconds!",

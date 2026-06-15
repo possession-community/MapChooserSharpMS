@@ -163,6 +163,13 @@ internal sealed class RtvService(
 
     public void InitiateForceRtvVote(IGameClient? client)
     {
+        if (rtvManager.RtvStatus is RtvStatus.TriggeredWaitingForVote
+            or RtvStatus.TriggeredWaitingForMapTransition)
+        {
+            controller.NotifyAdminCommandResult(client, "Rtv.Notification.Admin.ForceRtv.AlreadyTriggered");
+            return;
+        }
+
         var forceParams = new ForceRtvParams(plugin, (PluginModuleBase)controller, client);
         bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnForceRtv(forceParams));
 
