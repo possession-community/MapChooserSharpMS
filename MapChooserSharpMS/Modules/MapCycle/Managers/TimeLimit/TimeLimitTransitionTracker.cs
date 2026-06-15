@@ -49,4 +49,9 @@ internal sealed class TimeLimitTransitionTracker
         _voteThresholdFired = false;
         _limitReachedFired = false;
     }
+
+    public void ResetVoteThresholdFlag()
+    {
+        _voteThresholdFired = false;
+    }
 }

@@ -243,6 +243,15 @@ internal sealed class McsMapCycleController
         _mapTransitionManager.TrySetNextMap(@params.MapInformation);
     }
 
+    public void OnMapNotChanged(IMapVoteNotChangedParams @params)
+    {
+        if (_transitionTracker is null)
+            return;
+
+        _transitionTracker.ResetVoteThresholdFlag();
+        SharedSystem.GetModSharp().InvokeFrameAction(() => FireTransitions());
+    }
+
     #endregion
 
     #region IClientListener
