@@ -157,7 +157,7 @@ internal sealed class McsMapCycleController
         _extendVoteService = new McsExtendVoteService(
             Plugin, this, Logger, _eventManager, _extendService,
             _conVars,
-            () => _mapTransitionManager.CurrentMap);
+            () => _mapTransitionManager.CurrentMap?.MapConfig);
 
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _cooldownQueryService = new McsMapCooldownQueryService();
@@ -206,7 +206,7 @@ internal sealed class McsMapCycleController
 
     public void OnMapConfirmed(IMapVoteMapConfirmedEventParams @params)
     {
-        _mapTransitionManager.TrySetNextMap(@params.ConfirmedMap);
+        _mapTransitionManager.TrySetNextMap(@params.MapInformation);
     }
 
     #endregion
@@ -284,7 +284,7 @@ internal sealed class McsMapCycleController
         float delay = Math.Max(extraTime - 1.0f, 0f);
 
         var intermissionParams = new EventManager.Events.MapCycle.McsIntermissionParams(
-            Plugin, this, nextMap);
+            Plugin, this, nextMap.MapConfig);
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
 
         _mapTransitionManager.TransitionToNextMap(delay);
@@ -298,9 +298,11 @@ internal sealed class McsMapCycleController
     {
         TearDownCurrentMap();
 
+        _cooldownLifecycleService?.DecrementAllCooldowns();
+
         var currentMapName = SharedSystem.GetModSharp().GetMapName() ?? string.Empty;
         _mapTransitionManager.SetCurrentMap(currentMapName);
-        _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap);
+        _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap?.MapConfig);
         _extCommandService.ClearParticipants();
 
         var mode = ParseMode(_conVars.Mode.GetString());
@@ -393,9 +395,7 @@ internal sealed class McsMapCycleController
             _tickTimerId = Guid.Empty;
         }
 
-        _cooldownLifecycleService?.DecrementAllCooldowns();
-
-        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap is { } playedMap)
+        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap?.MapConfig is { } playedMap)
             _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);
 
         _internalTimeLimitManager = null;
@@ -518,7 +518,7 @@ internal sealed class McsMapCycleController
                                 Plugin, this, _internalTimeLimitManager.TimeLimitType)));
 
                     if (_mapTransitionManager.IsNextMapConfirmed)
-                        _mapTransitionManager.ChangeMapOnNextRoundEnd = true;
+                        _mapTransitionManager.ForceEndMatch();
                     break;
             }
         }

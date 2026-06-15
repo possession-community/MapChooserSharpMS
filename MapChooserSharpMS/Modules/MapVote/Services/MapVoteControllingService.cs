@@ -13,6 +13,7 @@ using MapChooserSharpMS.Modules.MapVote.Models;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapVote;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.MapVote.Services;
 using MapChooserSharpMS.Shared.Nomination.Managers;
@@ -345,7 +346,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         else if (winner.MapConfig is not null)
         {
             _logger.LogInformation("Vote result: Next map confirmed as {MapName}", winner.MapName);
-            var confirmedParams = new MapVoteMapConfirmedParams(_plugin, _moduleBase, winner.MapConfig, session.IsRtvVote);
+            var mapInfo = BuildMapInformation(winner.MapConfig);
+            var confirmedParams = new MapVoteMapConfirmedParams(_plugin, _moduleBase, mapInfo, session.IsRtvVote);
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapConfirmed(confirmedParams));
 
             ApplyNominationCooldownToNominatedMaps();
@@ -565,6 +567,33 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         {
             _cooldownLifecycleService.ApplyNominationCooldown(entry.Value.MapConfig);
         }
+    }
+
+    private IMapInformation BuildMapInformation(IMapConfig mapConfig)
+    {
+        var builder = MapInformation.For(mapConfig);
+
+        if (_nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var nomination))
+        {
+            var clients = _plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+            var steamIds = new List<ulong>();
+            foreach (int slot in nomination.NominationParticipants)
+            {
+                foreach (var client in clients)
+                {
+                    if (client.Slot == slot)
+                    {
+                        steamIds.Add(client.SteamId);
+                        break;
+                    }
+                }
+            }
+
+            if (steamIds.Count > 0)
+                builder.WithNominators(steamIds);
+        }
+
+        return builder.Build();
     }
 
     private void StartPreVoteCountdown(

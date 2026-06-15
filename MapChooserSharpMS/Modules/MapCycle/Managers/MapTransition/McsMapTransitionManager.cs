@@ -6,6 +6,7 @@ using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Modules.WorkshopSync;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Shared.WorkshopManagement;
 using Microsoft.Extensions.Logging;
@@ -31,8 +32,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly MapCycleConVars _conVars;
     private readonly WorkshopProvisioningService? _workshopProvisioning;
 
-    private IMapConfig? _currentMap;
-    private IMapConfig? _nextMap;
+    private IMapInformation? _currentMap;
+    private IMapInformation? _nextMap;
     private bool _isNextMapConfirmed;
     private bool _transitionStarted;
     private Guid _retryTimerId;
@@ -66,33 +67,37 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _workshopProvisioning = workshopProvisioning;
     }
 
-    public IMapConfig? NextMap => _nextMap;
+    public IMapInformation? NextMap => _nextMap;
 
-    public IMapConfig? CurrentMap => _currentMap;
+    public IMapInformation? CurrentMap => _currentMap;
 
     public bool IsNextMapConfirmed => _isNextMapConfirmed;
 
     public bool ChangeMapOnNextRoundEnd { get; set; }
 
-    public bool TrySetNextMap(IMapConfig mapConfig)
+    public bool TrySetNextMap(IMapInformation mapInformation)
     {
         var oldNextMap = _nextMap;
-        _nextMap = mapConfig;
+        _nextMap = mapInformation;
         _isNextMapConfirmed = true;
 
-        // A next map confirmed after the limit already ran out (vote finished
-        // late, admin set it manually, external API) must still transition —
-        // LimitReached has already fired and will not re-fire.
         if (_isTimeLimitReached())
-            ChangeMapOnNextRoundEnd = true;
+            ForceEndMatch();
 
-        if (!ReferenceEquals(oldNextMap, mapConfig))
+        if (oldNextMap?.MapConfig is not { } oldConfig
+            || !ReferenceEquals(oldConfig, mapInformation.MapConfig))
         {
-            var confirmedParams = new NextMapConfirmedParams(_plugin, _moduleBase, mapConfig, oldNextMap);
+            var confirmedParams = new NextMapConfirmedParams(
+                _plugin, _moduleBase, mapInformation.MapConfig, oldNextMap?.MapConfig);
             _eventManager.Fire<IMapCycleEventListener>(e => e.OnNextMapConfirmed(confirmedParams));
         }
 
         return true;
+    }
+
+    public bool TrySetNextMap(IMapConfig mapConfig)
+    {
+        return TrySetNextMap(MapInformation.For(mapConfig).Build());
     }
 
     public bool TrySetNextMap(string mapName)
@@ -189,7 +194,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _nextMap = null;
         _isNextMapConfirmed = false;
 
-        var removedParams = new NextMapRemovedParams(_plugin, _moduleBase, previousNextMap);
+        var removedParams = new NextMapRemovedParams(_plugin, _moduleBase, previousNextMap.MapConfig);
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnNextMapRemoved(removedParams));
 
         return true;
@@ -201,14 +206,14 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
             return;
 
         _transitionStarted = true;
-        var target = _nextMap;
+        var targetConfig = _nextMap.MapConfig;
 
         void ChangeNow()
         {
             _changeAttemptsUsed = 1;
-            IssueMapChange(target);
-            ArmEarlyTransitionNotice(target);
-            ArmTransitionRetryWatchdog(target);
+            IssueMapChange(targetConfig);
+            ArmEarlyTransitionNotice(targetConfig);
+            ArmTransitionRetryWatchdog(targetConfig);
         }
 
         if (seconds <= 0f)
@@ -296,7 +301,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     {
         if (_mapConfigProvider.TryGetMapConfig(mapName, out var found))
         {
-            _currentMap = found;
+            _currentMap = MapInformation.For(found).Build();
             return;
         }
 
@@ -365,9 +370,9 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
                 "[MapTransition] ForceEndMatch watchdog fired after {Timeout}s — native end match never reached intermission; transitioning directly",
                 timeout);
 
-            BroadcastToAll("MapCycle.Broadcast.ForceEndMatchFallback", ResolveDisplayName(_nextMap));
+            BroadcastToAll("MapCycle.Broadcast.ForceEndMatchFallback", ResolveDisplayName(_nextMap.MapConfig));
 
-            var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap);
+            var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap.MapConfig);
             _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
 
             TransitionToNextMap(0f);
@@ -418,7 +423,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         if (_nextMap is null)
             return;
 
-        var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap);
+        var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap.MapConfig);
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
 
         float delay = _conVars.TransitionDelay.GetFloat();
@@ -434,7 +439,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
         ChangeMapOnNextRoundEnd = true;
 
-        string mapDisplay = ResolveDisplayName(_nextMap);
+        string mapDisplay = ResolveDisplayName(_nextMap.MapConfig);
         for (int i = 0; i < 3; i++)
             BroadcastToAll("MapCycle.Broadcast.MapChanging", mapDisplay);
 

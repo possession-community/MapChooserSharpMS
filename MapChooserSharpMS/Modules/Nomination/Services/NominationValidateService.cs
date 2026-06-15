@@ -181,7 +181,7 @@ internal sealed class NominationValidateService
     public async Task<List<IMapConfig>> FilterPickableMapsAsync(List<IMapConfig> maps)
     {
         var snapshot = new PickupSnapshot(
-            CurrentMapName: _mapTransitionManager.CurrentMap?.MapName ?? SharedSystem.GetModSharp().GetMapName(),
+            CurrentMapName: _mapTransitionManager.CurrentMap?.MapConfig.MapName ?? SharedSystem.GetModSharp().GetMapName(),
             RealPlayerCount: SharedSystem.GetModSharp().GetIServer().GetGameClients(true).Count(u => !u.IsFakeClient && !u.IsHltv)
         );
 
@@ -251,7 +251,7 @@ internal sealed class NominationValidateService
     public bool IsCurrentMap(IMapConfig mapConfig)
     {
         if (_mapTransitionManager.CurrentMap is not null)
-            return _mapTransitionManager.CurrentMap.MapName.Equals(mapConfig.MapName, StringComparison.OrdinalIgnoreCase);
+            return _mapTransitionManager.CurrentMap.MapConfig.MapName.Equals(mapConfig.MapName, StringComparison.OrdinalIgnoreCase);
 
         var liveMapName = SharedSystem.GetModSharp().GetMapName();
         if (liveMapName is null)

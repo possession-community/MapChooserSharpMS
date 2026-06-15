@@ -38,7 +38,7 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
         IMapConfig? mapConfig;
         if (commandInfo.ArgCount < 1)
         {
-            mapConfig = _controller.MapTransitionManager.CurrentMap;
+            mapConfig = _controller.MapTransitionManager.CurrentMap?.MapConfig;
         }
         else
         {

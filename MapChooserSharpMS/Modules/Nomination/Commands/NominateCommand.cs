@@ -38,7 +38,7 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
         if (_voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
         {
             string nextMapDisplay = _transitionManager.NextMap is { } nextMap
-                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap.MapConfig)
                 : LocalizeString(client, "Word.VotePending");
             client.GetPlayerController()?.PrintToChat(
                 LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));

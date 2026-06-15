@@ -83,7 +83,7 @@ internal sealed class McsStateResettingService
         var extendService = Resolve<IMcsInternalMapExtendService>();
         var transitionManager = Resolve<IMcsInternalMapTransitionManager>();
 
-        extendService?.InitializeForCurrentMap(transitionManager?.CurrentMap);
+        extendService?.InitializeForCurrentMap(transitionManager?.CurrentMap?.MapConfig);
     }
 
     private T? Resolve<T>() where T : class

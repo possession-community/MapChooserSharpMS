@@ -198,7 +198,7 @@ internal sealed class RtvService(
 
         string mapDisplayName = ServiceProvider
             .GetRequiredService<IMapConfigToolingService>()
-            .ResolveMapDisplayName(nextMap);
+            .ResolveMapDisplayName(nextMap.MapConfig);
 
         BroadcastToAll("Rtv.Broadcast.ChangeOnRoundEnd", mapDisplayName);
     }
@@ -214,7 +214,7 @@ internal sealed class RtvService(
 
         string mapDisplayName = ServiceProvider
             .GetRequiredService<IMapConfigToolingService>()
-            .ResolveMapDisplayName(nextMap);
+            .ResolveMapDisplayName(nextMap.MapConfig);
 
         var behaviour = ServiceProvider
             .GetRequiredService<IMcsPluginConfigProvider>()

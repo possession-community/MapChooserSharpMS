@@ -120,10 +120,10 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
             .MapTransitionManager;
 
         string currentMapName = modSharp.GetMapName() ?? "";
-        string currentDisplayName = transitionManager.CurrentMap is { } curConfig
-            ? mapConfigProvider.ToolingService.ResolveMapDisplayName(curConfig)
+        string currentDisplayName = transitionManager.CurrentMap is { } curInfo
+            ? mapConfigProvider.ToolingService.ResolveMapDisplayName(curInfo.MapConfig)
             : currentMapName;
-        long currentWorkshopId = transitionManager.CurrentMap?.WorkshopId ?? 0;
+        long currentWorkshopId = transitionManager.CurrentMap?.MapConfig.WorkshopId ?? 0;
 
         string nextDisplayName = mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap);
 
