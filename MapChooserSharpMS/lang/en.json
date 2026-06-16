@@ -83,6 +83,8 @@
     "Nomination.Notification.Failure.CancelledByExternalPlugin": "Nomination was blocked",
     "Nomination.Notification.Failure.ProhibitAdminNomination": "Admin nomination is disabled for this map",
     "Nomination.Notification.Failure.NotEnoughPermissions": "You don't have enough permissions",
+    "Nomination.Notification.UnNominate.Success": "Your nomination has been removed",
+    "Nomination.Notification.UnNominate.NotParticipating": "You have not nominated any map",
     "Nomination.Broadcast.Nominated": "{0} nominated {lime}{1}{default}",
     "Nomination.Broadcast.NominationChanged": "{0} changed their nomination to {lime}{1}{default}",
     "Nomination.Broadcast.Admin.Nominated": "Admin {0} inserted {lime}{1}{default} into nomination",
