@@ -37,8 +37,13 @@ internal sealed class McsSharedApi : IMapChooserSharpShared
     public IMcsRtvController McsRtvController { get; }
     public IMcsMapConfigProvider McsMapConfigProvider { get; }
 
-    public void SetDefaultMenuCompat(IMcsMenuCompat menuCompat)
+    public void SetNominationMenuCompat(IMcsNominationMenuCompat menuCompat)
     {
-        _plugin.MenuCompat = menuCompat;
+        _plugin.NominationMenuCompat = menuCompat;
+    }
+
+    public void SetVoteMenuCompat(IMcsVoteMenuCompat menuCompat)
+    {
+        _plugin.VoteMenuCompat = menuCompat;
     }
 }

@@ -92,13 +92,16 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         NominationService          = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService);
 
         NominationMenuManagementService = new NominationMenuManagementService(
-            () => ((MapChooserSharpMs)Plugin).MenuCompat,
+            () => ((MapChooserSharpMs)Plugin).NominationMenuCompat,
             _mapConfigProvider,
             _internalNominationManager,
             NominationService,
             _mapConfigToolingService,
             NotifyNominationFailure,
-            _conVars);
+            _conVars,
+            Plugin,
+            this,
+            _eventManager);
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         _eventManager.RegisterListener<IMapVoteEventListener>(this);

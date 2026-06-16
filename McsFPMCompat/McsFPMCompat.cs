@@ -52,7 +52,9 @@ public class McsFPMCompat : IModSharpModule
         var menuManager = _sharedSystem.GetSharpModuleManager()
             .GetRequiredSharpModuleInterface<IMenuManager>(IMenuManager.Identity).Instance!;
 
-        mcs.SetDefaultMenuCompat(new FpmMcsMenuCompat(menuManager));
+        var compat = new FpmMcsMenuCompat(menuManager);
+        mcs.SetNominationMenuCompat(compat);
+        mcs.SetVoteMenuCompat(compat);
         _logger.LogInformation("Registered FPM menu compat for MapChooserSharpMS.");
     }
 

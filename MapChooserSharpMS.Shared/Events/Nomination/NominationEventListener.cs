@@ -1,4 +1,5 @@
 ﻿using MapChooserSharpMS.Shared.Events.Nomination.Params;
+using MapChooserSharpMS.Shared.Ui.Menu;
 
 namespace MapChooserSharpMS.Shared.Events.Nomination;
 
@@ -38,4 +39,10 @@ public interface INominationEventListener: IEventListenerBase
     /// entry.
     /// </summary>
     void OnUnNominate(IUnNominateParams @params) {}
+
+    /// <summary>
+    /// Fired when a nomination detail menu is about to open.
+    /// Add extra <see cref="McsMenuItem"/> via <see cref="INominationMenuDetailsOpeningParams.ExtraItems"/>.
+    /// </summary>
+    void OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams @params) {}
 }

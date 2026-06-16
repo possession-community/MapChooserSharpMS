@@ -51,13 +51,15 @@ public interface IMapChooserSharpShared
     IMcsMapConfigProvider McsMapConfigProvider { get; }
 
     /// <summary>
-    /// Register the default menu compat adapter. Intended to be called once,
+    /// Register the nomination menu compat adapter. Intended to be called once,
     /// during <c>OnAllModulesLoaded</c> of a companion compat module
     /// (see <c>McsFPMCompat</c>). Calling again replaces the previous adapter.
-    /// The registered instance is consumed internally by MCS — it is not exposed
-    /// back to external callers. MCS menu flows will throw
-    /// <see cref="System.InvalidOperationException"/> if no compat has been
-    /// registered by the time a menu is requested.
     /// </summary>
-    void SetDefaultMenuCompat(IMcsMenuCompat menuCompat);
+    void SetNominationMenuCompat(IMcsNominationMenuCompat menuCompat);
+
+    /// <summary>
+    /// Register the vote menu compat adapter. Reserved for custom vote UI
+    /// implementations that replace or supplement NVM.
+    /// </summary>
+    void SetVoteMenuCompat(IMcsVoteMenuCompat menuCompat);
 }

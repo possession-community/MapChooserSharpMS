@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MapChooserSharpMS.Modules.EventManager;
+using MapChooserSharpMS.Modules.EventManager.Events.Nomination;
+using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
 using MapChooserSharpMS.Shared.Nomination;
@@ -8,27 +11,35 @@ using MapChooserSharpMS.Shared.Nomination.Managers;
 using MapChooserSharpMS.Shared.Nomination.Services;
 using MapChooserSharpMS.Shared.Ui.Menu;
 using Sharp.Shared.Objects;
+using TnmsPluginFoundation;
+using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.Nomination.Services;
 
 internal sealed class NominationMenuManagementService : INominationMenuManagementService
 {
-    private readonly Func<IMcsMenuCompat?> _menuCompatProvider;
+    private readonly Func<IMcsNominationMenuCompat?> _menuCompatProvider;
     private readonly IMcsMapConfigProvider _mapConfigProvider;
     private readonly INominationManager _nominationManager;
     private readonly IMapNominationService _nominationService;
     private readonly IMapConfigToolingService _toolingService;
     private readonly Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> _failureNotifier;
     private readonly NominationConVars _conVars;
+    private readonly TnmsPlugin _plugin;
+    private readonly PluginModuleBase _moduleBase;
+    private readonly IInternalEventManager _eventManager;
 
     internal NominationMenuManagementService(
-        Func<IMcsMenuCompat?> menuCompatProvider,
+        Func<IMcsNominationMenuCompat?> menuCompatProvider,
         IMcsMapConfigProvider mapConfigProvider,
         INominationManager nominationManager,
         IMapNominationService nominationService,
         IMapConfigToolingService toolingService,
         Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> failureNotifier,
-        NominationConVars conVars)
+        NominationConVars conVars,
+        TnmsPlugin plugin,
+        PluginModuleBase moduleBase,
+        IInternalEventManager eventManager)
     {
         _menuCompatProvider = menuCompatProvider;
         _mapConfigProvider = mapConfigProvider;
@@ -37,6 +48,9 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         _toolingService = toolingService;
         _failureNotifier = failureNotifier;
         _conVars = conVars;
+        _plugin = plugin;
+        _moduleBase = moduleBase;
+        _eventManager = eventManager;
     }
 
     public void ShowNominationMenu(IGameClient client, List<IMapConfig> configs)
@@ -130,25 +144,39 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         ExecuteNomination(client, config, isAdmin);
     }
 
+    public List<McsMenuItem> CollectExtraMenuItems(IMapConfig mapConfig, IGameClient client)
+    {
+        var eventParams = new NominationMenuDetailsOpeningParams(_plugin, _moduleBase, mapConfig, client);
+        _eventManager.Fire<INominationEventListener>(e => e.OnNominationMenuDetailsOpening(eventParams));
+        return eventParams.ExtraItems;
+    }
+
     private void ShowConfirmMenu(IGameClient client, IMapConfig config, string displayName)
     {
         var compat = GetMenuCompatOrThrow();
+
+        var extraItems = CollectExtraMenuItems(config, client);
+
+        var items = new List<McsMenuItem>
+        {
+            new()
+            {
+                DisplayText = "Yes",
+                OnSelect = c => ExecuteNomination(c, config, false),
+            },
+            new()
+            {
+                DisplayText = "No",
+                OnSelect = _ => { },
+            },
+        };
+
+        items.AddRange(extraItems);
+
         compat.ShowMenu(client, new McsMenuDefinition
         {
             Title = $"Nominate {displayName}?",
-            Items =
-            [
-                new McsMenuItem
-                {
-                    DisplayText = "Yes",
-                    OnSelect = c => ExecuteNomination(c, config, false),
-                },
-                new McsMenuItem
-                {
-                    DisplayText = "No",
-                    OnSelect = _ => { },
-                },
-            ],
+            Items = items,
         });
     }
 
@@ -162,13 +190,13 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
             _failureNotifier(client, config, results);
     }
 
-    private IMcsMenuCompat GetMenuCompatOrThrow()
+    private IMcsNominationMenuCompat GetMenuCompatOrThrow()
     {
         var compat = _menuCompatProvider();
         if (compat is null)
             throw new InvalidOperationException(
-                "No IMcsMenuCompat registered. Ensure a companion menu plugin " +
-                "(e.g. McsFPMCompat) calls IMapChooserSharpShared.SetDefaultMenuCompat " +
+                "No IMcsNominationMenuCompat registered. Ensure a companion menu plugin " +
+                "(e.g. McsFPMCompat) calls IMapChooserSharpShared.SetNominationMenuCompat " +
                 "during OnAllModulesLoaded.");
         return compat;
     }

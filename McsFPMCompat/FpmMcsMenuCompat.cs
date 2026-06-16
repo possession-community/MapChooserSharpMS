@@ -10,7 +10,7 @@ namespace McsFPMCompat;
 /// Stateless except for tracking the single active menu per client so
 /// <see cref="CloseMenu"/> can match against the right instance.
 /// </summary>
-public sealed class FpmMcsMenuCompat(IMenuManager menuManager) : IMcsMenuCompat
+public sealed class FpmMcsMenuCompat(IMenuManager menuManager) : IMcsNominationMenuCompat, IMcsVoteMenuCompat
 {
     private readonly Dictionary<IGameClient, Menu> _activeMenus = new();
 
