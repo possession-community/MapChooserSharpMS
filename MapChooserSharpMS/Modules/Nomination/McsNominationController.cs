@@ -75,6 +75,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         services.AddSingleton<IMcsInternalNominationManager>(_ => _internalNominationManager);
         services.AddSingleton<INominationManager>(_ => _internalNominationManager);
         services.AddSingleton<INominationValidateService>(_ => NominationValidateService);
+        services.AddSingleton<IMapNominationService>(_ => NominationService);
     }
 
     protected override void OnInitialize()
