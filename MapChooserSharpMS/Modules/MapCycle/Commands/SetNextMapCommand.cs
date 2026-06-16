@@ -1,9 +1,7 @@
 using System;
-using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.Commands;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
-using MapChooserSharpMS.Shared.WorkshopManagement;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared.Objects;
@@ -37,24 +35,13 @@ internal sealed class SetNextMapCommand(IServiceProvider provider) : McsCommandB
 
         string mapName = commandInfo[1];
 
-        if (_mapConfigProvider.TryGetMapConfig(mapName, out var mapConfig))
+        if (!_mapConfigProvider.TryGetMapConfig(mapName, out var mapConfig))
         {
-            ApplyNextMap(client, mapConfig);
+            PrintMessageToServerOrPlayerChat(client,
+                LocalizeWithPluginPrefix(client, "General.Notification.MapNotFound", mapName));
             return;
         }
 
-        if (long.TryParse(mapName, out long workshopId) && workshopId > 0)
-        {
-            FetchAndSetFromWorkshop(client, workshopId);
-            return;
-        }
-
-        PrintMessageToServerOrPlayerChat(client,
-            LocalizeWithPluginPrefix(client, "General.Notification.MapNotFound", mapName));
-    }
-
-    private void ApplyNextMap(IGameClient? client, IMapConfig mapConfig)
-    {
         var transitionManager = _controller.MapTransitionManager;
         var previousNextMap = transitionManager.NextMap;
 
@@ -77,58 +64,5 @@ internal sealed class SetNextMapCommand(IServiceProvider provider) : McsCommandB
         Logger.LogInformation(
             "Admin {Executor} set next map to {Map} (Workshop ID: {WorkshopId})",
             executorName, mapConfig.MapName, mapConfig.WorkshopId);
-    }
-
-    private void FetchAndSetFromWorkshop(IGameClient? client, long workshopId)
-    {
-        var transitionManager = _controller.MapTransitionManager;
-
-        PrintMessageToServerOrPlayerChat(client,
-            LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetNextMap.FetchingWorkshop", workshopId));
-
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var (success, fetchResult) = await transitionManager.TrySetNextMap(workshopId);
-
-                SharedSystem.GetModSharp().InvokeFrameAction(() =>
-                {
-                    if (!success)
-                    {
-                        string reason = fetchResult.ExistenceStatus switch
-                        {
-                            ExistenceStatus.NotAvailableInWorkshop => "private/deleted",
-                            ExistenceStatus.FailedToFetchHttpError => "HTTP error",
-                            _ => "unknown",
-                        };
-                        Logger.LogWarning("SetNextMap workshop {Id}: {Reason}", workshopId, reason);
-
-                        if (client is null || client.IsValid)
-                        {
-                            PrintMessageToServerOrPlayerChat(client,
-                                LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetNextMap.WorkshopNotAvailable",
-                                    workshopId, reason));
-                        }
-                        return;
-                    }
-
-                    string executorName = client is not null && client.IsValid ? client.Name : "Console";
-                    string mapDisplay = fetchResult.MapName ?? workshopId.ToString();
-
-                    PrintLocalizedChatToAll(
-                        "MapCycle.Broadcast.Admin.SetNextMap",
-                        executorName, mapDisplay);
-
-                    Logger.LogInformation(
-                        "Admin {Executor} set next map from workshop: {Map} (Workshop ID: {WorkshopId})",
-                        executorName, mapDisplay, workshopId);
-                });
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning(ex, "SetNextMap workshop fetch failed for {Id}", workshopId);
-            }
-        });
     }
 }

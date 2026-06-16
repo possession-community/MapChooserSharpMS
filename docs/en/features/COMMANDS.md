@@ -28,7 +28,8 @@ In chat, `!nominate` / `css_nominate` can also be used.
 | !nominate_removemap \<map\> | - | mcs.admin.command.nomination.removemap | Remove a map from nominations |
 | !map \<map\> | - | mcs.admin.command.mapcycle.map | Immediately change to the specified map |
 | !wsmap \<workshopId\> | - | mcs.admin.command.mapcycle.wsmap | Immediately change to a map by Workshop ID (fetches from API even if not in config) |
-| !setnextmap \<map/workshopId\> | - | mcs.admin.command.mapcycle.setnextmap | Set the next map (Workshop ID also accepted) |
+| !setnextmap \<map\> | - | mcs.admin.command.mapcycle.setnextmap | Set the next map |
+| !setnextwsmap \<workshopId\> | - | mcs.admin.command.mapcycle.setnextwsmap | Set the next map by Workshop ID (fetches from API even if not in config) |
 | !removenextmap | - | mcs.admin.command.mapcycle.removenextmap | Remove the next map setting |
 | !extend \<amount\> | - | mcs.admin.command.mapcycle.extend | Extend the map's time/rounds (negative values to shorten) |
 | !voteextend \<minutes\> | !ve | mcs.admin.command.mapcycle.voteextend | Start an extend vote (NVM YesNo vote) |

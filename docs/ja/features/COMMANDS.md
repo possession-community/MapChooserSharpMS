@@ -28,7 +28,8 @@
 | !nominate_removemap \<map\> | - | mcs.admin.command.nomination.removemap | ノミネーションからマップを削除 |
 | !map \<map\> | - | mcs.admin.command.mapcycle.map | マップへ即時変更 |
 | !wsmap \<workshopId\> | - | mcs.admin.command.mapcycle.wsmap | Workshop ID でマップへ即時変更 (config 未登録でも API フェッチ) |
-| !setnextmap \<map/workshopId\> | - | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定 (Workshop ID も可) |
+| !setnextmap \<map\> | - | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定 |
+| !setnextwsmap \<workshopId\> | - | mcs.admin.command.mapcycle.setnextwsmap | Workshop ID で次のマップを設定 (config 未登録でも API フェッチ) |
 | !removenextmap | - | mcs.admin.command.mapcycle.removenextmap | 次のマップ設定を解除 |
 | !extend \<amount\> | - | mcs.admin.command.mapcycle.extend | マップの時間/ラウンドを延長 (マイナスで短縮) |
 | !voteextend \<minutes\> | !ve | mcs.admin.command.mapcycle.voteextend | 延長投票 (NVM YesNo 投票) を開始 |
