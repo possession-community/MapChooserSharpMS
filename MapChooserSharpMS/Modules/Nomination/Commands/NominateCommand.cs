@@ -14,7 +14,7 @@ using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
+internal sealed class NominateCommand(IServiceProvider provider) : NominationCommandBase(provider)
 {
     public override string CommandName => "nominate";
     public override List<string> CommandAliases => ["nom"];
@@ -41,7 +41,7 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
                 ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap.MapConfig)
                 : LocalizeString(client, "Word.VotePending");
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
+                LocalizeWithNominationPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
             return;
         }
 
@@ -79,14 +79,14 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
         if (matched.Count == 0)
         {
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.NotMapsFound", query));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.NotMapsFound", query));
             return;
         }
 
         if (matched.Count > 1)
         {
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, query));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, query));
             _controller.NominationMenuManagementService.ShowNominationMenu(client, matched);
             return;
         }

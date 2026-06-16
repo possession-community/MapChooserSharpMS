@@ -14,7 +14,7 @@ using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCommandBase(provider)
+internal sealed class RemoveNominationCommand(IServiceProvider provider) : NominationCommandBase(provider)
 {
     public override string CommandName => "nominate_removemap";
     public override string CommandDescription => "Admin: remove a map from nomination";
@@ -42,14 +42,14 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCo
                 ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap.MapConfig)
                 : LocalizeString(client, "Word.VotePending");
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
+                LocalizeWithNominationPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
             return;
         }
 
         if (commandInfo.ArgCount < 1)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "NominationRemoveMap.Command.Notification.Usage"));
+                LocalizeWithNominationPrefix(client, "NominationRemoveMap.Command.Notification.Usage"));
             if (client is not null)
                 _controller.NominationMenuManagementService.ShowRemoveNominationMenu(client);
             return;
@@ -72,14 +72,14 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : McsCo
         if (matched.Count == 0)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
             return;
         }
 
         if (matched.Count > 1)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, mapName));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, mapName));
             if (client is not null)
                 _controller.NominationMenuManagementService.ShowRemoveNominationMenu(client,
                     matched.Select(kv => kv.Value).ToList());
