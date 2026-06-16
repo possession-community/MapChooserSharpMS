@@ -725,6 +725,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             MaxPlayers = source.MaxPlayers,
             MinPlayers = source.MinPlayers,
             ProhibitAdminNomination = source.ProhibitAdminNomination,
+            RestrictToAllowedUsersOnly = source.RestrictToAllowedUsersOnly,
             DaysAllowed = source.DaysAllowed is not null ? new List<DayOfWeek>(source.DaysAllowed) : null,
             AllowedTimeRanges = source.AllowedTimeRanges is not null ? new List<ITimeRange>(source.AllowedTimeRanges) : null,
             Cooldown = source.Cooldown,

@@ -32,4 +32,9 @@ public interface INominationConfig
     /// Time ranges when nomination is allowed
     /// </summary>
     public IReadOnlyList<ITimeRange> AllowedTimeRanges { get; }
+
+    /// <summary>
+    /// When true, only players with allow permission nodes can nominate this map.
+    /// </summary>
+    public bool RestrictToAllowedUsersOnly { get; }
 }

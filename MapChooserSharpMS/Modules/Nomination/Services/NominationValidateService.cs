@@ -43,7 +43,11 @@ internal sealed class NominationValidateService
     {
         var result = new List<NominationCheckResult>();
 
-        // Phase 1: Always checked — even allow permission cannot bypass these.
+        // Phase 1: Bypass — allow permission skips everything.
+        if (HasBypassPermission(mapConfig, client))
+            return result;
+
+        // Phase 2: Always checked — cannot be bypassed.
         if (IsMapDisabled(mapConfig))
             result.Add(NominationCheckResult.Disabled);
 
@@ -56,10 +60,6 @@ internal sealed class NominationValidateService
         if (result.Count > 0)
             return result;
 
-        // Phase 2: Allow permission bypasses deny and all remaining checks.
-        if (IsPlayerAllowedByPermission(mapConfig, client))
-            return result;
-
         // Phase 3: Deny permission check.
         if (IsPlayerDeniedByPermission(mapConfig, client))
         {
@@ -67,7 +67,15 @@ internal sealed class NominationValidateService
             return result;
         }
 
-        // Phase 4: Normal checks.
+        // Phase 4: Allow restriction — if config requires allow permission, check it.
+        if (mapConfig.NominationConfig.RestrictToAllowedUsersOnly
+            && !IsPlayerAllowedByPermission(mapConfig, client))
+        {
+            result.Add(NominationCheckResult.NotEnoughPermissions);
+            return result;
+        }
+
+        // Phase 5: Normal checks.
         if (IsCurrentMap(mapConfig))
             result.Add(NominationCheckResult.SameMap);
 
@@ -361,6 +369,20 @@ internal sealed class NominationValidateService
             return cc.TimedCooldownEndUtc;
 
         return DateTime.MinValue;
+    }
+
+    public bool HasBypassPermission(IMapConfig mapConfig, IGameClient client)
+    {
+        if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.map.bypass.{mapConfig.MapName}"))
+            return true;
+
+        foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
+        {
+            if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.group.bypass.{groupSetting.GroupName}"))
+                return true;
+        }
+
+        return false;
     }
 
     public bool IsPlayerAllowedByPermission(IMapConfig mapConfig, IGameClient client)

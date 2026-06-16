@@ -42,6 +42,7 @@ internal sealed class ParsedProperties
     public int? MaxPlayers { get; set; }
     public int? MinPlayers { get; set; }
     public bool? ProhibitAdminNomination { get; set; }
+    public bool? RestrictToAllowedUsersOnly { get; set; }
     public List<DayOfWeek>? DaysAllowed { get; set; }
     public List<ITimeRange>? AllowedTimeRanges { get; set; }
 
@@ -96,6 +97,7 @@ internal static class TomlPropertyMapper
         "MaxPlayers",
         "MinPlayers",
         "ProhibitAdminNomination",
+        "RestrictToAllowedUsersOnly",
         "DaysAllowed",
         "AllowedTimeRanges",
         "Cooldown",
@@ -215,6 +217,11 @@ internal static class TomlPropertyMapper
             case "ProhibitAdminNomination":
                 if (valueNode.TryGetBool(out var prohibit))
                     props.ProhibitAdminNomination = prohibit;
+                break;
+
+            case "RestrictToAllowedUsersOnly":
+                if (valueNode.TryGetBool(out var restrict))
+                    props.RestrictToAllowedUsersOnly = restrict;
                 break;
 
             case "DaysAllowed":

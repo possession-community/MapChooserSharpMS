@@ -58,7 +58,15 @@ public interface INominationValidateService
     bool HasReachedGroupNominationLimit(IMapConfig mapConfig);
 
     /// <summary>
-    /// Checks if the player has an allow permission that bypasses deny and normal checks.<br/>
+    /// Checks if the player has a bypass permission that skips all nomination checks.<br/>
+    /// Bypass nodes: mcs.nominate.map.bypass.{map}, mcs.nominate.group.bypass.{group}<br/>
+    /// Uses wildcard-capable matching (PlayerHasPermission).
+    /// </summary>
+    bool HasBypassPermission(IMapConfig mapConfig, IGameClient client);
+
+    /// <summary>
+    /// Checks if the player has an allow permission for restricted maps.<br/>
+    /// Only checked when <see cref="IMapConfig.NominationConfig"/>.<see cref="INominationConfig.RestrictToAllowedUsersOnly"/> is true.<br/>
     /// Allow nodes: mcs.nominate.map.allow.{map}, mcs.nominate.group.allow.{group}<br/>
     /// Uses wildcard-capable matching (PlayerHasPermission).
     /// </summary>

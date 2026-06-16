@@ -36,6 +36,7 @@ internal static class MapConfigBuilder
             MaxPlayers = overrideProps.MaxPlayers ?? baseProps.MaxPlayers,
             MinPlayers = overrideProps.MinPlayers ?? baseProps.MinPlayers,
             ProhibitAdminNomination = overrideProps.ProhibitAdminNomination ?? baseProps.ProhibitAdminNomination,
+            RestrictToAllowedUsersOnly = overrideProps.RestrictToAllowedUsersOnly ?? baseProps.RestrictToAllowedUsersOnly,
             DaysAllowed = overrideProps.DaysAllowed ?? baseProps.DaysAllowed,
             AllowedTimeRanges = overrideProps.AllowedTimeRanges ?? baseProps.AllowedTimeRanges,
             Cooldown = overrideProps.Cooldown ?? baseProps.Cooldown,
@@ -84,7 +85,8 @@ internal static class MapConfigBuilder
                 MinPlayers: props.MinPlayers ?? 0,
                 ProhibitAdminNomination: props.ProhibitAdminNomination ?? false,
                 DaysAllowed: props.DaysAllowed ?? [],
-                AllowedTimeRanges: props.AllowedTimeRanges ?? []),
+                AllowedTimeRanges: props.AllowedTimeRanges ?? [],
+                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
@@ -126,7 +128,8 @@ internal static class MapConfigBuilder
                 MinPlayers: props.MinPlayers ?? 0,
                 ProhibitAdminNomination: props.ProhibitAdminNomination ?? false,
                 DaysAllowed: props.DaysAllowed ?? [],
-                AllowedTimeRanges: props.AllowedTimeRanges ?? []),
+                AllowedTimeRanges: props.AllowedTimeRanges ?? [],
+                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
