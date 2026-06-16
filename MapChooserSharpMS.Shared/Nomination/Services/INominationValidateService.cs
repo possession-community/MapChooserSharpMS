@@ -58,9 +58,16 @@ public interface INominationValidateService
     bool HasReachedGroupNominationLimit(IMapConfig mapConfig);
 
     /// <summary>
+    /// Checks if the player has an allow permission that bypasses deny and normal checks.<br/>
+    /// Allow nodes: mcs.nominate.map.allow.{map}, mcs.nominate.group.allow.{group}<br/>
+    /// Uses wildcard-capable matching (PlayerHasPermission).
+    /// </summary>
+    bool IsPlayerAllowedByPermission(IMapConfig mapConfig, IGameClient client);
+
+    /// <summary>
     /// Checks if the player is denied from nominating this map by permission nodes.<br/>
-    /// Resolution order: Any Deny > Any Allow > Default (allowed).<br/>
     /// Deny nodes: mcs.nominate.map.deny.{map}, mcs.nominate.group.deny.{group}<br/>
+    /// Uses exact matching (PlayerHasPermissionExact).
     /// </summary>
     bool IsPlayerDeniedByPermission(IMapConfig mapConfig, IGameClient client);
 

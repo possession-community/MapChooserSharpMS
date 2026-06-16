@@ -50,6 +50,10 @@ In chat, `!nominate` / `css_nominate` can also be used.
 
 | Node | Description |
 |---|---|
+| mcs.nominate.map.allow.\<map\> | Allow nomination of a specific map (wildcard-capable). Bypasses all checks except Disabled/Cooldown |
+| mcs.nominate.group.allow.\<group\> | Allow nomination of a specific group (wildcard-capable). Same as above |
 | mcs.nominate.map.deny.\<map\> | Deny nomination of a specific map (exact match) |
 | mcs.nominate.group.deny.\<group\> | Deny nomination of a specific group (exact match) |
 | mcs.admin.command.nomination.nomlist.verbose | Show nominator names with !nomlist full |
+
+Check order: Disabled → Cooldown → **Allow (bypass)** → Deny → Normal checks (Day/Time/Players etc.)

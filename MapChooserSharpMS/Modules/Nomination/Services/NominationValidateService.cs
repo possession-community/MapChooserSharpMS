@@ -43,9 +43,31 @@ internal sealed class NominationValidateService
     {
         var result = new List<NominationCheckResult>();
 
+        // Phase 1: Always checked — even allow permission cannot bypass these.
         if (IsMapDisabled(mapConfig))
             result.Add(NominationCheckResult.Disabled);
 
+        if (IsMapInCooldown(mapConfig))
+            result.Add(NominationCheckResult.MapIsInCooldown);
+
+        if (IsMapInNominationCooldown(mapConfig))
+            result.Add(NominationCheckResult.NominationCooldownActive);
+
+        if (result.Count > 0)
+            return result;
+
+        // Phase 2: Allow permission bypasses deny and all remaining checks.
+        if (IsPlayerAllowedByPermission(mapConfig, client))
+            return result;
+
+        // Phase 3: Deny permission check.
+        if (IsPlayerDeniedByPermission(mapConfig, client))
+        {
+            result.Add(NominationCheckResult.NotEnoughPermissions);
+            return result;
+        }
+
+        // Phase 4: Normal checks.
         if (IsCurrentMap(mapConfig))
             result.Add(NominationCheckResult.SameMap);
 
@@ -56,12 +78,6 @@ internal sealed class NominationValidateService
 
         if (IsDuringVotingPeriod())
             result.Add(NominationCheckResult.VotingPeriod);
-
-        if (IsMapInCooldown(mapConfig))
-            result.Add(NominationCheckResult.MapIsInCooldown);
-
-        if (IsMapInNominationCooldown(mapConfig))
-            result.Add(NominationCheckResult.NominationCooldownActive);
 
         if (!IsLowerThanMaxPlayers(mapConfig))
             result.Add(NominationCheckResult.TooMuchPlayers);
@@ -74,9 +90,6 @@ internal sealed class NominationValidateService
 
         if (!IsWithinTimeRange(mapConfig))
             result.Add(NominationCheckResult.OnlySpecificTime);
-
-        if (IsPlayerDeniedByPermission(mapConfig, client))
-            result.Add(NominationCheckResult.NotEnoughPermissions);
 
         if (result.Count == 0)
         {
@@ -350,11 +363,22 @@ internal sealed class NominationValidateService
         return DateTime.MinValue;
     }
 
+    public bool IsPlayerAllowedByPermission(IMapConfig mapConfig, IGameClient client)
+    {
+        if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.map.allow.{mapConfig.MapName}"))
+            return true;
+
+        foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
+        {
+            if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.group.allow.{groupSetting.GroupName}"))
+                return true;
+        }
+
+        return false;
+    }
+
     public bool IsPlayerDeniedByPermission(IMapConfig mapConfig, IGameClient client)
     {
-        // Resolution: Any Deny > Any Allow > Default (allowed)
-        // Deny checks use exact matching — wildcard holders (e.g. root *)
-        // must not accidentally match deny nodes.
         if (TnmsPlugin.AdminManager.PlayerHasPermissionExact(client.SteamId, $"mcs.nominate.map.deny.{mapConfig.MapName}"))
             return true;
 
