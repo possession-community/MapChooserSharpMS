@@ -10,6 +10,7 @@ using MapChooserSharpMS.Shared.Events.Nomination.Params;
 using MapChooserSharpMS.Shared.Events.RockTheVote;
 using MapChooserSharpMS.Shared.Events.RockTheVote.Params;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.Ui.Menu;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared;
@@ -197,4 +198,20 @@ public class McsEventDebugger : IModSharpModule,
     public void OnUnNominate(IUnNominateParams p)
         => _logger.LogInformation("[Nomination] OnUnNominate: Map={Map}, Slot={Slot}, Reason={Reason}",
             p.NominationData?.MapConfig?.MapName, p.Slot, p.Reason);
+
+    public void OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams p)
+    {
+        _logger.LogInformation("[Nomination] OnNominationMenuDetailsOpening: Map={Map}, Client={Client}",
+            p.MapConfig.MapName, p.Client.Name);
+
+        p.ExtraItems.Add(new McsVoteMenuItem
+        {
+            DisplayText = $"Debugger - {p.MapConfig.MapName}",
+            OnSelect = client =>
+            {
+                _logger.LogInformation("[Nomination] Debugger item clicked: Map={Map}, Client={Client}",
+                    p.MapConfig.MapName, client.Name);
+            },
+        });
+    }
 }

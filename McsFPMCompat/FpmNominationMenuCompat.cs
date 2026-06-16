@@ -24,8 +24,8 @@ public sealed class FpmNominationMenuCompat(IMenuManager menuManager) : IMcsNomi
             var capturedContext = context;
             builder.Item(item.DisplayText, controller =>
             {
-                controller.Exit();
-                ShowDetailMenu(target, capturedItem, capturedContext);
+                var detailMenu = BuildDetailMenu(target, capturedItem, capturedContext);
+                controller.Next(detailMenu);
             });
         }
 
@@ -34,7 +34,7 @@ public sealed class FpmNominationMenuCompat(IMenuManager menuManager) : IMcsNomi
         menuManager.DisplayMenu(target, built);
     }
 
-    private void ShowDetailMenu(IGameClient target, McsNominationMenuItem item, McsNominationMenuContext context)
+    private Menu BuildDetailMenu(IGameClient target, McsNominationMenuItem item, McsNominationMenuContext context)
     {
         var builder = Menu.Create();
         builder.Title(item.DisplayText);
@@ -43,12 +43,6 @@ public sealed class FpmNominationMenuCompat(IMenuManager menuManager) : IMcsNomi
         {
             controller.Exit();
             item.OnNominate?.Invoke(target);
-        });
-
-        builder.Item("« Back", controller =>
-        {
-            controller.Exit();
-            ShowNominationMenu(target, context);
         });
 
         var cooldownResult = context.CooldownQueryService.GetCurrentCooldowns(item.MapConfig);
@@ -77,9 +71,7 @@ public sealed class FpmNominationMenuCompat(IMenuManager menuManager) : IMcsNomi
             });
         }
 
-        var built = builder.Build();
-        _activeMenus[target] = built;
-        menuManager.DisplayMenu(target, built);
+        return builder.Build();
     }
 
     public void CloseMenu(IGameClient target)
