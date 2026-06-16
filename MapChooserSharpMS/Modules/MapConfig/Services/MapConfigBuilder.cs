@@ -51,6 +51,7 @@ internal static class MapConfigBuilder
             MapSelectionWeight = overrideProps.MapSelectionWeight ?? baseProps.MapSelectionWeight,
             ShortGroupName = overrideProps.ShortGroupName ?? baseProps.ShortGroupName,
             NominationLimit = overrideProps.NominationLimit ?? baseProps.NominationLimit,
+            SearchTags = overrideProps.SearchTags ?? baseProps.SearchTags,
         };
     }
 
@@ -92,7 +93,8 @@ internal static class MapConfigBuilder
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
                 configNominationCooldown: props.NominationCooldown ?? 0,
                 nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
-            ExtraConfiguration: extraConfig);
+            ExtraConfiguration: extraConfig,
+            SearchTags: BuildSearchTags(props, groupConfigs));
     }
 
     /// <summary>
@@ -135,6 +137,28 @@ internal static class MapConfigBuilder
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
                 configNominationCooldown: props.NominationCooldown ?? 0,
                 nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
-            ExtraConfiguration: extraConfig);
+            ExtraConfiguration: extraConfig,
+            SearchTags: props.SearchTags ?? []);
+    }
+
+    private static IReadOnlyList<string> BuildSearchTags(
+        ParsedProperties props,
+        List<IMapGroupConfig> groupConfigs)
+    {
+        var tags = new List<string>();
+
+        if (props.SearchTags is not null)
+            tags.AddRange(props.SearchTags);
+
+        foreach (var group in groupConfigs)
+        {
+            foreach (var tag in group.SearchTags)
+            {
+                if (!tags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                    tags.Add(tag);
+            }
+        }
+
+        return tags;
     }
 }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace MapChooserSharpMS.Shared.MapConfig.Services;
 
 /// <summary>
@@ -20,4 +22,9 @@ public interface IMapConfigToolingService
     /// restrictive (largest) value wins — matching legacy MCS behaviour.
     /// </summary>
     int GetHighestCooldown(IMapConfig mapConfig);
+
+    /// <summary>
+    /// Returns all maps that have a search tag matching the query (case-insensitive).
+    /// </summary>
+    List<IMapConfig> FindMapsBySearchTag(string tag, IEnumerable<IMapConfig> allMaps);
 }

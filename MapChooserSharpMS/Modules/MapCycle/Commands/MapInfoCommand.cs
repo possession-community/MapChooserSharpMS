@@ -72,6 +72,10 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
             Print(client, "MapCycle.Command.Notification.MapInfo.Groups",
                 string.Join(", ", mapConfig.GroupSettings.Select(g => g.GroupName)));
 
+        if (mapConfig.SearchTags.Count > 0)
+            Print(client, "MapCycle.Command.Notification.MapInfo.SearchTags",
+                string.Join(", ", mapConfig.SearchTags));
+
         if (mapConfig.NominationConfig.DaysAllowed.Count > 0)
             Print(client, "MapCycle.Command.Notification.MapInfo.DaysAllowed",
                 string.Join(", ", mapConfig.NominationConfig.DaysAllowed));

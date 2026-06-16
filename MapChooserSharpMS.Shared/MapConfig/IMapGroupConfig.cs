@@ -1,4 +1,6 @@
-﻿namespace MapChooserSharpMS.Shared.MapConfig;
+﻿using System.Collections.Generic;
+
+namespace MapChooserSharpMS.Shared.MapConfig;
 
 /// <summary>
 /// Map group's name and cooldown
@@ -24,4 +26,9 @@ public interface IMapGroupConfig: IBaseMapConfig
     /// Maximum number of nominations allowed from this group. 0 = unlimited.
     /// </summary>
     public int NominationLimit { get; }
+
+    /// <summary>
+    /// Search tags inherited by maps in this group
+    /// </summary>
+    public IReadOnlyList<string> SearchTags { get; }
 }

@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
 
@@ -37,5 +40,12 @@ internal sealed class MapConfigToolingService : IMapConfigToolingService
         }
 
         return highest;
+    }
+
+    public List<IMapConfig> FindMapsBySearchTag(string tag, IEnumerable<IMapConfig> allMaps)
+    {
+        return allMaps
+            .Where(m => m.SearchTags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
     }
 }

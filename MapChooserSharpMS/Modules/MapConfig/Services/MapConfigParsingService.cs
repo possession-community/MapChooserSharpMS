@@ -740,6 +740,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             MapSelectionWeight = source.MapSelectionWeight,
             ShortGroupName = source.ShortGroupName,
             NominationLimit = source.NominationLimit,
+            SearchTags = source.SearchTags is not null ? new List<string>(source.SearchTags) : null,
         };
     }
 

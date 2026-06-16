@@ -135,6 +135,7 @@
     "MapCycle.Command.Notification.MapInfo.MaxExtends": "Max Extends: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.WorkshopId": "Workshop ID: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.Groups": "Groups: {lime}{0}{default}",
+    "MapCycle.Command.Notification.MapInfo.SearchTags": "Tags: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.DaysAllowed": "Days can be play: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.AllowedTimeRanges": "Time ranges can be play: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.MaxPlayers": "Max Players: {lime}{0}{default}",

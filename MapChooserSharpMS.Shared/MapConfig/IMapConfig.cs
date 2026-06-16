@@ -28,6 +28,11 @@ public interface IMapConfig: IBaseMapConfig
     public long WorkshopId { get; }
     
     /// <summary>
+    /// Search tags for nomination search (e.g. "easy", "hard", "ze")
+    /// </summary>
+    public IReadOnlyList<string> SearchTags { get; }
+
+    /// <summary>
     /// Group settings
     /// </summary>
     public List<IMapGroupConfig> GroupSettings { get; }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using MapChooserSharpMS.Shared.MapConfig;
 
 namespace MapChooserSharpMS.Modules.MapConfig.Models;
@@ -17,4 +18,5 @@ internal sealed record MapGroupConfig(
     IRandomPickConfig RandomPickConfig,
     INominationConfig NominationConfig,
     ICooldownConfig CooldownConfig,
-    IExtraConfigAccessor ExtraConfiguration) : IMapGroupConfig;
+    IExtraConfigAccessor ExtraConfiguration,
+    IReadOnlyList<string> SearchTags) : IMapGroupConfig;

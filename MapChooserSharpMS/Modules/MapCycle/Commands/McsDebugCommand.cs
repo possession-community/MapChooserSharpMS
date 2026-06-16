@@ -84,6 +84,7 @@ internal sealed class McsDebugCommand(IServiceProvider provider) : McsCommandBas
         sb.AppendLine($"  MaxExtends: {mapConfig.MaxExtends}");
         sb.AppendLine($"  MaxExtCommandUses: {mapConfig.MaxExtCommandUses}");
         sb.AppendLine($"  MapSelectionWeight: {mapConfig.RandomPickConfig.MapSelectionWeight}");
+        sb.AppendLine($"  SearchTags: [{string.Join(", ", mapConfig.SearchTags)}]");
 
         sb.AppendLine($"--- NominationConfig ---");
         var nom = mapConfig.NominationConfig;

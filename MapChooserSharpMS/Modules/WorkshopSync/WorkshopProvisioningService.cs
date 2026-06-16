@@ -76,7 +76,8 @@ internal sealed class WorkshopProvisioningService : IDisposable
                 DaysAllowed: [],
                 AllowedTimeRanges: []),
             CooldownConfig: new CooldownConfig(configCooldown: 0, timedCooldown: TimeSpan.Zero),
-            ExtraConfiguration: ExtraConfigAccessor.Empty);
+            ExtraConfiguration: ExtraConfigAccessor.Empty,
+            SearchTags: []);
     }
 }
 

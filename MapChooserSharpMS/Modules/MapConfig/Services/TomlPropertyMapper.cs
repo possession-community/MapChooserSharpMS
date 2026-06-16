@@ -52,6 +52,9 @@ internal sealed class ParsedProperties
     // Group display
     public string? ShortGroupName { get; set; }
 
+    // Search tags
+    public List<string>? SearchTags { get; set; }
+
     // Cooldown
     public int? Cooldown { get; set; }
     public string? CooldownDateTime { get; set; }
@@ -105,6 +108,7 @@ internal static class TomlPropertyMapper
         "NominationCooldown",
         "NominationCooldownDateTime",
         "NominationLimit",
+        "SearchTags",
     };
 
     public static ParsedProperties ExtractProperties(TomlDocumentNode node)
@@ -255,6 +259,10 @@ internal static class TomlPropertyMapper
             case "NominationLimit":
                 if (valueNode.TryGetInt64(out var nomLimit))
                     props.NominationLimit = Math.Max(0, (int)nomLimit);
+                break;
+
+            case "SearchTags":
+                props.SearchTags = ExtractStringArray(valueNode);
                 break;
 
             // Override properties

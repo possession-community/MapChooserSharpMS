@@ -135,6 +135,7 @@
     "MapCycle.Command.Notification.MapInfo.MaxExtends": "最大延長回数: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.WorkshopId": "ワークショップID: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.Groups": "グループ: {lime}{0}{default}",
+    "MapCycle.Command.Notification.MapInfo.SearchTags": "タグ: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.DaysAllowed": "プレイ可能な日: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.AllowedTimeRanges": "プレイ可能な時間: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.MaxPlayers": "最大人数: {lime}{0}{default}",

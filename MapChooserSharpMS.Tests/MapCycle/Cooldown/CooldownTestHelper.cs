@@ -40,7 +40,8 @@ internal static class CooldownTestHelper
             RandomPickConfig: new RandomPickConfig(1, true, false),
             NominationConfig: new NominationConfig(0, 0, false, Array.Empty<DayOfWeek>(), Array.Empty<ITimeRange>()),
             CooldownConfig: cc,
-            ExtraConfiguration: ExtraConfigAccessor.Empty);
+            ExtraConfiguration: ExtraConfigAccessor.Empty,
+            SearchTags: []);
     }
 
     internal static CooldownConfig GetCooldownConfig(IMapConfig map)
