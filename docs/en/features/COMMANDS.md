@@ -10,6 +10,7 @@ In chat, `!nominate` / `css_nominate` can also be used.
 | !nominate \<map\> | !nom | Nominate a map. Without arguments, shows the full map list. Partial match with multiple hits shows a menu |
 | !nomlist | - | Show the current nomination list. `!nomlist full` shows nominator names for admins |
 | !rtv | chat "rtv" | Vote for Rock The Vote |
+| !unnominate | !unnom | Remove your nomination |
 | !unrtv | - | Cancel your RTV vote |
 | !ext | - | Vote to extend the current map (RTV-style counting) |
 | !timeleft | chat "timeleft" | Show remaining time/rounds |

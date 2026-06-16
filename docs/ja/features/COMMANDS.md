@@ -10,6 +10,7 @@
 | !nominate \<map\> | !nom | マップをノミネートする。引数なしで全マップ一覧、部分一致で複数ヒット時はメニュー表示 |
 | !nomlist | - | 現在のノミネーション一覧を表示。`!nomlist full` で管理者はノミネーター名表示 |
 | !rtv | チャット "rtv" | Rock The Vote に投票する |
+| !unnominate | !unnom | 自分のノミネートを取り消す |
 | !unrtv | - | RTV 投票を取り消す |
 | !ext | - | 現在のマップの延長に投票する (RTV 式カウント) |
 | !timeleft | チャット "timeleft" | 残り時間/ラウンドを表示 |
