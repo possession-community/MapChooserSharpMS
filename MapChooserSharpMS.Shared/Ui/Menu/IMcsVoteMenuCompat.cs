@@ -1,7 +1,15 @@
+using Sharp.Shared.Objects;
+
 namespace MapChooserSharpMS.Shared.Ui.Menu;
 
 /// <summary>
 /// Menu compat adapter for vote-related menus.
-/// Reserved for custom vote UI implementations that replace or supplement NVM.
 /// </summary>
-public interface IMcsVoteMenuCompat : IMcsMenuCompat;
+public interface IMcsVoteMenuCompat
+{
+    void ShowMenu(IGameClient target, McsVoteMenuDefinition menu);
+
+    void CloseMenu(IGameClient target);
+
+    void Cleanup();
+}

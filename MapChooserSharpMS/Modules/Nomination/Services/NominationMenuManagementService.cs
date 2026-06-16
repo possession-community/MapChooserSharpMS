@@ -6,6 +6,7 @@ using MapChooserSharpMS.Modules.EventManager.Events.Nomination;
 using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapCycle.Services;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
 using MapChooserSharpMS.Shared.Nomination.Services;
@@ -23,6 +24,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     private readonly INominationManager _nominationManager;
     private readonly IMapNominationService _nominationService;
     private readonly IMapConfigToolingService _toolingService;
+    private readonly IMapCooldownQueryService _cooldownQueryService;
     private readonly Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> _failureNotifier;
     private readonly NominationConVars _conVars;
     private readonly TnmsPlugin _plugin;
@@ -35,6 +37,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         INominationManager nominationManager,
         IMapNominationService nominationService,
         IMapConfigToolingService toolingService,
+        IMapCooldownQueryService cooldownQueryService,
         Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> failureNotifier,
         NominationConVars conVars,
         TnmsPlugin plugin,
@@ -46,6 +49,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         _nominationManager = nominationManager;
         _nominationService = nominationService;
         _toolingService = toolingService;
+        _cooldownQueryService = cooldownQueryService;
         _failureNotifier = failureNotifier;
         _conVars = conVars;
         _plugin = plugin;
@@ -57,14 +61,10 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     {
         var compat = GetMenuCompatOrThrow();
         var items = configs
-            .Select(c => CreateNominationMenuItem(c, client, isAdmin: false))
+            .Select(c => CreateNominationMenuItem(c, isAdmin: false))
             .ToList();
 
-        compat.ShowMenu(client, new McsMenuDefinition
-        {
-            Title = "Nominate Map",
-            Items = items,
-        });
+        compat.ShowNominationMenu(client, BuildContext("Nominate Map", items));
     }
 
     public void ShowNominationMenu(IGameClient client)
@@ -79,14 +79,10 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     {
         var compat = GetMenuCompatOrThrow();
         var items = configs
-            .Select(c => CreateNominationMenuItem(c, client, isAdmin: true))
+            .Select(c => CreateNominationMenuItem(c, isAdmin: true))
             .ToList();
 
-        compat.ShowMenu(client, new McsMenuDefinition
-        {
-            Title = "Admin Nominate Map",
-            Items = items,
-        });
+        compat.ShowNominationMenu(client, BuildContext("Admin Nominate Map", items));
     }
 
     public void ShowAdminNominationMenu(IGameClient client)
@@ -101,18 +97,15 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     {
         var compat = GetMenuCompatOrThrow();
         var items = configs
-            .Select(n => new McsMenuItem
+            .Select(n => new McsNominationMenuItem
             {
                 DisplayText = _toolingService.ResolveMapDisplayName(n.MapConfig),
-                OnSelect = c => _nominationService.TryRemoveNomination(n.MapConfig, c, forceRemoval: true),
+                MapConfig = n.MapConfig,
+                OnNominate = c => _nominationService.TryRemoveNomination(n.MapConfig, c, forceRemoval: true),
             })
             .ToList();
 
-        compat.ShowMenu(client, new McsMenuDefinition
-        {
-            Title = "Remove Nomination",
-            Items = items,
-        });
+        compat.ShowNominationMenu(client, BuildContext("Remove Nomination", items));
     }
 
     public void ShowRemoveNominationMenu(IGameClient client)
@@ -121,12 +114,13 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         ShowRemoveNominationMenu(client, nominations);
     }
 
-    private McsMenuItem CreateNominationMenuItem(IMapConfig config, IGameClient client, bool isAdmin)
+    private McsNominationMenuItem CreateNominationMenuItem(IMapConfig config, bool isAdmin)
     {
-        return new McsMenuItem
+        return new McsNominationMenuItem
         {
             DisplayText = _toolingService.ResolveMapDisplayName(config),
-            OnSelect = isAdmin
+            MapConfig = config,
+            OnNominate = isAdmin
                 ? c => ExecuteNomination(c, config, true)
                 : c => NominateOrConfirm(c, config, false),
         };
@@ -136,48 +130,43 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     {
         if (!isAdmin && _conVars.ConfirmMenu.GetInt32() != 0)
         {
-            string displayName = _toolingService.ResolveMapDisplayName(config);
-            ShowConfirmMenu(client, config, displayName);
+            ShowConfirmMenu(client, config);
             return;
         }
 
         ExecuteNomination(client, config, isAdmin);
     }
 
-    public List<McsMenuItem> CollectExtraMenuItems(IMapConfig mapConfig, IGameClient client)
+    public List<McsVoteMenuItem> CollectExtraMenuItems(IMapConfig mapConfig, IGameClient client)
     {
         var eventParams = new NominationMenuDetailsOpeningParams(_plugin, _moduleBase, mapConfig, client);
         _eventManager.Fire<INominationEventListener>(e => e.OnNominationMenuDetailsOpening(eventParams));
         return eventParams.ExtraItems;
     }
 
-    private void ShowConfirmMenu(IGameClient client, IMapConfig config, string displayName)
+    private void ShowConfirmMenu(IGameClient client, IMapConfig config)
     {
         var compat = GetMenuCompatOrThrow();
-
-        var extraItems = CollectExtraMenuItems(config, client);
-
-        var items = new List<McsMenuItem>
+        var item = new McsNominationMenuItem
         {
-            new()
-            {
-                DisplayText = "Yes",
-                OnSelect = c => ExecuteNomination(c, config, false),
-            },
-            new()
-            {
-                DisplayText = "No",
-                OnSelect = _ => { },
-            },
+            DisplayText = _toolingService.ResolveMapDisplayName(config),
+            MapConfig = config,
+            OnNominate = c => ExecuteNomination(c, config, false),
         };
 
-        items.AddRange(extraItems);
+        compat.ShowNominationMenu(client, BuildContext($"Nominate {item.DisplayText}?", [item]));
+    }
 
-        compat.ShowMenu(client, new McsMenuDefinition
+    private McsNominationMenuContext BuildContext(string title, List<McsNominationMenuItem> items)
+    {
+        return new McsNominationMenuContext
         {
-            Title = $"Nominate {displayName}?",
+            Title = title,
             Items = items,
-        });
+            ToolingService = _toolingService,
+            CooldownQueryService = _cooldownQueryService,
+            NominationMenuService = this,
+        };
     }
 
     private void ExecuteNomination(IGameClient client, IMapConfig config, bool isAdmin)

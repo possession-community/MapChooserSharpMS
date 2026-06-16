@@ -11,6 +11,7 @@ using MapChooserSharpMS.Shared.Events.RockTheVote;
 using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapCycle.Services;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
 using MapChooserSharpMS.Shared.Nomination.Services;
@@ -91,12 +92,14 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this);
         NominationService          = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService);
 
+        var cooldownQueryService = ServiceProvider.GetRequiredService<IMapCooldownQueryService>();
         NominationMenuManagementService = new NominationMenuManagementService(
             () => ((MapChooserSharpMs)Plugin).NominationMenuCompat,
             _mapConfigProvider,
             _internalNominationManager,
             NominationService,
             _mapConfigToolingService,
+            cooldownQueryService,
             NotifyNominationFailure,
             _conVars,
             Plugin,

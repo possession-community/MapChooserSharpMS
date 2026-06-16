@@ -15,5 +15,5 @@ public interface INominationMenuDetailsOpeningParams : IEventBaseParams
 
     IGameClient Client { get; }
 
-    List<McsMenuItem> ExtraItems { get; }
+    List<McsVoteMenuItem> ExtraItems { get; }
 }

@@ -23,5 +23,5 @@ internal sealed class NominationMenuDetailsOpeningParams(
 
     public IGameClient Client { get; } = client;
 
-    public List<McsMenuItem> ExtraItems { get; } = [];
+    public List<McsVoteMenuItem> ExtraItems { get; } = [];
 }

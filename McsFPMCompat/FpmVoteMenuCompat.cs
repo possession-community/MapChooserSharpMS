@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using MapChooserSharpMS.Shared.Nomination.Services;
 using MapChooserSharpMS.Shared.Ui.Menu;
 using Sharp.Modules.MenuManager.Shared;
 using Sharp.Shared.Objects;
@@ -7,17 +6,13 @@ using Sharp.Shared.Objects;
 namespace McsFPMCompat;
 
 /// <summary>
-/// FPM <c>MenuManager</c> backed implementation of <see cref="IMcsMenuCompat"/>.
-/// Stateless except for tracking the single active menu per client so
-/// <see cref="CloseMenu"/> can match against the right instance.
+/// FPM MenuManager backed implementation for vote menus.
 /// </summary>
-public sealed class FpmMcsMenuCompat(IMenuManager menuManager) : IMcsNominationMenuCompat, IMcsVoteMenuCompat
+public sealed class FpmVoteMenuCompat(IMenuManager menuManager) : IMcsVoteMenuCompat
 {
     private readonly Dictionary<IGameClient, Menu> _activeMenus = new();
 
-    public INominationMenuManagementService NominationMenuService { get; set; } = null!;
-
-    public void ShowMenu(IGameClient target, McsMenuDefinition menu)
+    public void ShowMenu(IGameClient target, McsVoteMenuDefinition menu)
     {
         var builder = Menu.Create();
         builder.Title(menu.Title);
