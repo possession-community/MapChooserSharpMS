@@ -40,6 +40,7 @@ internal sealed class McsSharedApi : IMapChooserSharpShared
     public void SetNominationMenuCompat(IMcsNominationMenuCompat menuCompat)
     {
         _plugin.NominationMenuCompat = menuCompat;
+        menuCompat.NominationMenuService = McsNominationController.NominationMenuManagementService;
     }
 
     public void SetVoteMenuCompat(IMcsVoteMenuCompat menuCompat)
