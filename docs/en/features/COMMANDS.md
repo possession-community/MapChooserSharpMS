@@ -50,8 +50,8 @@ In chat, `!nominate` / `css_nominate` can also be used.
 
 | Node | Description |
 |---|---|
-| mcs.nominate.map.bypass.\<map\> | Bypass all checks and allow nomination (wildcard-capable) |
-| mcs.nominate.group.bypass.\<group\> | Same as above (group-level) |
+| mcs.nominate.map.bypass.\<map\> | Bypass all checks and allow nomination (exact match) |
+| mcs.nominate.group.bypass.\<group\> | Same as above (group-level, exact match) |
 | mcs.nominate.map.allow.\<map\> | Allow nomination on maps with `RestrictToAllowedUsersOnly = true` (wildcard-capable) |
 | mcs.nominate.group.allow.\<group\> | Same as above (group-level) |
 | mcs.nominate.map.deny.\<map\> | Deny nomination of a specific map (exact match) |

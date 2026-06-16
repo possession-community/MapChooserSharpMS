@@ -50,8 +50,8 @@
 
 | ノード | 説明 |
 |---|---|
-| mcs.nominate.map.bypass.\<map\> | 全チェックをバイパスしてノミネートを許可 (ワイルドカード対応) |
-| mcs.nominate.group.bypass.\<group\> | 同上 (グループ単位) |
+| mcs.nominate.map.bypass.\<map\> | 全チェックをバイパスしてノミネートを許可 (exact match) |
+| mcs.nominate.group.bypass.\<group\> | 同上 (グループ単位, exact match) |
 | mcs.nominate.map.allow.\<map\> | `RestrictToAllowedUsersOnly = true` のマップでノミネートを許可 (ワイルドカード対応) |
 | mcs.nominate.group.allow.\<group\> | 同上 (グループ単位) |
 | mcs.nominate.map.deny.\<map\> | 特定マップのノミネートを拒否 (exact match) |

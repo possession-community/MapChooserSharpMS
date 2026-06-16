@@ -373,12 +373,12 @@ internal sealed class NominationValidateService
 
     public bool HasBypassPermission(IMapConfig mapConfig, IGameClient client)
     {
-        if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.map.bypass.{mapConfig.MapName}"))
+        if (TnmsPlugin.AdminManager.PlayerHasPermissionExact(client.SteamId, $"mcs.nominate.map.bypass.{mapConfig.MapName}"))
             return true;
 
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
-            if (TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, $"mcs.nominate.group.bypass.{groupSetting.GroupName}"))
+            if (TnmsPlugin.AdminManager.PlayerHasPermissionExact(client.SteamId, $"mcs.nominate.group.bypass.{groupSetting.GroupName}"))
                 return true;
         }
 

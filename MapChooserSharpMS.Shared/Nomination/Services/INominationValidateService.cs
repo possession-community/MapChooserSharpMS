@@ -60,7 +60,7 @@ public interface INominationValidateService
     /// <summary>
     /// Checks if the player has a bypass permission that skips all nomination checks.<br/>
     /// Bypass nodes: mcs.nominate.map.bypass.{map}, mcs.nominate.group.bypass.{group}<br/>
-    /// Uses wildcard-capable matching (PlayerHasPermission).
+    /// Uses exact matching (PlayerHasPermissionExact) — root wildcard does not auto-match.
     /// </summary>
     bool HasBypassPermission(IMapConfig mapConfig, IGameClient client);
 
