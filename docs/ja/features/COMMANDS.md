@@ -50,10 +50,12 @@
 
 | ノード | 説明 |
 |---|---|
-| mcs.nominate.map.allow.\<map\> | 特定マップのノミネートを許可 (ワイルドカード対応)。Disabled/Cooldown 以外の全チェックをバイパス |
-| mcs.nominate.group.allow.\<group\> | 特定グループのノミネートを許可 (ワイルドカード対応)。同上 |
+| mcs.nominate.map.bypass.\<map\> | 全チェックをバイパスしてノミネートを許可 (ワイルドカード対応) |
+| mcs.nominate.group.bypass.\<group\> | 同上 (グループ単位) |
+| mcs.nominate.map.allow.\<map\> | `RestrictToAllowedUsersOnly = true` のマップでノミネートを許可 (ワイルドカード対応) |
+| mcs.nominate.group.allow.\<group\> | 同上 (グループ単位) |
 | mcs.nominate.map.deny.\<map\> | 特定マップのノミネートを拒否 (exact match) |
 | mcs.nominate.group.deny.\<group\> | 特定グループのノミネートを拒否 (exact match) |
 | mcs.admin.command.nomination.nomlist.verbose | !nomlist full でノミネーター名表示 |
 
-チェック順: Disabled → Cooldown → **Allow (バイパス)** → Deny → 通常チェック (Day/Time/Players 等)
+チェック順: **Bypass (即許可)** → Disabled → Cooldown → Deny → **Allow (config 制限時のみ)** → 通常チェック (Day/Time/Players 等)
