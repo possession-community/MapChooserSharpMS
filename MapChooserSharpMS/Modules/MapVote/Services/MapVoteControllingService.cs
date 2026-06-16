@@ -16,6 +16,7 @@ using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.MapVote.Services;
+using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
 using Microsoft.Extensions.Logging;
 using NativeVoteManagerMS.Shared;
@@ -146,7 +147,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         _nativeVoteManager.CancelVote();
 
-        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, client);
+        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, client, SnapshotNominations());
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
 
         return McsMapVoteState.Cancelling;
@@ -164,7 +165,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         _nativeVoteManager.CancelVote();
 
-        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
 
         return true;
@@ -173,7 +174,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     internal void HandleExternalCancel(MapVoteInformation session)
     {
         StopCountdownTimer();
-        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
 
         session.CurrentState = McsMapVoteState.NoActiveVote;
@@ -317,7 +318,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         ApplyNominationCooldownToNominatedMaps();
 
-        var finishedParams = new MapVoteFinishedParams(_plugin, _moduleBase, session, session.IsRtvVote);
+        var finishedParams = new MapVoteFinishedParams(_plugin, _moduleBase, session, session.IsRtvVote, SnapshotNominations());
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteFinished(finishedParams));
 
         if (winner is null)
@@ -536,7 +537,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         if (result != VoteInitiateResult.Success)
         {
             _logger.LogWarning("Failed to initiate native vote: {Result}", result);
-            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
             _voteState.Reset();
             _voteManager.ClearSession();
@@ -564,6 +565,9 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             _cooldownLifecycleService.ApplyNominationCooldown(entry.Value.MapConfig);
         }
     }
+
+    private IReadOnlyDictionary<string, IMcsNominationData> SnapshotNominations()
+        => new Dictionary<string, IMcsNominationData>(_nominationManager.NominatedMaps, StringComparer.OrdinalIgnoreCase);
 
     private IMapInformation BuildMapInformation(IMapConfig mapConfig)
     {
@@ -613,7 +617,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
                 StopCountdownTimer();
                 _countdownUi?.CloseCountdownUiAll();
 
-                var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+                var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
                 _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
 
                 session.CurrentState = McsMapVoteState.NoActiveVote;
@@ -682,7 +686,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         if (cancelled)
         {
             _logger.LogInformation("Vote start cancelled by event listener");
-            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
             session.CurrentState = McsMapVoteState.NoActiveVote;
             _voteState.Reset();

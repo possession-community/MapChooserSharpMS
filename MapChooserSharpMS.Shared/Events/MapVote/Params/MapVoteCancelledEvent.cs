@@ -1,4 +1,6 @@
-﻿using Sharp.Shared.Objects;
+﻿using System.Collections.Generic;
+using MapChooserSharpMS.Shared.Nomination;
+using Sharp.Shared.Objects;
 
 namespace MapChooserSharpMS.Shared.Events.MapVote.Params;
 
@@ -11,4 +13,9 @@ public interface IMapVoteCancelledParams : IEventBaseParams
     /// Client who cancelled the vote, or null if cancelled by system/console.
     /// </summary>
     IGameClient? CancelledBy { get; }
+
+    /// <summary>
+    /// Snapshot of nominated maps at the time of cancellation.
+    /// </summary>
+    IReadOnlyDictionary<string, IMcsNominationData> NominatedMaps { get; }
 }
