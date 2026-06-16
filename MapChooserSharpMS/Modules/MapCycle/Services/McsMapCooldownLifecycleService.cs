@@ -135,6 +135,9 @@ internal sealed class McsMapCooldownLifecycleService
         if (map.CooldownConfig is not CooldownConfig cc)
             return;
 
+        _logger.LogDebug("[NomCD] Applying to {Map}: ConfigNomCD={ConfigNomCD}, NomTimedCD={NomTimedCD}",
+            map.MapName, cc.ConfigNominationCooldown, cc.NominationTimedCooldown);
+
         if (cc.ConfigNominationCooldown > 0)
             cc.CurrentNominationCooldown = cc.ConfigNominationCooldown;
 

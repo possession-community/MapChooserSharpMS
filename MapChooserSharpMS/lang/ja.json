@@ -117,6 +117,7 @@
     "MapVote.Broadcast.NotEnoughMapsToStartVote": "マップ投票を開始するために十分なマップが存在しません! サーバー管理者にお問い合わせください!",
     "MapVote.Broadcast.StartingRunoffVote": "どのマップの投票率も {0}% を超えませんでした! 最終投票を開始します!",
     "MapVote.Notification.SpectatorIsExcluded": "観戦者の投票がサーバーにより無効化されているため、この投票には参加できません!",
+    "MapCycle.Command.Admin.McsDebug.Usage": "使い方: !mcsdebug <config [map]|state>",
     "MapVote.Command.Admin.ForceResetMcs.Usage": "使い方: !forceresetmcs",
     "MapVote.Broadcast.Admin.ForceResetMcs": "管理者 {lime}{0}{default} が MCS の全状態を強制リセットしました!",
 
@@ -141,6 +142,9 @@
     "MapCycle.Command.Notification.MapInfo.Cooldown": "クールダウン: {lime}{0} マップ{default}",
     "MapCycle.Command.Notification.MapInfo.TimedCooldown": "クールダウン: {lime}{0} まで制限中{default}",
     "MapCycle.Command.Notification.MapInfo.CooldownWithTimed": "クールダウン: {lime}{0} マップ{default} かつ {lime}{1}{default} まで制限中",
+    "MapCycle.Command.Notification.MapInfo.NomCooldown": "ノミネーションCD: {lime}{0} マップ{default}",
+    "MapCycle.Command.Notification.MapInfo.NomTimedCooldown": "ノミネーションCD: {lime}{0} まで制限中{default}",
+    "MapCycle.Command.Notification.MapInfo.NomCooldownWithTimed": "ノミネーションCD: {lime}{0} マップ{default} かつ {lime}{1}{default} まで制限中",
     "MapCycle.Command.Notification.MapInfo.YouCanNominate": "ノミネート可能か: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.NotAvailable": "このマップのマップ情報は存在しません",
 

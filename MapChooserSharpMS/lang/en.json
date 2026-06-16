@@ -117,6 +117,7 @@
     "MapVote.Broadcast.NotEnoughMapsToStartVote": "There are not enough maps to initiate a vote! Please contact the server admin!",
     "MapVote.Broadcast.StartingRunoffVote": "No maps got over {0}% of votes! Starting runoff vote!",
     "MapVote.Notification.SpectatorIsExcluded": "Spectator voting is disabled on this server, so you cannot participate in this vote!",
+    "MapCycle.Command.Admin.McsDebug.Usage": "Usage: !mcsdebug <config [map]|state>",
     "MapVote.Command.Admin.ForceResetMcs.Usage": "Usage: !forceresetmcs",
     "MapVote.Broadcast.Admin.ForceResetMcs": "Admin {lime}{0}{default} force reset all MCS state!",
 
@@ -141,6 +142,9 @@
     "MapCycle.Command.Notification.MapInfo.Cooldown": "Cooldown: {lime}{0} maps{default}",
     "MapCycle.Command.Notification.MapInfo.TimedCooldown": "Cooldown: {lime}Restricted until {0}{default}",
     "MapCycle.Command.Notification.MapInfo.CooldownWithTimed": "Cooldown: {lime}{0} maps{default} and Restricted until {lime}{1}{default}",
+    "MapCycle.Command.Notification.MapInfo.NomCooldown": "Nomination Cooldown: {lime}{0} maps{default}",
+    "MapCycle.Command.Notification.MapInfo.NomTimedCooldown": "Nomination Cooldown: {lime}Restricted until {0}{default}",
+    "MapCycle.Command.Notification.MapInfo.NomCooldownWithTimed": "Nomination Cooldown: {lime}{0} maps{default} and Restricted until {lime}{1}{default}",
     "MapCycle.Command.Notification.MapInfo.YouCanNominate": "You can nominate: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.NotAvailable": "No map info available for this map",
 
