@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using MapChooserSharpMS.Shared.Nomination.Services;
 using MapChooserSharpMS.Shared.Ui.Menu;
 using Sharp.Modules.MenuManager.Shared;
@@ -6,17 +7,6 @@ using Sharp.Shared.Objects;
 
 namespace McsFPMCompat;
 
-/// <summary>
-/// FPM MenuManager backed implementation for nomination menus.
-/// <para>
-/// Example — collecting extra menu items in a detail sub-menu:
-/// <code>
-/// var extras = NominationMenuService.CollectExtraMenuItems(item.MapConfig, target);
-/// foreach (var extra in extras)
-///     detailBuilder.Item(extra.DisplayText, ctrl => { ctrl.Exit(); extra.OnSelect?.Invoke(target); });
-/// </code>
-/// </para>
-/// </summary>
 public sealed class FpmNominationMenuCompat(IMenuManager menuManager) : IMcsNominationMenuCompat
 {
     private readonly Dictionary<IGameClient, Menu> _activeMenus = new();
@@ -31,16 +21,64 @@ public sealed class FpmNominationMenuCompat(IMenuManager menuManager) : IMcsNomi
         foreach (var item in context.Items)
         {
             var capturedItem = item;
+            var capturedContext = context;
             builder.Item(item.DisplayText, controller =>
             {
                 controller.Exit();
-                capturedItem.OnNominate?.Invoke(target);
+                ShowDetailMenu(target, capturedItem, capturedContext);
             });
         }
 
         var built = builder.Build();
         _activeMenus[target] = built;
+        menuManager.DisplayMenu(target, built);
+    }
 
+    private void ShowDetailMenu(IGameClient target, McsNominationMenuItem item, McsNominationMenuContext context)
+    {
+        var builder = Menu.Create();
+        builder.Title(item.DisplayText);
+
+        builder.Item("» Nominate", controller =>
+        {
+            controller.Exit();
+            item.OnNominate?.Invoke(target);
+        });
+
+        builder.Item("« Back", controller =>
+        {
+            controller.Exit();
+            ShowNominationMenu(target, context);
+        });
+
+        var cooldownResult = context.CooldownQueryService.GetCurrentCooldowns(item.MapConfig);
+        if (cooldownResult.HighestCooldownCount > 0)
+            builder.Item($"Cooldown: {cooldownResult.HighestCooldownCount} maps", _ => { });
+
+        if (cooldownResult.LongestTimedCooldown > System.DateTime.UtcNow)
+            builder.Item($"Restricted until: {cooldownResult.LongestTimedCooldown.ToLocalTime():yyyy/MM/dd HH:mm}", _ => { });
+
+        var tags = item.MapConfig.SearchTags;
+        if (tags.Count > 0)
+            builder.Item($"Tags: {string.Join(", ", tags)}", _ => { });
+
+        var groups = item.MapConfig.GroupSettings;
+        if (groups.Count > 0)
+            builder.Item($"Groups: {string.Join(", ", groups.Select(g => g.GroupName))}", _ => { });
+
+        var extras = NominationMenuService.CollectExtraMenuItems(item.MapConfig, target);
+        foreach (var extra in extras)
+        {
+            var capturedExtra = extra;
+            builder.Item(extra.DisplayText, controller =>
+            {
+                controller.Exit();
+                capturedExtra.OnSelect?.Invoke(target);
+            });
+        }
+
+        var built = builder.Build();
+        _activeMenus[target] = built;
         menuManager.DisplayMenu(target, built);
     }
 
