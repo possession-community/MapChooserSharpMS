@@ -315,6 +315,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             }
         }
 
+        ApplyNominationCooldownToNominatedMaps();
+
         var finishedParams = new MapVoteFinishedParams(_plugin, _moduleBase, session, session.IsRtvVote);
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteFinished(finishedParams));
 
@@ -327,8 +329,6 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         else if (winner.MapName == MapVoteConstants.ExtendMapInternalName)
         {
             _logger.LogInformation("Vote result: Extend current map");
-            // The extend service applies the extension and fires OnMapExtended
-            // with the real amount/type, consuming the vote-extend budget.
             var extendResult = _mapExtendService.TryExtend(McsExtendTrigger.MapVote);
             if (extendResult != Shared.MapCycle.McsMapExtendResult.Extended)
             {
@@ -350,15 +350,11 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             var confirmedParams = new MapVoteMapConfirmedParams(_plugin, _moduleBase, mapInfo, session.IsRtvVote);
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapConfirmed(confirmedParams));
 
-            ApplyNominationCooldownToNominatedMaps();
-
             session.CurrentState = McsMapVoteState.NextMapConfirmed;
             _voteState.SetState(McsMapVoteState.NextMapConfirmed);
             _voteManager.ClearSession();
             return;
         }
-
-        ApplyNominationCooldownToNominatedMaps();
 
         session.CurrentState = McsMapVoteState.NoActiveVote;
         _voteState.Reset();
