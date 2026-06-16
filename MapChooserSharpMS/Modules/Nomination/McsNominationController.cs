@@ -249,4 +249,5 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
             "Nomination.Broadcast.Admin.RemovedNomination",
             executor?.Name ?? "Console", mapDisplay);
     }
+
 }
