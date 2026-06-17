@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapVote;
+using MapChooserSharpMS.Shared.Events;
+using McsCancellableEvent = MapChooserSharpMS.Shared.Events.McsCancellableEvent;
 using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.Handlers;
@@ -421,18 +423,15 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             var pickParams = new MapVoteRandomMapPickParams(
                 _plugin, _moduleBase, remaining, allConfigs);
 
-            List<IMapConfig>? overrideList = null;
-            _eventManager.Fire<IMapVoteEventListener>(e =>
-            {
-                var result = e.OnRandomMapPick(pickParams);
-                if (result.Count > 0)
-                    overrideList = result;
-            });
+            var overrideResult = _eventManager.FireWithResult<IMapVoteEventListener, McsValueOverrideEvent<List<IMapConfig>>>(
+                e => e.OnRandomMapPick(pickParams),
+                r => r.HasValue,
+                McsValueOverrideEvent<List<IMapConfig>>.NoOverride);
 
             IEnumerable<IMapConfig> mapsToAdd;
-            if (overrideList is not null)
+            if (overrideResult.HasValue)
             {
-                mapsToAdd = overrideList;
+                mapsToAdd = overrideResult.Value;
             }
             else
             {
@@ -682,8 +681,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         var participantSlots = participants.Select(c => c.Slot).ToList();
         var startParams = new MapVoteStartParams(_plugin, _moduleBase, realMapConfigs, participantSlots);
-        bool cancelled = _eventManager.FireCancellable<IMapVoteEventListener>(e => e.OnMapVoteStart(startParams));
-        if (cancelled)
+        if (_eventManager.FireCancellable<IMapVoteEventListener>(e => e.OnMapVoteStart(startParams)) == McsCancellableEvent.Stop)
         {
             _logger.LogInformation("Vote start cancelled by event listener");
             var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());

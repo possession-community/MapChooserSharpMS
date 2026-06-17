@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.Nomination;
+using McsCancellableEvent = MapChooserSharpMS.Shared.Events.McsCancellableEvent;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Modules.Nomination.Models;
@@ -103,7 +104,7 @@ internal sealed class NominationValidateService
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
-                    evt.OnNominationCheckPassed(nominationEvent)))
+                    evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
             {
                 result.Add(NominationCheckResult.CancelledByExternalPlugin);
             }
@@ -146,7 +147,7 @@ internal sealed class NominationValidateService
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
-                    evt.OnNominationCheckPassed(nominationEvent)))
+                    evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
             {
                 result.Add(NominationCheckResult.CancelledByExternalPlugin);
             }
@@ -190,7 +191,7 @@ internal sealed class NominationValidateService
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
-                    evt.OnNominationCheckPassed(nominationEvent)))
+                    evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
             {
                 result.Add(NominationCheckResult.CancelledByExternalPlugin);
             }
@@ -214,7 +215,7 @@ internal sealed class NominationValidateService
         return filtered.Where(m =>
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
-            return !_eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNominationCheckPassed(nominationEvent));
+            return _eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Stop;
         }).ToList();
     }
 

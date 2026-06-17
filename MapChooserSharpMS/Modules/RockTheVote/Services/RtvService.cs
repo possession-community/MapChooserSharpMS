@@ -3,6 +3,7 @@ using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Modules.EventManager.Events.RockTheVote;
+using McsCancellableEvent = MapChooserSharpMS.Shared.Events.McsCancellableEvent;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
@@ -59,8 +60,7 @@ internal sealed class RtvService(
         
         
         IClientRtvCastParams @params = ActivatorUtilities.CreateInstance<ClientRtvCastParams>(ServiceProvider, plugin, controller, client, false);
-        bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params));
-        if (cancelled)
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params)) == McsCancellableEvent.Stop)
             return RtvExecutionResult.DisallowedByExternalConsumer;
 
         if (!rtvManager.AddParticipants(client))
@@ -111,9 +111,7 @@ internal sealed class RtvService(
             @params = ActivatorUtilities.CreateInstance<ClientRtvUnCastParams>(ServiceProvider, plugin, controller, client, false);
         }
         
-        bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvUnCast(@params));
-
-        if (cancelled)
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvUnCast(@params)) == McsCancellableEvent.Stop)
             return false;
         
         return rtvManager.RemoveParticipants(client);
@@ -171,9 +169,7 @@ internal sealed class RtvService(
         }
 
         var forceParams = new ForceRtvParams(plugin, (PluginModuleBase)controller, client);
-        bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnForceRtv(forceParams));
-
-        if (cancelled)
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnForceRtv(forceParams)) == McsCancellableEvent.Stop)
             return;
 
         if (TransitionManager.IsNextMapConfirmed)

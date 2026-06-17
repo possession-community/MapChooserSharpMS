@@ -5,12 +5,11 @@ namespace MapChooserSharpMS.Shared.Events.MapCycle;
 public interface IMapCycleEventListener : IEventListenerBase
 {
     /// <summary>
-    /// When ext command executed, 
+    /// Fired when the !ext command is executed.
+    /// Return <see cref="McsCancellableEvent.Stop"/> to cancel the command.
     /// </summary>
-    /// <param name="params"></param>
-    /// <returns></returns>
-    bool OnExtCommandExecute(IExtCommandExecuteEventParams @params)
-        => false;
+    McsCancellableEvent OnExtCommandExecute(IExtCommandExecuteEventParams @params)
+        => McsCancellableEvent.Continue;
     
     /// <summary>
     /// Fired when map info command is fully executed (you can add more information for !mapinfo command by this)

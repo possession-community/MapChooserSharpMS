@@ -5,22 +5,25 @@ namespace MapChooserSharpMS.Shared.Events.RockTheVote;
 public interface IRockTheVoteEventListener: IEventListenerBase
 {
     /// <summary>
-    /// If true, client's RTV will be cancelled
+    /// Fired when a client casts an RTV vote.
+    /// Return <see cref="McsCancellableEvent.Stop"/> to cancel the RTV cast.
     /// </summary>
-    bool OnClientRtvCast(IClientRtvCastParams @params)
-        => false;
+    McsCancellableEvent OnClientRtvCast(IClientRtvCastParams @params)
+        => McsCancellableEvent.Continue;
 
     /// <summary>
-    /// If true, client's RTV will be cancelled
+    /// Fired when a client retracts their RTV vote.
+    /// Return <see cref="McsCancellableEvent.Stop"/> to cancel the retraction.
     /// </summary>
-    bool OnClientRtvUnCast(IClientRtvUnCastParams @params)
-        => false;
+    McsCancellableEvent OnClientRtvUnCast(IClientRtvUnCastParams @params)
+        => McsCancellableEvent.Continue;
 
     /// <summary>
-    /// If true, force RTV will be cancelled
+    /// Fired when an admin force-RTVs.
+    /// Return <see cref="McsCancellableEvent.Stop"/> to cancel the force RTV.
     /// </summary>
-    bool OnForceRtv(IForceRtvParam @params)
-        => false;
+    McsCancellableEvent OnForceRtv(IForceRtvParam @params)
+        => McsCancellableEvent.Continue;
 
     /// <summary>
     /// Fired after RTV has been confirmed (either by reaching the vote threshold or by force RTV).
