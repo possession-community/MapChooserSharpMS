@@ -53,7 +53,7 @@ GroupConfigDirectoryPath = "groups/"
 MaxVoteElements = 5
 ShouldPrintVoteToChat = true
 ShouldPrintVoteRemainingTime = true
-CountdownUiType = "CenterHtml"
+CountdownUiType = "Center"
 
 [MapVote.Sound]
 SoundFile = ""
@@ -74,5 +74,5 @@ RunoffVoteCountdownSound1 = ""
 | MaxVoteElements | int | 5 | Number of maps shown in the vote menu (including Extend/DontChange) |
 | ShouldPrintVoteToChat | bool | true | Whether to display in chat when a player votes |
 | ShouldPrintVoteRemainingTime | bool | true | Whether to display remaining time in chat during voting |
-| CountdownUiType | enum ([Flags]) | CenterHtml | Display method for the pre-vote countdown. `None` / `CenterHud` / `CenterAlert` / `CenterHtml` / `Chat`. Multiple values can be combined with commas (e.g. `"CenterHtml, Chat"`) |
+| CountdownUiType | enum ([Flags]) | Center | Default display method for countdowns. `None` / `Hint` / `Center` / `Chat`. Multiple values can be combined with commas (e.g. `"Center,Chat"`). Players can override individually via `!mcs_settings countdown` (persisted with ICookie) |
 | SoundFile | string | "" | .vsndevts file path (for precache). Can be left empty if already handled by another plugin |

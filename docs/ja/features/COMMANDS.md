@@ -19,6 +19,7 @@
 | !mapinfo \<map\> | - | マップ情報を表示。引数なしで現在のマップ |
 | !extends | - | 残りの延長回数を表示 |
 | !thetime | チャット "thetime" | 現在のサーバー時刻を表示 |
+| !mcs_settings \<subcommand\> [value] | !mcss | 個人設定を変更。`volume <0-100>` で投票サウンド音量、`countdown <type>` でカウントダウンUI変更。引数なしで現在設定表示 |
 
 ## 管理者コマンド
 
