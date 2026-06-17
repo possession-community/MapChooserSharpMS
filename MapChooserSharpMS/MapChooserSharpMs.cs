@@ -62,8 +62,14 @@ public sealed class MapChooserSharpMs(
         Logger.LogInformation("Registering module: McsRtvController");
         RegisterModule<Modules.RockTheVote.McsRtvController>();
 
+        Logger.LogInformation("Registering module: McsStatisticsController");
+        RegisterModule<Modules.Statistics.McsStatisticsController>();
+
         Logger.LogInformation("Registering module: McsMapCycleController");
         RegisterModule<McsMapCycleController>();
+
+        Logger.LogInformation("Registering module: McsAuditController");
+        RegisterModule<Modules.Audit.McsAuditController>();
 
         Logger.LogInformation("Registering module: McsChatListenerController");
         RegisterModule<Modules.ChatListener.McsChatListenerController>();
