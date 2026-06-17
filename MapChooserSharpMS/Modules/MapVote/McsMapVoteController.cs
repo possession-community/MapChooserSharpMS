@@ -126,12 +126,11 @@ internal sealed class McsMapVoteController
             (Modules.Nomination.Services.NominationValidateService)nominationValidateService,
             configProvider, mapConfigProvider);
 
-        McsMapVoteSoundPlayer? soundPlayer = null;
         var soundConfig = configProvider.PluginConfig.VoteConfig.VoteSoundConfig;
-        if (!string.IsNullOrEmpty(soundConfig.VSndEvtsSoundFilePath))
-            soundPlayer = new McsMapVoteSoundPlayer(Plugin, SharedSystem.GetSoundManager(), soundConfig);
+        var soundPlayer = new McsMapVoteSoundPlayer(Plugin, SharedSystem.GetSoundManager(), soundConfig);
 
         var countdownUi = ServiceProvider.GetRequiredService<Ui.Countdown.McsCountdownUiController>();
+        soundPlayer.VolumeProvider = client => countdownUi.PreferenceService.GetVolume(client.Slot);
 
         _controllingService = new MapVoteControllingService(
             Plugin, this, Logger,

@@ -6,8 +6,7 @@ namespace MapChooserSharp.Modules.MapVote.Countdown;
 public enum McsCountdownUiType
 {
     None = 0,
-    CenterHud = 1 << 0,
-    CenterAlert = 1 << 1,
-    CenterHtml = 1 << 2,
+    Hint = 1 << 0,
+    Center = 1 << 1,
     Chat = 1 << 3,
 }

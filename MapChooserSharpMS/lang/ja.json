@@ -109,7 +109,7 @@
 
     "MapVote.Broadcast.Countdown": "投票が {lime}{0}{default} 秒で始まります",
     "MapVote.Broadcast.CenterHtml": "投票が {0} 秒で始まります",
-    "MapVote.Broadcast.Voting.VoteEndCountdown": "投票可能時間はあと {0} 秒",
+    "MapVote.Broadcast.Voting.VoteEndCountdown": "投票可能時間はあと {lime}{0}{default} 秒",
     "MapVote.Broadcast.VoteFinished": "投票が完了しました! {1}/{0} ({2}%)",
     "MapVote.Broadcast.VoteResult.NextMapConfirmed": "次のマップは {lime}{0}{default} です ({2}票 {1}%)",
     "MapVote.Broadcast.VoteResult.Extend": "マップが{lime}延長{default}されました！ ({0}% {1}票)",
@@ -216,5 +216,15 @@
 
     "Chat.Notification.MutedDuringVote": "投票中はチャットがミュートされています！",
     "Common.Validation.Failure.Permission": "このコマンドを使用する権限がありません",
-    "Common.Validation.Failure.Target": "不正な対象です"
+    "Common.Validation.Failure.Target": "不正な対象です",
+
+    "Ui.Command.Settings.Usage": "使い方: !mcs_settings <volume|countdown> [値]",
+    "Ui.Command.Settings.Current": "現在の設定 — カウントダウンUI: {lime}{0}{default} | 音量: {lime}{1}%{default}",
+    "Ui.Command.Settings.Volume.Current": "現在の投票サウンド音量: {lime}{0}%{default}",
+    "Ui.Command.Settings.Volume.InvalidRange": "音量は {lime}0{default} から {lime}100{default} の間で指定してください",
+    "Ui.Command.Settings.Volume.Set": "投票サウンド音量を {lime}{0}%{default} に設定しました",
+    "Ui.Command.Settings.Countdown.Current": "現在のカウントダウンUI: {lime}{0}{default}",
+    "Ui.Command.Settings.Countdown.Available": "選択可能: {lime}Hint, Center, Chat{default} (カンマで複数指定可: {lime}Hint,Chat{default})",
+    "Ui.Command.Settings.Countdown.Invalid": "不正なカウントダウンUIタイプです！",
+    "Ui.Command.Settings.Countdown.Set": "カウントダウンUIを {lime}{0}{default} に設定しました"
 }

@@ -109,7 +109,7 @@
 
     "MapVote.Broadcast.Countdown": "Vote starting in {lime}{0}{default} seconds",
     "MapVote.Broadcast.CenterHtml": "Vote starting in {0} seconds",
-    "MapVote.Broadcast.Voting.VoteEndCountdown": "{0} seconds remaining to vote",
+    "MapVote.Broadcast.Voting.VoteEndCountdown": "{lime}{0}{default} seconds remaining to vote",
     "MapVote.Broadcast.VoteFinished": "Vote finished! Received {1} of {0} votes ({2}%)",
     "MapVote.Broadcast.VoteResult.NextMapConfirmed": "Next map is {lime}{0}{default} ({1}% of {2} votes)",
     "MapVote.Broadcast.VoteResult.Extend": "Current map has been {lime}extended{default}! ({0}% of {1} votes)",
@@ -216,5 +216,15 @@
 
     "Chat.Notification.MutedDuringVote": "Chat is muted during the map vote!",
     "Common.Validation.Failure.Permission": "You don't have permission to use this command",
-    "Common.Validation.Failure.Target": "Invalid target"
+    "Common.Validation.Failure.Target": "Invalid target",
+
+    "Ui.Command.Settings.Usage": "Usage: !mcs_settings <volume|countdown> [value]",
+    "Ui.Command.Settings.Current": "Current settings — Countdown UI: {lime}{0}{default} | Volume: {lime}{1}%{default}",
+    "Ui.Command.Settings.Volume.Current": "Current vote sound volume: {lime}{0}%{default}",
+    "Ui.Command.Settings.Volume.InvalidRange": "Volume must be between {lime}0{default} and {lime}100{default}",
+    "Ui.Command.Settings.Volume.Set": "Vote sound volume set to {lime}{0}%{default}",
+    "Ui.Command.Settings.Countdown.Current": "Current countdown UI: {lime}{0}{default}",
+    "Ui.Command.Settings.Countdown.Available": "Available: {lime}Hint, Center, Chat{default} (combine with comma: {lime}Hint,Chat{default})",
+    "Ui.Command.Settings.Countdown.Invalid": "Invalid countdown UI type!",
+    "Ui.Command.Settings.Countdown.Set": "Countdown UI set to {lime}{0}{default}"
 }

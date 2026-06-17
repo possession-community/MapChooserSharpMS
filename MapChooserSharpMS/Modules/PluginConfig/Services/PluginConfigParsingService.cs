@@ -75,7 +75,7 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         int maxVoteElements = GetInt(voteNode, "MaxVoteElements"u8, 5);
         bool shouldPrintVote = GetBool(voteNode, "ShouldPrintVoteToChat"u8, true);
         bool shouldPrintRemaining = GetBool(voteNode, "ShouldPrintVoteRemainingTime"u8, true);
-        var countdownUiType = GetEnum(voteNode, "CountdownUiType"u8, McsCountdownUiType.CenterHtml);
+        var countdownUiType = GetEnum(voteNode, "CountdownUiType"u8, McsCountdownUiType.Center);
 
         var voteSoundConfig = ParseVoteSoundConfig(voteNode);
 

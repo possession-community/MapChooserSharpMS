@@ -28,7 +28,7 @@ MenuType = "Default"
 MaxVoteElements = 8
 ShouldPrintVoteToChat = false
 ShouldPrintVoteRemainingTime = false
-CountdownUiType = "CenterHud"
+CountdownUiType = "Hint"
 
 [MapVote.Sound]
 SoundFile = "soundevents/soundevents_mapchooser.vsndevts"

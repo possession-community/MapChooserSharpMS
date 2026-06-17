@@ -134,13 +134,12 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         #
         # Currently supports:
         # - None
-        # - CenterHud
-        # - CenterAlert
-        # - CenterHtml
+        # - Hint
+        # - Center
         # - Chat
         #
         # See GitHub readme for more information.
-        CountdownUiType = "CenterHtml"
+        CountdownUiType = "Center"
 
 
         [MapVote.Sound]

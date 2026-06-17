@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using MapChooserSharp.Modules.MapVote.Countdown;
 using MapChooserSharpMS.Modules.Ui.Countdown.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,17 +8,18 @@ using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Ui.Countdown;
 
-public class CenterHudCountdownUi(IServiceProvider provider): IMcsCountdownUi
+internal class HintCountdownUi(IServiceProvider provider) : IMcsCountdownUi
 {
     private readonly TnmsPlugin _plugin = provider.GetRequiredService<TnmsPlugin>();
-    
+
     public void ShowCountdownToPlayer(IGameClient client, int secondsLeft, McsCountdownType countdownType)
     {
-        client.GetPlayerController()?.PrintToCenter(_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Countdown", secondsLeft));
+        client.GetPlayerController()?.PrintToHint(
+            $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Countdown", secondsLeft)}");
     }
 
     public void Close(IGameClient client)
     {
-        client.GetPlayerController()?.PrintToCenter(" ");
+        client.GetPlayerController()?.PrintToHint(" ");
     }
 }

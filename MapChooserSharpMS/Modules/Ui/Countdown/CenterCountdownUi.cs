@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using MapChooserSharp.Modules.MapVote.Countdown;
 using MapChooserSharpMS.Modules.Ui.Countdown.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,27 +8,28 @@ using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Ui.Countdown;
 
-public class CenterAlertCountdownUi(IServiceProvider provider): IMcsCountdownUi
+internal class CenterCountdownUi(IServiceProvider provider) : IMcsCountdownUi
 {
     private readonly TnmsPlugin _plugin = provider.GetRequiredService<TnmsPlugin>();
-    
+
     public void ShowCountdownToPlayer(IGameClient client, int secondsLeft, McsCountdownType countdownType)
     {
         switch (countdownType)
         {
             case McsCountdownType.VoteStart:
-                client.GetPlayerController()?.PrintToSayText2(_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Countdown", secondsLeft));
+                client.GetPlayerController()?.PrintToCenter(
+                    $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Countdown", secondsLeft)}");
                 break;
-                
+
             case McsCountdownType.Voting:
-                client.GetPlayerController()?.PrintToSayText2(_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Voting.VoteEndCountdown", secondsLeft));
+                client.GetPlayerController()?.PrintToCenter(
+                    $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Voting.VoteEndCountdown", secondsLeft)}");
                 break;
         }
-        
     }
 
     public void Close(IGameClient client)
     {
-        client.GetPlayerController()?.PrintToSayText2(" ");
+        client.GetPlayerController()?.PrintToCenter(" ");
     }
 }

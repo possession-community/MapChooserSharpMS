@@ -46,8 +46,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private readonly IMcsMapConfigProvider _mapConfigProvider;
     private readonly IMcsInternalMapExtendService _mapExtendService;
     private readonly McsMapCooldownLifecycleService _cooldownLifecycleService;
-    private readonly McsMapVoteSoundPlayer? _soundPlayer;
-    private readonly Ui.Countdown.McsCountdownUiController? _countdownUi;
+    private readonly McsMapVoteSoundPlayer _soundPlayer;
+    private readonly Ui.Countdown.McsCountdownUiController _countdownUi;
 
     private Guid _countdownTimerId = Guid.Empty;
     private Guid _voteEndTimerId = Guid.Empty;
@@ -71,8 +71,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         IMcsMapConfigProvider mapConfigProvider,
         IMcsInternalMapExtendService mapExtendService,
         McsMapCooldownLifecycleService cooldownLifecycleService,
-        McsMapVoteSoundPlayer? soundPlayer,
-        Ui.Countdown.McsCountdownUiController? countdownUi)
+        McsMapVoteSoundPlayer soundPlayer,
+        Ui.Countdown.McsCountdownUiController countdownUi)
     {
         _plugin = plugin;
         _moduleBase = moduleBase;
@@ -116,8 +116,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         int countdownSeconds = _conVars.VoteCountdownTime.GetInt32();
         if (countdownSeconds > 0)
         {
-            _soundPlayer?.SetRunoff(false);
-            _soundPlayer?.PlayVoteCountdownStartSoundToAll();
+            _soundPlayer.SetRunoff(false);
+            _soundPlayer.PlayVoteCountdownStartSoundToAll();
             StartPreVoteCountdown(session, countdownSeconds);
         }
         else
@@ -271,7 +271,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private void HandleWinner(MapVoteInformation session, MapVoteOption? winner)
     {
         StopCountdownTimer();
-        _soundPlayer?.PlayVoteFinishedSoundToAll();
+        _soundPlayer.PlayVoteFinishedSoundToAll();
 
         session.SetWinner(winner);
 
@@ -547,8 +547,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         session.CurrentState = isRunoff ? McsMapVoteState.RunoffVoting : McsMapVoteState.Voting;
         _voteState.SetState(session.CurrentState);
 
-        _soundPlayer?.SetRunoff(isRunoff);
-        _soundPlayer?.PlayVoteStartSoundToAll();
+        _soundPlayer.SetRunoff(isRunoff);
+        _soundPlayer.PlayVoteStartSoundToAll();
 
         if (_configProvider.PluginConfig.VoteConfig.ShouldPrintVoteRemainingTime)
             StartVoteEndCountdown(session, voteDuration);
@@ -615,7 +615,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             if (readOnlyState?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
             {
                 StopCountdownTimer();
-                _countdownUi?.CloseCountdownUiAll();
+                _countdownUi.CloseCountdownUiAll();
 
                 var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
                 _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
@@ -632,13 +632,13 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             if (remaining <= 0)
             {
                 StopCountdownTimer();
-                _countdownUi?.CloseCountdownUiAll();
+                _countdownUi.CloseCountdownUiAll();
                 OnCountdownFinished(session);
                 return;
             }
 
-            _countdownUi?.ShowCountdownToAll(remaining, Ui.Countdown.McsCountdownType.VoteStart);
-            _soundPlayer?.PlayVoteCountdownSoundToAll(remaining);
+            _countdownUi.ShowCountdownToAll(remaining, Ui.Countdown.McsCountdownType.VoteStart);
+            _soundPlayer.PlayVoteCountdownSoundToAll(remaining);
 
         }, 1.0, Sharp.Shared.Enums.GameTimerFlags.Repeatable | Sharp.Shared.Enums.GameTimerFlags.StopOnMapEnd);
     }
@@ -709,7 +709,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             _plugin.SharedSystem.GetModSharp().StopTimer(_countdownTimerId);
             _countdownTimerId = Guid.Empty;
         }
-        _countdownUi?.CloseCountdownUiAll();
+        _countdownUi.CloseCountdownUiAll();
         StopVoteEndTimer();
     }
 
@@ -744,7 +744,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
                 return;
             }
 
-            BroadcastToAll("MapVote.Broadcast.Voting.VoteEndCountdown", remaining);
+            _countdownUi.ShowCountdownToAll(remaining, Ui.Countdown.McsCountdownType.Voting);
+            _soundPlayer.PlayVoteCountdownSoundToAll(remaining);
         }, 1.0, Sharp.Shared.Enums.GameTimerFlags.Repeatable | Sharp.Shared.Enums.GameTimerFlags.StopOnMapEnd);
     }
 

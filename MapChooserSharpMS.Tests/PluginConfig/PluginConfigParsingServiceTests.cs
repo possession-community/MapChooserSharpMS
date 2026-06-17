@@ -39,7 +39,7 @@ public class PluginConfigParsingServiceTests
         Assert.Equal(8, config.VoteConfig.MaxMenuElements);
         Assert.False(config.VoteConfig.ShouldPrintVoteToChat);
         Assert.False(config.VoteConfig.ShouldPrintVoteRemainingTime);
-        Assert.Equal(McsCountdownUiType.CenterHud, config.VoteConfig.CurrentCountdownUiType);
+        Assert.Equal(McsCountdownUiType.Hint, config.VoteConfig.CurrentCountdownUiType);
 
         // VoteSound
         Assert.Equal("soundevents/soundevents_mapchooser.vsndevts", config.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath);
@@ -81,7 +81,7 @@ public class PluginConfigParsingServiceTests
         Assert.Equal(5, config.VoteConfig.MaxMenuElements);
         Assert.True(config.VoteConfig.ShouldPrintVoteToChat);
         Assert.True(config.VoteConfig.ShouldPrintVoteRemainingTime);
-        Assert.Equal(McsCountdownUiType.CenterHtml, config.VoteConfig.CurrentCountdownUiType);
+        Assert.Equal(McsCountdownUiType.Center, config.VoteConfig.CurrentCountdownUiType);
 
         // VoteSound defaults
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath);
@@ -157,9 +157,8 @@ public class PluginConfigParsingServiceTests
 
     [Theory]
     [InlineData("None", McsCountdownUiType.None)]
-    [InlineData("CenterHud", McsCountdownUiType.CenterHud)]
-    [InlineData("CenterAlert", McsCountdownUiType.CenterAlert)]
-    [InlineData("CenterHtml", McsCountdownUiType.CenterHtml)]
+    [InlineData("Hint", McsCountdownUiType.Hint)]
+    [InlineData("Center", McsCountdownUiType.Center)]
     [InlineData("Chat", McsCountdownUiType.Chat)]
     public void ParseConfigFromDocument_CountdownUiType_ParsesCorrectly(string value, McsCountdownUiType expected)
     {
@@ -172,11 +171,11 @@ public class PluginConfigParsingServiceTests
     }
 
     [Fact]
-    public void ParseConfigFromDocument_InvalidCountdownUiType_FallsBackToCenterHtml()
+    public void ParseConfigFromDocument_InvalidCountdownUiType_FallsBackToCenter()
     {
         var doc = TomlTestHelper.LoadToml("PluginConfig/07_invalid_countdown_ui.toml");
         var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsCountdownUiType.CenterHtml, config.VoteConfig.CurrentCountdownUiType);
+        Assert.Equal(McsCountdownUiType.Center, config.VoteConfig.CurrentCountdownUiType);
     }
 
     #endregion
