@@ -44,10 +44,15 @@ New infrastructure-level design in this project builds on **Wuling**, an
 internal CS2 server framework cloned at `D:\myworks\github\cs2\ModSharp\Wuling`
 (local clone, not a submodule — not publicly licensed).
 
+- **Wuling is a hard dependency** — always use
+  `GetRequiredSharpModuleInterface<IWuling>`, never `GetOptional`.
+  Do NOT add graceful degradation, NullObject fallbacks, or nullable
+  references for Wuling-dependent services. If Wuling is absent the
+  plugin simply does not start.
 - External modules reference **`Wuling.Abstract` only**. Browse
   `Wuling.Abstract/Tianshi/<Module>/` for the contract of each module.
 - Obtain the facade via ModSharp's module system:
-  `GetOptionalSharpModuleInterface<IWuling>(IWuling.Identity)` in
+  `GetRequiredSharpModuleInterface<IWuling>(IWuling.Identity)` in
   `OnAllModulesLoaded`. Simple per-player operations are also available as
   extension methods on `IPlayerEntry` with zero setup.
 - Persistence backend is SurrealDB (`Wuling/Core/Infrastructure/Surreal/`) —
