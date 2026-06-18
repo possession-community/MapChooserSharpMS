@@ -133,14 +133,6 @@ internal sealed class NominationValidateService
         {
             if (mapConfig.NominationConfig.ProhibitAdminNomination)
                 result.Add(NominationCheckResult.ProhibitAdminNomination);
-            if (IsMapDisabled(mapConfig))
-                result.Add(NominationCheckResult.Disabled);
-
-            if (IsMapInCooldown(mapConfig))
-                result.Add(NominationCheckResult.MapIsInCooldown);
-
-            if (IsMapInNominationCooldown(mapConfig))
-                result.Add(NominationCheckResult.NominationCooldownActive);
         }
 
         if (result.Count == 0)

@@ -100,7 +100,7 @@ JsonTemplate = '''
 - 問題のあるマップがない場合も送信されません
 - JSON テンプレートは TOML の multiline literal string (`'''...'''`) で記述します
 
-### Map Transition Webhook
+## Map Transition Webhook
 
 マップ遷移時 (インターミッション or マップ終了) に Discord Webhook で通知を送信します。
 
