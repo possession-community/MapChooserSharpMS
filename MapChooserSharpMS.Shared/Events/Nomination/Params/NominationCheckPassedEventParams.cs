@@ -1,9 +1,10 @@
-﻿using Sharp.Shared.Objects;
+﻿using MapChooserSharpMS.Shared.MapConfig;
+using Sharp.Shared.Objects;
 
 namespace MapChooserSharpMS.Shared.Events.Nomination.Params;
 
 /// <summary>
-/// Fired when normal nomination is occured
+/// Fired after all built-in nomination checks have passed for a specific map.
 /// </summary>
 public interface INominationCheckPassedEventParams : IEventBaseParams
 {
@@ -11,4 +12,9 @@ public interface INominationCheckPassedEventParams : IEventBaseParams
     /// Client who activated this event. if it is console, then param is null
     /// </summary>
     IGameClient? Client { get; }
+
+    /// <summary>
+    /// The map that passed all nomination checks.
+    /// </summary>
+    IMapConfig MapConfig { get; }
 }

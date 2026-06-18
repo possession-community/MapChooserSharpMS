@@ -25,7 +25,9 @@ internal sealed class MapNominationService(
     IInternalEventManager eventManager,
     IMcsInternalNominationManager nominationManager,
     IMcsInternalNominationController nominationController,
-    INominationValidateService nominationValidator
+    INominationValidateService nominationValidator,
+    NominationConVars conVars,
+    PlayerNominationCooldownService playerCooldownService
 ) : IMcsInternalMapNominationService
 {
 
@@ -80,6 +82,8 @@ internal sealed class MapNominationService(
         ((McsNominationData)nomination).Participants.Add(nominator.Slot);
 
         nominationController.BroadcastNomination(nominator, mapConfig, isNominationChanged: previousNomination != null);
+
+        ApplyPlayerNominationCooldown(nominator.SteamId);
 
         return [];
     }
@@ -203,5 +207,15 @@ internal sealed class MapNominationService(
 
         nominationManager.ClearNominations();
         return true;
+    }
+
+    private void ApplyPlayerNominationCooldown(ulong steamId)
+    {
+        int count = conVars.PlayerCooldown.GetInt32();
+        float timed = conVars.PlayerTimedCooldown.GetFloat();
+
+        if (count <= 0 && timed <= 0f) return;
+
+        playerCooldownService.SetCooldown(steamId, count, timed);
     }
 }

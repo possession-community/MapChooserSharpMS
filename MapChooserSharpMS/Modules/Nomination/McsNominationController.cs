@@ -16,11 +16,13 @@ using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
 using MapChooserSharpMS.Shared.Nomination.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Sharp.Shared.Enums;
 using Sharp.Shared.Listeners;
 using Sharp.Shared.Objects;
 using TnmsPluginFoundation.Extensions.Client;
 using TnmsPluginFoundation.Models.Plugin;
+using Wuling.Abstract;
 
 namespace MapChooserSharpMS.Modules.Nomination;
 
@@ -59,6 +61,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     private IMcsMapConfigProvider _mapConfigProvider = null!;
     private IMapConfigToolingService _mapConfigToolingService = null!;
     private NominationConVars _conVars = null!;
+    private PlayerNominationCooldownService _playerCooldownService = null!;
 
     public IReadOnlyDictionary<string, IMcsNominationData> GetNominatedMaps() => _internalNominationManager.NominatedMaps;
 
@@ -90,8 +93,10 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         _mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _mapConfigToolingService = ServiceProvider.GetRequiredService<IMapConfigToolingService>();
 
-        NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this);
-        NominationService          = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService);
+        InitializePlayerCooldownService();
+
+        NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this, _playerCooldownService);
+        NominationService = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService, _conVars, _playerCooldownService);
 
         var cooldownQueryService = ServiceProvider.GetRequiredService<IMapCooldownQueryService>();
         NominationMenuManagementService = new NominationMenuManagementService(
@@ -126,6 +131,22 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     public void OnGameActivate()
     {
         NominationService.ClearNominations();
+        _playerCooldownService?.DecrementAll();
+    }
+
+    private void InitializePlayerCooldownService()
+    {
+        var surreal = SharedSystem.GetSharpModuleManager()
+            .GetRequiredSharpModuleInterface<IWuling>(IWuling.Identity)
+            .Instance!.Surreal;
+
+        _playerCooldownService = new PlayerNominationCooldownService(Logger, surreal.ServerId, surreal);
+
+        _ = System.Threading.Tasks.Task.Run(async () =>
+        {
+            try { await _playerCooldownService.LoadFromDbAsync(); }
+            catch (Exception ex) { Logger.LogWarning(ex, "[PlayerNomCD] Failed to load from DB"); }
+        });
     }
 
     public void OnMapVoteFinished(IMapVoteFinishedEventParams @params)
@@ -212,6 +233,10 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
 
             case NominationCheckResult.ProhibitAdminNomination:
                 PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.ProhibitAdminNomination", mapDisplay));
+                break;
+
+            case NominationCheckResult.PlayerCooldownActive:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.PlayerCooldownActive"));
                 break;
         }
     }

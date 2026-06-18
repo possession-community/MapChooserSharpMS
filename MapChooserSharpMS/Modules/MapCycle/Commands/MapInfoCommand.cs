@@ -132,6 +132,31 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
             }
         }
 
+        var playerCdState = _nominationValidateService.GetPlayerCooldownState(client.SteamId);
+
+        if (playerCdState is not null)
+        {
+            bool hasPlayerCount = playerCdState.RemainingCount > 0;
+            bool hasPlayerTimed = playerCdState.CooldownUntil > DateTime.UtcNow;
+
+            if (hasPlayerCount && hasPlayerTimed)
+            {
+                string timedStr = playerCdState.CooldownUntil.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
+                Print(client, "MapCycle.Command.Notification.MapInfo.PlayerNomCooldownWithTimed",
+                    playerCdState.RemainingCount, timedStr);
+            }
+            else if (hasPlayerCount)
+            {
+                Print(client, "MapCycle.Command.Notification.MapInfo.PlayerNomCooldown",
+                    playerCdState.RemainingCount);
+            }
+            else if (hasPlayerTimed)
+            {
+                string timedStr = playerCdState.CooldownUntil.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
+                Print(client, "MapCycle.Command.Notification.MapInfo.PlayerNomTimedCooldown", timedStr);
+            }
+        }
+
         var checkResults = _nominationValidateService.PlayerCanNominateMap(client, mapConfig);
         string canNominate = checkResults.Count == 0
             ? $"{LocalizeString(client, "Word.Yes")} {LocalizeString(client, "Word.MapInfo.NominationCheck.Success")}"

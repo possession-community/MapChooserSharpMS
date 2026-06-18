@@ -30,14 +30,16 @@ internal sealed class NominationValidateService
     private readonly IMcsInternalNominationController _nominationController;
     private readonly IMapTransitionManager _mapTransitionManager;
     private readonly IServiceProvider _serviceProvider;
+    private readonly PlayerNominationCooldownService _playerCooldownService;
 
-    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager):base(serviceProvider)
+    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager, PlayerNominationCooldownService playerCooldownService):base(serviceProvider)
     {
         _nominationManager  = nominationManager;
         _eventManager = internalEventManager;
         _nominationController = nominationController;
         _mapTransitionManager = mapTransitionManager;
         _serviceProvider = serviceProvider;
+        _playerCooldownService = playerCooldownService;
     }
 
     public IReadOnlyList<NominationCheckResult> PlayerCanNominateMap(IGameClient client, IMapConfig mapConfig)
@@ -49,6 +51,9 @@ internal sealed class NominationValidateService
             return result;
 
         // Phase 2: Always checked — cannot be bypassed.
+        if (IsPlayerInNominationCooldown(client.SteamId))
+            result.Add(NominationCheckResult.PlayerCooldownActive);
+
         if (IsMapDisabled(mapConfig))
             result.Add(NominationCheckResult.Disabled);
 
@@ -102,7 +107,7 @@ internal sealed class NominationValidateService
 
         if (result.Count == 0)
         {
-            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
+            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
             {
@@ -137,7 +142,7 @@ internal sealed class NominationValidateService
 
         if (result.Count == 0)
         {
-            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
+            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
             {
@@ -181,7 +186,7 @@ internal sealed class NominationValidateService
         // Only fire event if all other checks passed
         if (result.Count == 0)
         {
-            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
+            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
             {
@@ -206,7 +211,7 @@ internal sealed class NominationValidateService
 
         return filtered.Where(m =>
         {
-            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController);
+            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, m);
             return _eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Stop;
         }).ToList();
     }
@@ -304,6 +309,16 @@ internal sealed class NominationValidateService
     public bool IsMapInCooldown(IMapConfig mapConfig)
     {
         return GetCooldownInformations(mapConfig).HasCooldown;
+    }
+
+    public bool IsPlayerInNominationCooldown(ulong steamId)
+    {
+        return _playerCooldownService.IsInCooldown(steamId);
+    }
+
+    public Shared.Nomination.IPlayerNominationCooldownState? GetPlayerCooldownState(ulong steamId)
+    {
+        return _playerCooldownService.GetState(steamId);
     }
 
     public bool IsMapInNominationCooldown(IMapConfig mapConfig)

@@ -21,4 +21,5 @@ public enum NominationCheckResult
     GroupNominationLimitReached,
     CancelledByExternalPlugin,
     ProhibitAdminNomination,
+    PlayerCooldownActive,
 }
