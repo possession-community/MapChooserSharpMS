@@ -365,7 +365,7 @@ internal sealed class McsMapCycleController
             switch (mode)
             {
                 case MapCycleMode.Time:
-                    cvm.FindConVar("mp_timelimit")?.Set(mapConfig.MapTime);
+                    cvm.FindConVar("mp_timelimit")?.Set((float)mapConfig.MapTime);
                     Logger.LogInformation(
                         "[MapCycle] Applied MapTime={MapTime} from map config to mp_timelimit",
                         mapConfig.MapTime);
