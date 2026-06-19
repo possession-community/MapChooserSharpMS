@@ -56,8 +56,6 @@ internal sealed class McsChatListenerController : PluginModuleBase, IClientListe
         _triggers[commandName] = CommandPrefix + commandName;
     }
 
-    // TODO: FakeCommand does not dispatch to ModSharp's StringCommand callbacks.
-    //       Investigate MS-side routing and fix the dispatch method.
     public ECommandAction OnClientSayCommand(
         IGameClient client, bool teamOnly, bool isCommand, string commandName, string message)
     {
@@ -67,7 +65,7 @@ internal sealed class McsChatListenerController : PluginModuleBase, IClientListe
         string trimmed = message.Trim();
         if (_triggers.TryGetValue(trimmed, out var fullCommand))
         {
-            client.FakeCommand(fullCommand);
+            client.ExecuteStringCommand(fullCommand);
             return ECommandAction.Handled;
         }
 
