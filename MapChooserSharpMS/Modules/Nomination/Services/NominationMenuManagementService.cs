@@ -137,7 +137,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         ExecuteNomination(client, config, isAdmin);
     }
 
-    public List<McsVoteMenuItem> CollectExtraMenuItems(IMapConfig mapConfig, IGameClient client)
+    public List<McsMenuItem> CollectExtraMenuItems(IMapConfig mapConfig, IGameClient client)
     {
         var eventParams = new NominationMenuDetailsOpeningParams(_plugin, _moduleBase, mapConfig, client);
         _eventManager.Fire<INominationEventListener>(e => e.OnNominationMenuDetailsOpening(eventParams));

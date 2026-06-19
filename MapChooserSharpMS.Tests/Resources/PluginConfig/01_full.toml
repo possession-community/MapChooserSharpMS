@@ -24,7 +24,6 @@ MapConfigDirectoryPath = "Custom/maps/"
 GroupConfigDirectoryPath = "Custom/groups/"
 
 [MapVote]
-MenuType = "Default"
 MaxVoteElements = 8
 ShouldPrintVoteToChat = false
 ShouldPrintVoteRemainingTime = false
@@ -60,4 +59,3 @@ RunoffVoteCountdownSound9 = ""
 RunoffVoteCountdownSound10 = ""
 
 [Nomination]
-MenuType = "Default"

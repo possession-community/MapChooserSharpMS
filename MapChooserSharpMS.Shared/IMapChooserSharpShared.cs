@@ -57,9 +57,4 @@ public interface IMapChooserSharpShared
     /// </summary>
     void SetNominationMenuCompat(IMcsNominationMenuCompat menuCompat);
 
-    /// <summary>
-    /// Register the vote menu compat adapter. Reserved for custom vote UI
-    /// implementations that replace or supplement NVM.
-    /// </summary>
-    void SetVoteMenuCompat(IMcsVoteMenuCompat menuCompat);
 }

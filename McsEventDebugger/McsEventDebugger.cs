@@ -205,7 +205,7 @@ public class McsEventDebugger : IModSharpModule,
         _logger.LogInformation("[Nomination] OnNominationMenuDetailsOpening: Map={Map}, Client={Client}",
             p.MapConfig.MapName, p.Client.Name);
 
-        p.ExtraItems.Add(new McsVoteMenuItem
+        p.ExtraItems.Add(new McsMenuItem
         {
             DisplayText = $"Debugger - {p.MapConfig.MapName}",
             OnSelect = client =>

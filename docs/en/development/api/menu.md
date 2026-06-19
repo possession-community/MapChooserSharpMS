@@ -8,8 +8,8 @@ MCS internally builds `McsMenuDefinition` instances and delegates actual renderi
 
 ## Overview
 
-1. A companion module (e.g. `McsFPMCompat`) creates `IMcsNominationMenuCompat` and `IMcsVoteMenuCompat` implementations in `OnAllModulesLoaded`
-2. It registers them via `IMapChooserSharpShared.SetNominationMenuCompat()` and `SetVoteMenuCompat()`
+1. A companion module (e.g. `McsFPMCompat`) creates an `IMcsNominationMenuCompat` implementation in `OnAllModulesLoaded`
+2. It registers it via `IMapChooserSharpShared.SetNominationMenuCompat()`
 3. When MCS needs to display a menu, it calls `ShowMenu()` on the appropriate registered implementation
 
 If MCS attempts to display a menu before any implementation is registered, an `InvalidOperationException` is thrown.
@@ -57,14 +57,6 @@ foreach (var extra in extras)
 
 ---
 
-## IMcsVoteMenuCompat
-
-Vote-specific menu compat. Extends `IMcsMenuCompat`. Reserved for future custom vote UI implementations that replace or supplement NVM.
-
-Currently has no additional members beyond the base interface.
-
----
-
 ## McsMenuDefinition
 
 Declarative definition for a single menu. Built internally by MCS and passed to compat implementations.
@@ -107,7 +99,6 @@ public void OnAllModulesLoaded()
     var menuManager = GetMenuManager(); // your menu plugin's API
 
     mcs.SetNominationMenuCompat(new MyNominationMenuCompat(menuManager));
-    mcs.SetVoteMenuCompat(new MyVoteMenuCompat(menuManager));
 }
 ```
 

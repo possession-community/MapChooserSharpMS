@@ -51,5 +51,5 @@ public interface INominationMenuManagementService
     /// <summary>
     /// Fires OnNominationMenuDetailsOpening and returns the collected extra items.
     /// </summary>
-    List<McsVoteMenuItem> CollectExtraMenuItems(IMapConfig mapConfig, IGameClient client);
+    List<McsMenuItem> CollectExtraMenuItems(IMapConfig mapConfig, IGameClient client);
 }

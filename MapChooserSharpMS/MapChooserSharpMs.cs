@@ -32,7 +32,6 @@ public sealed class MapChooserSharpMs(
     internal McsVoteStateManager VoteState { get; } = new();
 
     internal IMcsNominationMenuCompat? NominationMenuCompat { get; set; }
-    internal IMcsVoteMenuCompat? VoteMenuCompat { get; set; }
 
     protected override void RegisterRequiredPluginServices(IServiceCollection collection, IServiceProvider provider)
     {
