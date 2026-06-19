@@ -359,6 +359,26 @@ internal sealed class McsMapCycleController
         var mode = ParseMode(_conVars.Mode.GetString());
         var cvm = SharedSystem.GetConVarManager();
 
+        var mapConfig = _mapTransitionManager.CurrentMap?.MapConfig;
+        if (mapConfig is not null)
+        {
+            switch (mode)
+            {
+                case MapCycleMode.Time:
+                    cvm.FindConVar("mp_timelimit")?.Set(mapConfig.MapTime);
+                    Logger.LogInformation(
+                        "[MapCycle] Applied MapTime={MapTime} from map config to mp_timelimit",
+                        mapConfig.MapTime);
+                    break;
+                case MapCycleMode.Round:
+                    cvm.FindConVar("mp_maxrounds")?.Set(mapConfig.MapRounds);
+                    Logger.LogInformation(
+                        "[MapCycle] Applied MapRounds={MapRounds} from map config to mp_maxrounds",
+                        mapConfig.MapRounds);
+                    break;
+            }
+        }
+
         switch (mode)
         {
             case MapCycleMode.Round:
