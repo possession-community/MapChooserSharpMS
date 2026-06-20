@@ -311,6 +311,23 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
             return;
         }
 
+        string? addonIds = _sharedSystem.GetModSharp().GetAddonName();
+        if (addonIds is not null)
+        {
+            foreach (string segment in addonIds.Split(','))
+            {
+                if (long.TryParse(segment.Trim(), out long addonId) && addonId > 0
+                    && _mapConfigProvider.TryGetMapConfig(addonId, out var byWorkshop))
+                {
+                    _logger.LogInformation(
+                        "[MapTransition] Map name '{MapName}' not found, matched by addon ID {AddonId} -> '{ConfigMapName}'",
+                        mapName, addonId, byWorkshop.MapName);
+                    _currentMap = MapInformation.For(byWorkshop).Build();
+                    return;
+                }
+            }
+        }
+
         _logger.LogInformation(
             "[MapTransition] No map config found for current map '{MapName}'; CurrentMap is null",
             mapName);
