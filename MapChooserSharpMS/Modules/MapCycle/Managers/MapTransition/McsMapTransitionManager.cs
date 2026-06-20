@@ -357,9 +357,13 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
         if (_conVars.EndMatchImmediately.GetInt32() != 0)
         {
-            nint gameRulesPtr = modSharp.GetGameRules().GetAbsPtr();
-            _beginIntermission(gameRulesPtr);
-            _logger.LogInformation("[MapTransition] Called BeginIntermission directly");
+            modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
+            modSharp.InvokeFrameAction(() =>
+            {
+                nint gameRulesPtr = modSharp.GetGameRules().GetAbsPtr();
+                _beginIntermission(gameRulesPtr);
+            });
+            _logger.LogInformation("[MapTransition] TerminateRound -> BeginIntermission scheduled");
         }
     }
 
