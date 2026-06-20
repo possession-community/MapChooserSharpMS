@@ -59,6 +59,7 @@ internal sealed class McsMapCycleController
     private McsMapCooldownQueryService _cooldownQueryService = null!;
     private McsMapCooldownCommandService _cooldownCommandService = null!;
     private McsMapCooldownLifecycleService _cooldownLifecycleService = null!;
+    private MapConfigExecutionService _mapConfigExecutionService = null!;
     private WorkshopProvisioningService? _workshopProvisioningService;
 
     private MapCycleMode _mode = MapCycleMode.None;
@@ -161,6 +162,10 @@ internal sealed class McsMapCycleController
             Plugin, this, Logger, _eventManager, _extendService,
             _conVars,
             () => _mapTransitionManager.CurrentMap?.MapConfig);
+
+        _mapConfigExecutionService = new MapConfigExecutionService(
+            SharedSystem, Logger, Plugin.SharpPath,
+            () => configProvider.PluginConfig.MapCycleConfig.MapConfigExecutionType);
 
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _cooldownQueryService = new McsMapCooldownQueryService();
@@ -356,10 +361,12 @@ internal sealed class McsMapCycleController
         _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap?.MapConfig);
         _extCommandService.ClearParticipants();
 
+        var mapConfig = _mapTransitionManager.CurrentMap?.MapConfig;
+        if (mapConfig is not null)
+            _mapConfigExecutionService.ExecuteConfigsForMap(mapConfig);
+
         var mode = ParseMode(_conVars.Mode.GetString());
         var cvm = SharedSystem.GetConVarManager();
-
-        var mapConfig = _mapTransitionManager.CurrentMap?.MapConfig;
         if (mapConfig is not null)
         {
             switch (mode)
