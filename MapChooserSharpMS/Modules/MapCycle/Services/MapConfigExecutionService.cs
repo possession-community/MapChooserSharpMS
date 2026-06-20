@@ -132,8 +132,16 @@ internal sealed class MapConfigExecutionService
         return results;
     }
 
-    private void ExecuteCfgFile(string cfgPath, string label, int depth = 0)
+    private void ExecuteCfgFile(string cfgPath, string label, int depth = 0, HashSet<string>? visited = null)
     {
+        string fullPath = Path.GetFullPath(cfgPath);
+        visited ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!visited.Add(fullPath))
+        {
+            _logger.LogWarning("[MapConfigExec] Circular reference detected, skipping: {CfgPath}", cfgPath);
+            return;
+        }
+
         if (depth > 8)
         {
             _logger.LogWarning("[MapConfigExec] Recursion limit reached for {CfgPath}", cfgPath);
@@ -173,7 +181,7 @@ internal sealed class MapConfigExecutionService
                     : relativePath;
 
                 if (File.Exists(resolvedPath))
-                    ExecuteCfgFile(resolvedPath, $"exec:{Path.GetFileName(resolvedPath)}", depth + 1);
+                    ExecuteCfgFile(resolvedPath, $"exec:{Path.GetFileName(resolvedPath)}", depth + 1, visited);
                 else
                     _logger.LogWarning("[MapConfigExec] exec target not found: {Path}", resolvedPath);
 
