@@ -121,8 +121,14 @@ internal sealed class MapConfigExecutionService
         return results;
     }
 
-    private void ExecuteCfgFile(string cfgPath, string label)
+    private void ExecuteCfgFile(string cfgPath, string label, int depth = 0)
     {
+        if (depth > 8)
+        {
+            _logger.LogWarning("[MapConfigExec] Recursion limit reached for {CfgPath}", cfgPath);
+            return;
+        }
+
         string[] lines;
         try
         {
@@ -137,12 +143,31 @@ internal sealed class MapConfigExecutionService
         _logger.LogInformation("[MapConfigExec] Executing {CfgPath} ({Label}, {LineCount} lines)",
             cfgPath, label, lines.Length);
 
+        string? directory = Path.GetDirectoryName(cfgPath);
         var modSharp = _sharedSystem.GetModSharp();
         foreach (string line in lines)
         {
             string trimmed = line.Trim();
             if (trimmed.Length == 0 || trimmed.StartsWith("//"))
                 continue;
+
+            if (trimmed.StartsWith("exec ", StringComparison.OrdinalIgnoreCase))
+            {
+                string relativePath = trimmed[5..].Trim().Trim('"');
+                if (!relativePath.EndsWith(".cfg", StringComparison.OrdinalIgnoreCase))
+                    relativePath += ".cfg";
+
+                string resolvedPath = directory is not null
+                    ? Path.Combine(directory, relativePath)
+                    : relativePath;
+
+                if (File.Exists(resolvedPath))
+                    ExecuteCfgFile(resolvedPath, $"exec:{Path.GetFileName(resolvedPath)}", depth + 1);
+                else
+                    _logger.LogWarning("[MapConfigExec] exec target not found: {Path}", resolvedPath);
+
+                continue;
+            }
 
             modSharp.ServerCommand(trimmed);
         }
