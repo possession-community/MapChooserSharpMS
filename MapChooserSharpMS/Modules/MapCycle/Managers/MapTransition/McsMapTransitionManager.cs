@@ -33,7 +33,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly Func<bool> _shouldStopSourceTv;
     private readonly WorkshopProvisioningService? _workshopProvisioning;
 
-    private readonly unsafe delegate* unmanaged<nint, byte, void> _goToIntermission;
+    private readonly unsafe delegate* unmanaged<nint, void> _beginIntermission;
 
     private IMapInformation? _currentMap;
     private IMapInformation? _nextMap;
@@ -69,16 +69,16 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         unsafe
         {
             var server = sharedSystem.GetLibraryModuleManager().Server;
-            nint fnAddr = server.FindFunction("Going to intermission...\n");
+            nint fnAddr = server.FindFunction("GMR_BeginIntermission\n");
             if (fnAddr == nint.Zero)
             {
-                logger.LogError("[MapTransition] Failed to resolve GoToIntermission function address");
+                logger.LogError("[MapTransition] Failed to resolve BeginIntermission function address");
             }
             else
             {
-                logger.LogInformation("[MapTransition] Resolved GoToIntermission at 0x{Addr:X}", fnAddr);
+                logger.LogInformation("[MapTransition] Resolved BeginIntermission at 0x{Addr:X}", fnAddr);
             }
-            _goToIntermission = (delegate* unmanaged<nint, byte, void>)fnAddr;
+            _beginIntermission = (delegate* unmanaged<nint, void>)fnAddr;
         }
     }
 
@@ -347,9 +347,9 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     public unsafe void ForceEndMatch()
     {
-        if (_goToIntermission == null)
+        if (_beginIntermission == null)
         {
-            _logger.LogError("[MapTransition] GoToIntermission not resolved — cannot force end match");
+            _logger.LogError("[MapTransition] BeginIntermission not resolved — cannot force end match");
             return;
         }
 
@@ -358,8 +358,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         if (_conVars.EndMatchImmediately.GetInt32() != 0)
         {
             nint gameRulesPtr = modSharp.GetGameRules().GetAbsPtr();
-            _goToIntermission(gameRulesPtr, 0);
-            _logger.LogInformation("[MapTransition] Called GoToIntermission directly");
+            _beginIntermission(gameRulesPtr);
+            _logger.LogInformation("[MapTransition] Called BeginIntermission directly");
         }
     }
 
