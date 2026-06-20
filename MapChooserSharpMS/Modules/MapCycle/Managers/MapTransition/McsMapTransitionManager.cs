@@ -33,16 +33,14 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly Func<bool> _shouldStopSourceTv;
     private readonly WorkshopProvisioningService? _workshopProvisioning;
 
+    private readonly unsafe delegate* unmanaged<nint, byte, void> _goToIntermission;
+
     private IMapInformation? _currentMap;
     private IMapInformation? _nextMap;
     private bool _isNextMapConfirmed;
     private bool _transitionStarted;
     private Guid _retryTimerId;
     private int _changeAttemptsUsed;
-
-    private string? _forcedLimitConVarName;
-    private float _forcedLimitOriginalValue;
-    private bool _forcedLimitIsRoundBased;
 
     public McsMapTransitionManager(
         ISharedSystem sharedSystem,
@@ -68,6 +66,21 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _conVars = conVars;
         _shouldStopSourceTv = shouldStopSourceTv;
         _workshopProvisioning = workshopProvisioning;
+
+        unsafe
+        {
+            var server = sharedSystem.GetLibraryModuleManager().Server;
+            nint fnAddr = server.FindFunction("Going to intermission...\n");
+            if (fnAddr == nint.Zero)
+            {
+                logger.LogError("[MapTransition] Failed to resolve GoToIntermission function address");
+            }
+            else
+            {
+                logger.LogInformation("[MapTransition] Resolved GoToIntermission at 0x{Addr:X}", fnAddr);
+            }
+            _goToIntermission = (delegate* unmanaged<nint, byte, void>)fnAddr;
+        }
     }
 
     public IMapInformation? NextMap => _nextMap;
@@ -334,43 +347,21 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _currentMap = null;
     }
 
-    public void ForceEndMatch()
+    public unsafe void ForceEndMatch()
     {
-        var limitType = _timeLimitTypeProvider();
-        bool roundBased = limitType == TimeLimitType.Round;
-        string conVarName = roundBased ? "mp_maxrounds" : "mp_timelimit";
-
-        // One-shot mp_* write — a deliberate, scoped exception to the
-        // "internal TimeLimit only" rule: the game must see its own
-        // game-over condition met to run the native end match screen.
-        // The original value is restored in ClearState() on map end.
-        // Written via the command path — IConVar.Set did not reliably
-        // reach the value the game rules read for the game-over check.
-        if (_forcedLimitConVarName is null)
+        if (_goToIntermission == null)
         {
-            _forcedLimitConVarName = conVarName;
-            _forcedLimitOriginalValue = _sharedSystem.GetConVarManager()
-                .FindConVar(conVarName)?.GetFloat() ?? 0f;
-            _forcedLimitIsRoundBased = roundBased;
+            _logger.LogError("[MapTransition] GoToIntermission not resolved — cannot force end match");
+            return;
         }
 
         var modSharp = _sharedSystem.GetModSharp();
-        modSharp.ServerCommand($"{conVarName} 1");
 
         if (_conVars.EndMatchImmediately.GetInt32() != 0)
         {
-            modSharp.InvokeFrameAction(() =>
-            {
-                if (modSharp.GetGameRules().IsWarmupPeriod)
-                    modSharp.ServerCommand("mp_warmup_end");
-
-                modSharp.InvokeFrameAction(() =>
-                {
-                    modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
-                });
-            });
-
-            ArmForceEndMatchWatchdog();
+            nint gameRulesPtr = modSharp.GetGameRules().GetAbsPtr();
+            _goToIntermission(gameRulesPtr, 0);
+            _logger.LogInformation("[MapTransition] Called GoToIntermission directly");
         }
     }
 
@@ -429,16 +420,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _transitionStarted = false;
         ChangeMapOnNextRoundEnd = false;
         StopRetryWatchdog(resetAttempts: true);
-
-        if (_forcedLimitConVarName is not null)
-        {
-            string restored = _forcedLimitIsRoundBased
-                ? ((int)_forcedLimitOriginalValue).ToString(System.Globalization.CultureInfo.InvariantCulture)
-                : _forcedLimitOriginalValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-            _sharedSystem.GetModSharp().ServerCommand($"{_forcedLimitConVarName} {restored}");
-            _forcedLimitConVarName = null;
-        }
     }
 
     public void OnRoundEnd()
