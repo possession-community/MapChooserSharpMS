@@ -38,6 +38,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private IMapInformation? _currentMap;
     private IMapInformation? _nextMap;
     private bool _isNextMapConfirmed;
+    private bool _intermissionFired;
     private Guid _retryTimerId;
     private int _changeAttemptsUsed;
 
@@ -89,6 +90,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     public bool IsNextMapConfirmed => _isNextMapConfirmed;
 
     public bool ChangeMapOnNextRoundEnd { get; set; }
+
+    public bool IsIntermissionFired => _intermissionFired;
 
     public bool TrySetNextMap(IMapInformation mapInformation)
     {
@@ -347,6 +350,9 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     public unsafe void ForceEndMatch()
     {
+        if (_intermissionFired)
+            return;
+
         if (_beginIntermission == null)
         {
             _logger.LogError("[MapTransition] BeginIntermission not resolved — cannot force end match");
@@ -357,6 +363,11 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
         if (_conVars.EndMatchImmediately.GetInt32() != 0)
         {
+            _intermissionFired = true;
+
+            var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap!.MapConfig);
+            _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
+
             modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
             modSharp.InvokeFrameAction(() =>
             {
@@ -388,6 +399,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _currentMap = null;
         _nextMap = null;
         _isNextMapConfirmed = false;
+        _intermissionFired = false;
         ChangeMapOnNextRoundEnd = false;
         StopRetryWatchdog(resetAttempts: true);
     }
@@ -397,8 +409,10 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         if (!ChangeMapOnNextRoundEnd)
             return;
 
-        if (_nextMap is null)
+        if (_nextMap is null || _intermissionFired)
             return;
+
+        _intermissionFired = true;
 
         var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap.MapConfig);
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
@@ -437,10 +451,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     private void ForceTerminateRound(float terminateDelay)
     {
-        var cvm = _sharedSystem.GetConVarManager();
-        cvm.FindConVar("mp_timelimit")?.Set(1);
-        cvm.FindConVar("mp_maxrounds")?.Set(1);
-
         _logger.LogInformation("[MapTransition] Forcing round termination in {Delay}s", terminateDelay);
 
         TnmsPluginFoundation.Utils.Entity.GameRulesUtil.TerminateRound(terminateDelay, RoundEndReason.RoundDraw);

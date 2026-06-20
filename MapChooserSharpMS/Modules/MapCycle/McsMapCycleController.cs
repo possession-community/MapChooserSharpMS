@@ -325,8 +325,7 @@ internal sealed class McsMapCycleController
         if (nextMap is null)
             return;
 
-        // The round_end transition path is armed and owns this change.
-        if (_mapTransitionManager.ChangeMapOnNextRoundEnd)
+        if (_mapTransitionManager.ChangeMapOnNextRoundEnd || _mapTransitionManager.IsIntermissionFired)
             return;
 
         float extraTime = SharedSystem.GetConVarManager()
