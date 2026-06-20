@@ -32,7 +32,6 @@ FallbackExtendRoundsPerExtends = 5
 ShouldStopSourceTvRecording = false
 MapConfigExecutionType = "ExactMatch"
 MapConfigDirectoryPath = "maps/"
-GroupConfigDirectoryPath = "groups/"
 ```
 
 | キー | 型 | デフォルト | 説明 |
@@ -43,8 +42,30 @@ GroupConfigDirectoryPath = "groups/"
 | FallbackExtendRoundsPerExtends | int | 5 | 延長 1 回あたりの延長ラウンド数 |
 | ShouldStopSourceTvRecording | bool | false | マップ変更前に tv_stoprecord を実行するか (SourceTV クラッシュ防止) |
 | MapConfigExecutionType | enum | ExactMatch | マップ cfg 実行マッチング方式。`ExactMatch` / `StartWithMatch` / `PartialMatch` |
-| MapConfigDirectoryPath | string | maps/ | マップ config ディレクトリのパス (モジュールディレクトリからの相対パス) |
-| GroupConfigDirectoryPath | string | groups/ | グループ config ディレクトリのパス (モジュールディレクトリからの相対パス) |
+| MapConfigDirectoryPath | string | maps/ | マップ TOML config ディレクトリのパス (モジュールディレクトリからの相対パス) |
+
+### マップ config 実行 (cfg ファイル)
+
+マップ開始時に、現在のマップおよび所属グループにマッチする `.cfg` ファイルを自動実行します。cfg ファイルは Sharp ルート配下の固定ディレクトリから読み込まれます。
+
+```
+sharp/configs/mcsms/cfgs/
+├── maps/       # マップ固有の cfg ファイル
+│   ├── de_dust2.cfg
+│   └── ze_example_v1.cfg
+└── groups/     # グループ固有の cfg ファイル
+    ├── ze_maps.cfg
+    └── surf_maps.cfg
+```
+
+**実行順:** グループ cfg → マップ cfg の順で実行。マップの設定がグループを上書きします。
+
+**マッチングモード** (`MapConfigExecutionType`):
+- `ExactMatch` — `<マップ名>.cfg` のみ実行 (大文字小文字区別なし)
+- `StartWithMatch` — マップ名がファイル名で始まる cfg を全て実行 (例: `de_dust2` に対して `de_.cfg` と `de_dust2.cfg`)、短いプレフィックス順
+- `PartialMatch` — マップ名にファイル名が含まれる cfg を全て実行
+
+**exec 展開:** cfg ファイル内に `exec <パス>` 行がある場合、参照先ファイルは同ディレクトリ基準で解決され (`csgo/cfg/` ではなく)、インラインで展開されます。再帰的な include は最大8段までサポート。
 
 ## MapVote
 
@@ -75,4 +96,4 @@ RunoffVoteCountdownSound1 = ""
 | ShouldPrintVoteToChat | bool | true | プレイヤーが投票した際にチャットに表示するか |
 | ShouldPrintVoteRemainingTime | bool | true | 投票中に残り時間をチャットに表示するか |
 | CountdownUiType | enum ([Flags]) | Center | カウントダウンのデフォルト表示方式。`None` / `Hint` / `Center` / `Chat`。カンマ区切りで複数指定可 (例: `"Center,Chat"`)。プレイヤーは `!mcs_settings countdown` で個別に変更可能 (ICookie 永続化) |
-| SoundFile | string | "" | .vsndevts ファイルパス (precache 用)。他プラグインで済んでいれば空欄可 |
+| SoundFile | string | "" | .vsndevts ファイルパス。毎マップ開始時に自動 precache。他プラグインで済んでいれば空欄可 |
