@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using MapChooserSharpMS.Shared.MapConfig;
 using Microsoft.Extensions.Logging;
@@ -11,6 +10,10 @@ namespace MapChooserSharpMS.Modules.MapCycle.Services;
 
 internal sealed class MapConfigExecutionService
 {
+    private const string CfgBasePath = "mcsms";
+    private const string MapCfgSubDir = "maps";
+    private const string GroupCfgSubDir = "groups";
+
     private readonly ISharedSystem _sharedSystem;
     private readonly ILogger _logger;
     private readonly string _mapCfgDirectory;
@@ -20,34 +23,31 @@ internal sealed class MapConfigExecutionService
     public MapConfigExecutionService(
         ISharedSystem sharedSystem,
         ILogger logger,
-        string sharpPath,
         Func<McsMapConfigExecutionType> executionTypeProvider)
     {
         _sharedSystem = sharedSystem;
         _logger = logger;
-        _mapCfgDirectory = Path.Combine(sharpPath, "configs", "mcsms", "cfgs", "maps");
-        _groupCfgDirectory = Path.Combine(sharpPath, "configs", "mcsms", "cfgs", "groups");
         _executionTypeProvider = executionTypeProvider;
+
+        string gamePath = sharedSystem.GetModSharp().GetGamePath();
+        _mapCfgDirectory = Path.Combine(gamePath, "cfg", CfgBasePath, MapCfgSubDir);
+        _groupCfgDirectory = Path.Combine(gamePath, "cfg", CfgBasePath, GroupCfgSubDir);
     }
 
     public void ExecuteConfigsForMap(IMapConfig mapConfig)
     {
         _logger.LogInformation(
-            "[MapConfigExec] Starting cfg execution for map={Map}, groups={Groups}, mapDir={MapDir}, groupDir={GroupDir}",
-            mapConfig.MapName, mapConfig.GroupSettings.Count, _mapCfgDirectory, _groupCfgDirectory);
+            "[MapConfigExec] Starting cfg execution for map={Map}, groups={Groups}",
+            mapConfig.MapName, mapConfig.GroupSettings.Count);
 
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        ExecuteGroupConfigs(mapConfig, visited);
-        ExecuteMapConfigs(mapConfig.MapName, _executionTypeProvider(), visited);
+        ExecuteGroupConfigs(mapConfig);
+        ExecuteMapConfigs(mapConfig.MapName, _executionTypeProvider());
     }
 
-    private void ExecuteGroupConfigs(IMapConfig mapConfig, HashSet<string> visited)
+    private void ExecuteGroupConfigs(IMapConfig mapConfig)
     {
         if (!Directory.Exists(_groupCfgDirectory))
-        {
-            _logger.LogDebug("[MapConfigExec] Group cfg directory does not exist: {Dir}", _groupCfgDirectory);
             return;
-        }
 
         string[] cfgFiles;
         try
@@ -67,20 +67,17 @@ internal sealed class MapConfigExecutionService
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 if (string.Equals(fileName, group.GroupName, StringComparison.OrdinalIgnoreCase))
                 {
-                    ExecuteCfgFile(filePath, $"group:{group.GroupName}", visited);
+                    Exec($"{CfgBasePath}/{GroupCfgSubDir}/{Path.GetFileName(filePath)}", $"group:{group.GroupName}");
                     break;
                 }
             }
         }
     }
 
-    private void ExecuteMapConfigs(string mapName, McsMapConfigExecutionType executionType, HashSet<string> visited)
+    private void ExecuteMapConfigs(string mapName, McsMapConfigExecutionType executionType)
     {
         if (!Directory.Exists(_mapCfgDirectory))
-        {
-            _logger.LogDebug("[MapConfigExec] Map cfg directory does not exist: {Dir}", _mapCfgDirectory);
             return;
-        }
 
         string[] cfgFiles;
         try
@@ -94,11 +91,9 @@ internal sealed class MapConfigExecutionService
         }
 
         var matched = MatchCfgFiles(cfgFiles, mapName, executionType);
-        _logger.LogDebug("[MapConfigExec] Map cfg scan: {Total} files found, {Matched} matched (mode={Mode})",
-            cfgFiles.Length, matched.Count, executionType);
         foreach (string cfgPath in matched)
         {
-            ExecuteCfgFile(cfgPath, $"map:{mapName}", visited);
+            Exec($"{CfgBasePath}/{MapCfgSubDir}/{Path.GetFileName(cfgPath)}", $"map:{mapName}");
         }
     }
 
@@ -135,79 +130,9 @@ internal sealed class MapConfigExecutionService
         return results;
     }
 
-    private void ExecuteCfgFile(string cfgPath, string label, HashSet<string> visited)
+    private void Exec(string cfgRelativePath, string label)
     {
-        var sb = new StringBuilder();
-
-        FlattenCfgFile(cfgPath, sb, visited, 0);
-
-        if (sb.Length == 0)
-        {
-            _logger.LogDebug("[MapConfigExec] No commands to execute for {Label}", label);
-            return;
-        }
-
-        string commands = sb.ToString();
-        _logger.LogInformation("[MapConfigExec] Executing {Label} ({Length} chars)", label, commands.Length);
-        _logger.LogDebug("[MapConfigExec] Commands:\n{Commands}", commands);
-        _sharedSystem.GetModSharp().ServerCommand(commands);
-    }
-
-    private void FlattenCfgFile(string cfgPath, StringBuilder sb, HashSet<string> visited, int depth)
-    {
-        string fullPath = Path.GetFullPath(cfgPath);
-        if (!visited.Add(fullPath))
-        {
-            _logger.LogWarning("[MapConfigExec] Circular reference detected, skipping: {CfgPath}", cfgPath);
-            return;
-        }
-
-        if (depth > 8)
-        {
-            _logger.LogWarning("[MapConfigExec] Recursion limit reached for {CfgPath}", cfgPath);
-            return;
-        }
-
-        string[] lines;
-        try
-        {
-            lines = File.ReadAllLines(cfgPath);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "[MapConfigExec] Failed to read {CfgPath}", cfgPath);
-            return;
-        }
-
-        _logger.LogDebug("[MapConfigExec] Flattening {CfgPath} ({LineCount} lines, depth={Depth})",
-            cfgPath, lines.Length, depth);
-
-        string? directory = Path.GetDirectoryName(cfgPath);
-        foreach (string line in lines)
-        {
-            string trimmed = line.Trim();
-            if (trimmed.Length == 0 || trimmed.StartsWith("//"))
-                continue;
-
-            if (trimmed.StartsWith("exec ", StringComparison.OrdinalIgnoreCase))
-            {
-                string relativePath = trimmed[5..].Trim().Trim('"');
-                if (!relativePath.EndsWith(".cfg", StringComparison.OrdinalIgnoreCase))
-                    relativePath += ".cfg";
-
-                string resolvedPath = directory is not null
-                    ? Path.Combine(directory, relativePath)
-                    : relativePath;
-
-                if (File.Exists(resolvedPath))
-                    FlattenCfgFile(resolvedPath, sb, visited, depth + 1);
-                else
-                    _logger.LogWarning("[MapConfigExec] exec target not found: {Path}", resolvedPath);
-
-                continue;
-            }
-
-            sb.Append(trimmed).Append(';');
-        }
+        _logger.LogInformation("[MapConfigExec] exec {CfgPath} ({Label})", cfgRelativePath, label);
+        _sharedSystem.GetModSharp().ServerCommand($"exec {cfgRelativePath}");
     }
 }

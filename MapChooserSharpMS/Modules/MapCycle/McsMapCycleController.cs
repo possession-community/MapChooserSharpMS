@@ -165,7 +165,7 @@ internal sealed class McsMapCycleController
             () => _mapTransitionManager.CurrentMap?.MapConfig);
 
         _mapConfigExecutionService = new MapConfigExecutionService(
-            SharedSystem, Logger, Plugin.SharpPath,
+            SharedSystem, Logger,
             () => configProvider.PluginConfig.MapCycleConfig.MapConfigExecutionType);
 
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
