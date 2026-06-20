@@ -17,6 +17,7 @@ internal sealed class MapCycleConVars
     public readonly IConVar TransitionRetryInterval;
     public readonly IConVar TransitionFallbackMap;
     public readonly IConVar TransitionDelay;
+    public readonly IConVar EndMatchImmediately;
 
     public MapCycleConVars(IConVarManager cvm)
     {
@@ -69,6 +70,11 @@ internal sealed class MapCycleConVars
             "mcs_map_transition_delay", 20.0F, 0.0F, 60.0F,
             "Seconds to wait after round end before changing map. 0 = immediate",
             ConVarFlags.None)!;
+
+        EndMatchImmediately = cvm.CreateConVar(
+            "mcs_end_match_immediately", 1, 0, 1,
+            "1 = terminate round immediately when match ends, 0 = wait for round to end naturally",
+            ConVarFlags.None)!;
     }
 
     public IEnumerable<IConVar> All()
@@ -83,5 +89,6 @@ internal sealed class MapCycleConVars
         yield return TransitionRetryInterval;
         yield return TransitionFallbackMap;
         yield return TransitionDelay;
+        yield return EndMatchImmediately;
     }
 }

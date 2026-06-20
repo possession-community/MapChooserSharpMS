@@ -334,18 +334,21 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         var modSharp = _sharedSystem.GetModSharp();
         modSharp.ServerCommand($"{conVarName} 1");
 
-        modSharp.InvokeFrameAction(() =>
+        if (_conVars.EndMatchImmediately.GetInt32() != 0)
         {
-            if (modSharp.GetGameRules().IsWarmupPeriod)
-                modSharp.ServerCommand("mp_warmup_end");
-
             modSharp.InvokeFrameAction(() =>
             {
-                modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
-            });
-        });
+                if (modSharp.GetGameRules().IsWarmupPeriod)
+                    modSharp.ServerCommand("mp_warmup_end");
 
-        ArmForceEndMatchWatchdog();
+                modSharp.InvokeFrameAction(() =>
+                {
+                    modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
+                });
+            });
+
+            ArmForceEndMatchWatchdog();
+        }
     }
 
     /// <summary>
