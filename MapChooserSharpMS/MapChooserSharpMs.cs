@@ -120,7 +120,7 @@ public sealed class MapChooserSharpMs(
         Logger.LogInformation("MapChooserSharpMS unloading (hotReload={HotReload})", hotReload);
     }
 
-    public void OnGameActivate()
+    public void OnResourcePrecache()
     {
         PrecacheSoundResources();
     }
