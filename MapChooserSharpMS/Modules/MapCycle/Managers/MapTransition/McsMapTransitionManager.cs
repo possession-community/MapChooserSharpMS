@@ -38,7 +38,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private IMapInformation? _currentMap;
     private IMapInformation? _nextMap;
     private bool _isNextMapConfirmed;
-    private bool _transitionStarted;
     private Guid _retryTimerId;
     private int _changeAttemptsUsed;
 
@@ -221,7 +220,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         if (_nextMap is null)
             return;
 
-        _transitionStarted = true;
         var targetConfig = _nextMap.MapConfig;
 
         void ChangeNow()
@@ -365,37 +363,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         }
     }
 
-    /// <summary>
-    /// Safety net for ForceEndMatch: if the game never reaches its native
-    /// intermission (e.g. round termination suppressed by server settings),
-    /// notify players and transition directly instead of stalling forever.
-    /// </summary>
-    private void ArmForceEndMatchWatchdog()
-    {
-        float extraTime = _sharedSystem.GetConVarManager()
-            .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f;
-        float restartDelay = _sharedSystem.GetConVarManager()
-            .FindConVar("mp_round_restart_delay")?.GetFloat() ?? 5.0f;
-        float timeout = extraTime + restartDelay + 10.0f;
-
-        _sharedSystem.GetModSharp().PushTimer(() =>
-        {
-            if (_transitionStarted || _nextMap is null)
-                return;
-
-            _logger.LogWarning(
-                "[MapTransition] ForceEndMatch watchdog fired after {Timeout}s — native end match never reached intermission; transitioning directly",
-                timeout);
-
-            BroadcastToAll("MapCycle.Broadcast.ForceEndMatchFallback", ResolveDisplayName(_nextMap.MapConfig));
-
-            var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap.MapConfig);
-            _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
-
-            TransitionToNextMap(0f);
-        }, timeout, GameTimerFlags.StopOnMapEnd);
-    }
-
     private string ResolveDisplayName(IMapConfig map)
         => _mapConfigProvider.ToolingService.ResolveMapDisplayName(map);
 
@@ -417,7 +384,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _currentMap = null;
         _nextMap = null;
         _isNextMapConfirmed = false;
-        _transitionStarted = false;
         ChangeMapOnNextRoundEnd = false;
         StopRetryWatchdog(resetAttempts: true);
     }
