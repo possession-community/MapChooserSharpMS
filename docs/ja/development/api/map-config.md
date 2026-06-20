@@ -49,9 +49,9 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 | `IsDisabled` | `bool` | `true` の場合、ノミネーションやランダム選択の対象外になる |
 | `MaxExtends` | `int` | マップ投票の Extend 選択肢で消費できる延長回数の上限。`0` で Extend 選択肢を非表示にする |
 | `MaxExtCommandUses` | `int` | `!ext` コマンドで延長できる回数の上限 |
-| `MapTime` | `int` | このマップの mp_timelimit 相当の値 (分) |
+| `MapTime` | `int` | このマップの制限時間 (分)。マップ開始時に `mp_timelimit` に適用され、以降は MCS が内部で管理する |
 | `ExtendTimePerExtends` | `int` | 延長 1 回あたりに追加される分数 |
-| `MapRounds` | `int` | このマップの mp_maxrounds 相当の値 |
+| `MapRounds` | `int` | このマップのラウンド数。マップ開始時に `mp_maxrounds` に適用され、以降は MCS が内部で管理する |
 | `ExtendRoundsPerExtends` | `int` | 延長 1 回あたりに追加されるラウンド数 |
 | `RandomPickConfig` | `IRandomPickConfig` | ランダム選択時の重み付けや除外設定 |
 | `NominationConfig` | `INominationConfig` | ノミネーションの制限設定 |

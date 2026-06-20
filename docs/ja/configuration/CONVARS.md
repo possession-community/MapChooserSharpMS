@@ -28,6 +28,7 @@
 | mcs_map_transition_retry_interval | 30.0 | 5-300 | リトライ間隔 (秒) |
 | mcs_map_transition_fallback_map | de_dust2 | - | リトライ失敗時のフォールバックマップ |
 | mcs_map_transition_delay | 20.0 | 0-60 | ラウンド終了後のマップ変更までの待機秒数。0 で即変更 |
+| mcs_end_match_immediately | 1 | 0-1 | 1 = マッチ終了時にラウンドを即座に終了する、0 = ラウンドの自然終了を待つ |
 
 ## RTV
 

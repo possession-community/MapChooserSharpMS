@@ -464,7 +464,7 @@ For time-based maps, specifies how many minutes are added per extend.
 
 ### MapTime
 
-For time-based maps, specifies the map's time limit.
+For time-based maps, specifies the map's time limit in minutes. This value is applied to `mp_timelimit` at map start. MCS then manages the time limit internally and sets `mp_timelimit` to a large value to prevent the game from ending the match on its own.
 
 ### ExtendRoundsPerExtends
 
@@ -472,7 +472,7 @@ For round-based maps, specifies how many rounds are added per extend.
 
 ### MapRounds
 
-For round-based maps, specifies the number of rounds for the map.
+For round-based maps, specifies the number of rounds for the map. This value is applied to `mp_maxrounds` at map start. MCS then manages the round limit internally and sets `mp_maxrounds` to a large value to prevent the game from ending the match on its own.
 
 ## Nomination Settings
 

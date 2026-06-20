@@ -28,6 +28,7 @@ Settings that can be changed at runtime. Configurable via `server.cfg` or RCON.
 | mcs_map_transition_retry_interval | 30.0 | 5-300 | Retry interval (seconds) |
 | mcs_map_transition_fallback_map | de_dust2 | - | Fallback map when all retries fail |
 | mcs_map_transition_delay | 20.0 | 0-60 | Delay after round end before map change (seconds). 0 for immediate change |
+| mcs_end_match_immediately | 1 | 0-1 | 1 = terminate the round immediately when the match ends, 0 = wait for the round to end naturally |
 
 ## RTV
 

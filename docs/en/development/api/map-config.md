@@ -49,9 +49,9 @@ Properties inherited from `IBaseMapConfig`:
 | `IsDisabled` | `bool` | When `true`, the map is excluded from nomination and random selection |
 | `MaxExtends` | `int` | Maximum number of extends consumable by the map vote Extend option. `0` hides the Extend option |
 | `MaxExtCommandUses` | `int` | Maximum number of extends consumable by the `!ext` command |
-| `MapTime` | `int` | This map's mp_timelimit equivalent (minutes) |
+| `MapTime` | `int` | This map's time limit in minutes. Applied to `mp_timelimit` at map start; MCS manages the limit internally thereafter |
 | `ExtendTimePerExtends` | `int` | Minutes added per extend |
-| `MapRounds` | `int` | This map's mp_maxrounds equivalent |
+| `MapRounds` | `int` | This map's round limit. Applied to `mp_maxrounds` at map start; MCS manages the limit internally thereafter |
 | `ExtendRoundsPerExtends` | `int` | Rounds added per extend |
 | `RandomPickConfig` | `IRandomPickConfig` | Random selection weighting and exclusion settings |
 | `NominationConfig` | `INominationConfig` | Nomination restriction settings |

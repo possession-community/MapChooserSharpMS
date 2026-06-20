@@ -82,6 +82,19 @@ When copying build outputs to the game server:
   - **Never place Shared DLLs inside `modules/`.**
 - **Lang files** → `%MOD_SHARP_DIR%\modules\<ModuleName>\lang\*.json`
 
+## Documentation
+
+When adding new features or changing existing behavior, update the
+relevant documentation under `docs/`:
+
+- Check the diff of the current changes to identify what needs documenting.
+- `docs/en/` and `docs/ja/` must both be updated (EN and JA).
+- Common files to check:
+  - `configuration/CONVARS.md` — new or changed ConVars
+  - `configuration/MAP_CONFIG.md` — map/group config property changes
+  - `features/COMMANDS.md` — new or changed commands
+  - `development/api/` — public API changes
+
 ## Git commit rules
 
 - **Do NOT add `Co-Authored-By` trailers to commit messages.** This project does not use them.
