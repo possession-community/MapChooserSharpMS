@@ -406,7 +406,6 @@ internal sealed class McsMapCycleController
                 }
 
                 InitializeRoundBasedLimit(maxRounds, roundThreshold);
-                cvm.FindConVar("mp_maxrounds")?.Set(99999);
                 _mode = MapCycleMode.Round;
                 Logger.LogInformation(
                     "[MapCycle] Round-based mode: maxRounds={Max}, voteStartThreshold={Threshold}",
@@ -430,7 +429,6 @@ internal sealed class McsMapCycleController
                 }
 
                 InitializeTimeBasedLimit(timeLimit, voteThreshold);
-                cvm.FindConVar("mp_timelimit")?.Set(999999.0f);
                 _mode = MapCycleMode.Time;
                 Logger.LogInformation(
                     "[MapCycle] Time-based mode: timeLimit={Limit}, voteStartThreshold={Threshold}",
@@ -442,6 +440,9 @@ internal sealed class McsMapCycleController
                 Logger.LogInformation("[MapCycle] Mode=None; skipping TimeLimit init");
                 return;
         }
+
+        cvm.FindConVar("mp_timelimit")?.Set(99999999.0f);
+        cvm.FindConVar("mp_maxrounds")?.Set(99999999);
 
         _tickTimerId = SharedSystem.GetModSharp().PushTimer(
             OnTimerTick,
