@@ -423,7 +423,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     public void TerminateAndTransition(float? terminateDelay = null)
     {
-        if (_nextMap is null)
+        if (_nextMap is null || _intermissionFired)
             return;
 
         float delay = terminateDelay ?? _conVars.TransitionDelay.GetFloat();
