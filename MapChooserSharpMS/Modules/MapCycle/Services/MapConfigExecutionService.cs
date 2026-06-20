@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using MapChooserSharpMS.Shared.MapConfig;
 using Microsoft.Extensions.Logging;
@@ -132,10 +133,28 @@ internal sealed class MapConfigExecutionService
         return results;
     }
 
-    private void ExecuteCfgFile(string cfgPath, string label, int depth = 0, HashSet<string>? visited = null)
+    private void ExecuteCfgFile(string cfgPath, string label)
+    {
+        var sb = new StringBuilder();
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        FlattenCfgFile(cfgPath, sb, visited, 0);
+
+        if (sb.Length == 0)
+        {
+            _logger.LogDebug("[MapConfigExec] No commands to execute for {Label}", label);
+            return;
+        }
+
+        string commands = sb.ToString();
+        _logger.LogInformation("[MapConfigExec] Executing {Label} ({Length} chars)", label, commands.Length);
+        _logger.LogDebug("[MapConfigExec] Commands:\n{Commands}", commands);
+        _sharedSystem.GetModSharp().ServerCommand(commands);
+    }
+
+    private void FlattenCfgFile(string cfgPath, StringBuilder sb, HashSet<string> visited, int depth)
     {
         string fullPath = Path.GetFullPath(cfgPath);
-        visited ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (!visited.Add(fullPath))
         {
             _logger.LogWarning("[MapConfigExec] Circular reference detected, skipping: {CfgPath}", cfgPath);
@@ -159,11 +178,10 @@ internal sealed class MapConfigExecutionService
             return;
         }
 
-        _logger.LogInformation("[MapConfigExec] Executing {CfgPath} ({Label}, {LineCount} lines)",
-            cfgPath, label, lines.Length);
+        _logger.LogDebug("[MapConfigExec] Flattening {CfgPath} ({LineCount} lines, depth={Depth})",
+            cfgPath, lines.Length, depth);
 
         string? directory = Path.GetDirectoryName(cfgPath);
-        var modSharp = _sharedSystem.GetModSharp();
         foreach (string line in lines)
         {
             string trimmed = line.Trim();
@@ -181,15 +199,14 @@ internal sealed class MapConfigExecutionService
                     : relativePath;
 
                 if (File.Exists(resolvedPath))
-                    ExecuteCfgFile(resolvedPath, $"exec:{Path.GetFileName(resolvedPath)}", depth + 1, visited);
+                    FlattenCfgFile(resolvedPath, sb, visited, depth + 1);
                 else
                     _logger.LogWarning("[MapConfigExec] exec target not found: {Path}", resolvedPath);
 
                 continue;
             }
 
-            _logger.LogDebug("[MapConfigExec] > {Command}", trimmed);
-            modSharp.ServerCommand(trimmed);
+            sb.Append(trimmed).Append(';');
         }
     }
 }
