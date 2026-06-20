@@ -95,19 +95,19 @@ internal sealed class PlayerNominationCooldownService
         {
             var surql = $"SELECT * FROM {Table} WHERE server_id = $server_id;";
             var vars = new Dictionary<string, object?> { ["server_id"] = _serverId };
-            var results = await _surreal.QueryAsync(surql, vars);
+            var results = await _surreal.QueryAsync<NomCooldownDto>(surql, vars);
 
             int loaded = 0;
-            foreach (var row in results)
+            foreach (var dto in results)
             {
-                var steamId = (ulong)(long)row["steam_id"]!;
-                var remainingCount = (int)(long)row["remaining_count"]!;
-                var cooldownUntil = (DateTime)row["cooldown_until"]!;
-
-                if (remainingCount <= 0 && cooldownUntil <= DateTime.UtcNow)
+                if (dto.steam_id <= 0)
                     continue;
 
-                _states[steamId] = new PlayerNomCooldownState(remainingCount, cooldownUntil);
+                var steamId = (ulong)dto.steam_id;
+                if (dto.remaining_count <= 0 && dto.cooldown_until <= DateTime.UtcNow)
+                    continue;
+
+                _states[steamId] = new PlayerNomCooldownState(dto.remaining_count, dto.cooldown_until);
                 loaded++;
             }
 
@@ -117,6 +117,14 @@ internal sealed class PlayerNominationCooldownService
         {
             _logger.LogWarning(ex, "[PlayerNomCD] Failed to load player cooldowns from DB");
         }
+    }
+
+    internal sealed class NomCooldownDto
+    {
+        public long steam_id { get; set; }
+        public int remaining_count { get; set; }
+        public DateTime cooldown_until { get; set; }
+        public string? server_id { get; set; }
     }
 
     private void SaveToDbFireAndForget(ulong steamId, PlayerNomCooldownState state)
