@@ -37,6 +37,7 @@
 
     "Rtv.Notification.AlreadyVoted": "You have already voted for RTV!",
     "Rtv.Notification.InCooldown": "RTV is in cooldown",
+    "Rtv.Notification.InCooldownVerbose": "RTV is in cooldown ({0}s remaining)",
     "Rtv.Notification.Disabled": "RTV is currently disabled",
     "Rtv.Notification.AnotherVoteOngoing": "Another vote is in progress!",
     "Rtv.Notification.AlreadyTriggered": "RTV has already been triggered!",

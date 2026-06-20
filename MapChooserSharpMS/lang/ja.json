@@ -37,6 +37,7 @@
 
     "Rtv.Notification.AlreadyVoted": "既にRTVに投票しています!",
     "Rtv.Notification.InCooldown": "RTVはクールダウン中です",
+    "Rtv.Notification.InCooldownVerbose": "RTVはクールダウン中です (残り{0}秒)",
     "Rtv.Notification.Disabled": "RTVは現在無効化されています",
     "Rtv.Notification.AnotherVoteOngoing": "他の投票が進行中です!",
     "Rtv.Notification.AlreadyTriggered": "RTVは既に実行されています!",

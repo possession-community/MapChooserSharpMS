@@ -30,6 +30,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly Func<bool> _isTimeLimitReached;
     private readonly Func<TimeLimitType?> _timeLimitTypeProvider;
     private readonly MapCycleConVars _conVars;
+    private readonly Func<bool> _shouldStopSourceTv;
     private readonly WorkshopProvisioningService? _workshopProvisioning;
 
     private IMapInformation? _currentMap;
@@ -53,6 +54,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         Func<bool> isTimeLimitReached,
         Func<TimeLimitType?> timeLimitTypeProvider,
         MapCycleConVars conVars,
+        Func<bool> shouldStopSourceTv,
         WorkshopProvisioningService? workshopProvisioning)
     {
         _sharedSystem = sharedSystem;
@@ -64,6 +66,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _isTimeLimitReached = isTimeLimitReached;
         _timeLimitTypeProvider = timeLimitTypeProvider;
         _conVars = conVars;
+        _shouldStopSourceTv = shouldStopSourceTv;
         _workshopProvisioning = workshopProvisioning;
     }
 
@@ -225,8 +228,11 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _sharedSystem.GetModSharp().PushTimer(ChangeNow, seconds, GameTimerFlags.None);
     }
 
-    private static void IssueMapChange(IMapConfig target)
+    private void IssueMapChange(IMapConfig target)
     {
+        if (_shouldStopSourceTv())
+            _sharedSystem.GetModSharp().ServerCommand("tv_stoprecord");
+
         if (target.WorkshopId > 0)
         {
             MapUtil.ChangeToWorkshopMap(target.WorkshopId);

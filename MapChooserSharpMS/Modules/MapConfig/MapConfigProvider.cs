@@ -29,10 +29,7 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
     private Dictionary<string, IReadOnlyCollection<IMapConfigOverrides>>  _mapConfigsNameMapping = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<long, IReadOnlyCollection<IMapConfigOverrides>>  _mapConfigsWorkshopIdMapping = new();
 
-    // Stateless; built once here and shared with the DI container so both
-    // the `IMcsMapConfigProvider.ToolingService` getter and direct DI resolve
-    // return the same instance.
-    public IMapConfigToolingService ToolingService { get; } = new MapConfigToolingService();
+    public IMapConfigToolingService ToolingService { get; private set; } = null!;
 
     public override void RegisterServices(IServiceCollection services)
     {
@@ -45,6 +42,13 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
 
     protected override void OnInitialize()
     {
+        ToolingService = new MapConfigToolingService(() =>
+        {
+            var cp = ServiceProvider.GetService<IMcsPluginConfigProvider>();
+            try { return cp?.PluginConfig.GeneralConfig.ShouldUseAliasMapNameIfAvailable ?? true; }
+            catch { return true; }
+        });
+
         ReloadConfigs();
         SharedSystem.GetModSharp().InstallGameListener(this);
     }

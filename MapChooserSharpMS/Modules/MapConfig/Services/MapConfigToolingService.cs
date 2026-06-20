@@ -8,11 +8,18 @@ namespace MapChooserSharpMS.Modules.MapConfig.Services;
 
 internal sealed class MapConfigToolingService : IMapConfigToolingService
 {
+    private readonly Func<bool> _shouldUseAlias;
+
+    public MapConfigToolingService(Func<bool> shouldUseAlias)
+    {
+        _shouldUseAlias = shouldUseAlias;
+    }
+
     public string ResolveMapDisplayName(IMapConfig mapConfig)
     {
-        string baseName = string.IsNullOrWhiteSpace(mapConfig.MapNameAlias)
-            ? mapConfig.MapName
-            : mapConfig.MapNameAlias;
+        string baseName = _shouldUseAlias() && !string.IsNullOrWhiteSpace(mapConfig.MapNameAlias)
+            ? mapConfig.MapNameAlias
+            : mapConfig.MapName;
 
         string tag = ResolveTag(mapConfig);
         return tag.Length > 0 ? $"[{tag}] {baseName}" : baseName;

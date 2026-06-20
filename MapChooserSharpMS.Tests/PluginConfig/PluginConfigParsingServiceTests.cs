@@ -33,7 +33,6 @@ public class PluginConfigParsingServiceTests
         Assert.True(config.MapCycleConfig.ShouldStopSourceTvRecording);
         Assert.Equal(McsMapConfigExecutionType.StartWithMatch, config.MapCycleConfig.MapConfigExecutionType);
         Assert.Equal("Custom/maps/", config.MapCycleConfig.MapConfigDirectoryPath);
-        Assert.Equal("Custom/groups/", config.MapCycleConfig.GroupConfigDirectoryPath);
 
         // MapVote
         Assert.Equal(8, config.VoteConfig.MaxMenuElements);
@@ -75,7 +74,6 @@ public class PluginConfigParsingServiceTests
         Assert.False(config.MapCycleConfig.ShouldStopSourceTvRecording);
         Assert.Equal(McsMapConfigExecutionType.ExactMatch, config.MapCycleConfig.MapConfigExecutionType);
         Assert.Equal("maps/", config.MapCycleConfig.MapConfigDirectoryPath);
-        Assert.Equal("groups/", config.MapCycleConfig.GroupConfigDirectoryPath);
 
         // MapVote defaults
         Assert.Equal(5, config.VoteConfig.MaxMenuElements);

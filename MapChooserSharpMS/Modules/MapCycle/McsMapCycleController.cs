@@ -135,6 +135,8 @@ internal sealed class McsMapCycleController
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         _workshopProvisioningService = CreateWorkshopProvisioningService();
         var workshopProvisioning = _workshopProvisioningService;
+        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+
         _mapTransitionManager = new McsMapTransitionManager(
             SharedSystem,
             ServiceProvider.GetRequiredService<IMcsMapConfigProvider>(),
@@ -145,9 +147,8 @@ internal sealed class McsMapCycleController
             () => _internalTimeLimitManager?.IsLimitReached == true,
             () => _internalTimeLimitManager?.TimeLimitType,
             _conVars,
+            () => configProvider.PluginConfig.MapCycleConfig.ShouldStopSourceTvRecording,
             workshopProvisioning);
-
-        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         var readOnlyVoteState = ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
 
         _extendService = new McsMapExtendService(

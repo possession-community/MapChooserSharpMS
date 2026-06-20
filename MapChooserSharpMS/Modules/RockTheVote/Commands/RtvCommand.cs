@@ -1,4 +1,6 @@
 using System;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using MapChooserSharpMS.Modules.RockTheVote.Interfaces;
 using MapChooserSharpMS.Shared.RockTheVote;
 using MapChooserSharpMS.Shared.RockTheVote.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,9 +41,22 @@ internal sealed class RtvCommand(IServiceProvider provider) : TnmsAbstractComman
                 break;
 
             case RtvExecutionResult.CommandInCooldown:
-                client.GetPlayerController()?.PrintToChat(
-                    LocalizeWithPluginPrefix(client, "Rtv.Notification.InCooldown"));
+            {
+                var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+                if (configProvider.PluginConfig.GeneralConfig.VerboseCooldownPrint)
+                {
+                    var rtvManager = ServiceProvider.GetRequiredService<IInternalRtvManager>();
+                    int secondsLeft = (int)rtvManager.RtvCommandUnlockTime.TotalSeconds;
+                    client.GetPlayerController()?.PrintToChat(
+                        LocalizeWithPluginPrefix(client, "Rtv.Notification.InCooldownVerbose", secondsLeft));
+                }
+                else
+                {
+                    client.GetPlayerController()?.PrintToChat(
+                        LocalizeWithPluginPrefix(client, "Rtv.Notification.InCooldown"));
+                }
                 break;
+            }
 
             case RtvExecutionResult.CommandDisabled:
                 client.GetPlayerController()?.PrintToChat(

@@ -26,9 +26,8 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         var generalConfig = ParseGeneralConfig(root);
         var mapCycleConfig = ParseMapCycleConfig(root);
         var voteConfig = ParseVoteConfig(root);
-        var nominationConfig = ParseNominationConfig(root);
 
-        return new Models.PluginConfig(voteConfig, nominationConfig, mapCycleConfig, generalConfig);
+        return new Models.PluginConfig(voteConfig, mapCycleConfig, generalConfig);
     }
 
     private GeneralConfig ParseGeneralConfig(TomlDocumentNode root)
@@ -59,13 +58,12 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         bool shouldStopSourceTv = GetBool(cycleNode, "ShouldStopSourceTvRecording"u8, false);
         var executionType = GetEnum(cycleNode, "MapConfigExecutionType"u8, McsMapConfigExecutionType.ExactMatch);
         string mapConfigDir = GetString(cycleNode, "MapConfigDirectoryPath"u8, "maps/");
-        string groupConfigDir = GetString(cycleNode, "GroupConfigDirectoryPath"u8, "groups/");
 
         return new McsMapCycleConfig(
             fallbackMaxExtends, fallbackMaxExtCommandUses,
             fallbackExtendTime, fallbackExtendRounds,
             shouldStopSourceTv, executionType,
-            mapConfigDir, groupConfigDir);
+            mapConfigDir);
     }
 
     private VoteConfig ParseVoteConfig(TomlDocumentNode root)
@@ -110,11 +108,6 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         }
 
         return new VoteSound(countdownStartSound, voteStartSound, voteFinishSound, countdownSounds);
-    }
-
-    private NominationConfig ParseNominationConfig(TomlDocumentNode root)
-    {
-        return new NominationConfig();
     }
 
     #region Helpers

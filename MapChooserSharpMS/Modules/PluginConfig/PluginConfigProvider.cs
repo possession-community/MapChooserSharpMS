@@ -116,9 +116,6 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         # Relative path from the module directory (e.g. if map configs are located in modules/MapChooserSharpMS/maps/, then put maps/)
         MapConfigDirectoryPath = "maps/"
 
-        # Relative path from the module directory (e.g. if group configs are located in modules/MapChooserSharpMS/groups/, then put groups/)
-        GroupConfigDirectoryPath = "groups/"
-
 
         [MapVote]
         # How many maps should be appeared in map vote?
