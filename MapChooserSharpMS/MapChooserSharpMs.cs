@@ -122,11 +122,6 @@ public sealed class MapChooserSharpMs(
 
     public void OnResourcePrecache()
     {
-        PrecacheSoundResources();
-    }
-
-    private void PrecacheSoundResources()
-    {
         if (_pluginConfigProvider is not { } configProvider)
             return;
 
