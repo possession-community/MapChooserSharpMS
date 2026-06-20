@@ -31,6 +31,9 @@ internal sealed class MapConfigExecutionService
 
     public void ExecuteConfigsForMap(IMapConfig mapConfig)
     {
+        _logger.LogInformation(
+            "[MapConfigExec] Starting cfg execution for map={Map}, groups={Groups}, mapDir={MapDir}, groupDir={GroupDir}",
+            mapConfig.MapName, mapConfig.GroupSettings.Count, _mapCfgDirectory, _groupCfgDirectory);
         ExecuteGroupConfigs(mapConfig);
         ExecuteMapConfigs(mapConfig.MapName, _executionTypeProvider());
     }
@@ -38,7 +41,10 @@ internal sealed class MapConfigExecutionService
     private void ExecuteGroupConfigs(IMapConfig mapConfig)
     {
         if (!Directory.Exists(_groupCfgDirectory))
+        {
+            _logger.LogDebug("[MapConfigExec] Group cfg directory does not exist: {Dir}", _groupCfgDirectory);
             return;
+        }
 
         string[] cfgFiles;
         try
@@ -68,7 +74,10 @@ internal sealed class MapConfigExecutionService
     private void ExecuteMapConfigs(string mapName, McsMapConfigExecutionType executionType)
     {
         if (!Directory.Exists(_mapCfgDirectory))
+        {
+            _logger.LogDebug("[MapConfigExec] Map cfg directory does not exist: {Dir}", _mapCfgDirectory);
             return;
+        }
 
         string[] cfgFiles;
         try
@@ -82,6 +91,8 @@ internal sealed class MapConfigExecutionService
         }
 
         var matched = MatchCfgFiles(cfgFiles, mapName, executionType);
+        _logger.LogDebug("[MapConfigExec] Map cfg scan: {Total} files found, {Matched} matched (mode={Mode})",
+            cfgFiles.Length, matched.Count, executionType);
         foreach (string cfgPath in matched)
         {
             ExecuteCfgFile(cfgPath, $"map:{mapName}");
@@ -169,6 +180,7 @@ internal sealed class MapConfigExecutionService
                 continue;
             }
 
+            _logger.LogDebug("[MapConfigExec] > {Command}", trimmed);
             modSharp.ServerCommand(trimmed);
         }
     }
