@@ -99,9 +99,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _nextMap = mapInformation;
         _isNextMapConfirmed = true;
 
-        if (_isTimeLimitReached())
-            ForceEndMatch();
-
         if (oldNextMap?.MapConfig is not { } oldConfig
             || !ReferenceEquals(oldConfig, mapInformation.MapConfig))
         {
