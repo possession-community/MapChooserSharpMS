@@ -35,11 +35,13 @@ internal sealed class MapConfigExecutionService
         _logger.LogInformation(
             "[MapConfigExec] Starting cfg execution for map={Map}, groups={Groups}, mapDir={MapDir}, groupDir={GroupDir}",
             mapConfig.MapName, mapConfig.GroupSettings.Count, _mapCfgDirectory, _groupCfgDirectory);
-        ExecuteGroupConfigs(mapConfig);
-        ExecuteMapConfigs(mapConfig.MapName, _executionTypeProvider());
+
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        ExecuteGroupConfigs(mapConfig, visited);
+        ExecuteMapConfigs(mapConfig.MapName, _executionTypeProvider(), visited);
     }
 
-    private void ExecuteGroupConfigs(IMapConfig mapConfig)
+    private void ExecuteGroupConfigs(IMapConfig mapConfig, HashSet<string> visited)
     {
         if (!Directory.Exists(_groupCfgDirectory))
         {
@@ -65,14 +67,14 @@ internal sealed class MapConfigExecutionService
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 if (string.Equals(fileName, group.GroupName, StringComparison.OrdinalIgnoreCase))
                 {
-                    ExecuteCfgFile(filePath, $"group:{group.GroupName}");
+                    ExecuteCfgFile(filePath, $"group:{group.GroupName}", visited);
                     break;
                 }
             }
         }
     }
 
-    private void ExecuteMapConfigs(string mapName, McsMapConfigExecutionType executionType)
+    private void ExecuteMapConfigs(string mapName, McsMapConfigExecutionType executionType, HashSet<string> visited)
     {
         if (!Directory.Exists(_mapCfgDirectory))
         {
@@ -96,7 +98,7 @@ internal sealed class MapConfigExecutionService
             cfgFiles.Length, matched.Count, executionType);
         foreach (string cfgPath in matched)
         {
-            ExecuteCfgFile(cfgPath, $"map:{mapName}");
+            ExecuteCfgFile(cfgPath, $"map:{mapName}", visited);
         }
     }
 
@@ -133,10 +135,9 @@ internal sealed class MapConfigExecutionService
         return results;
     }
 
-    private void ExecuteCfgFile(string cfgPath, string label)
+    private void ExecuteCfgFile(string cfgPath, string label, HashSet<string> visited)
     {
         var sb = new StringBuilder();
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         FlattenCfgFile(cfgPath, sb, visited, 0);
 
