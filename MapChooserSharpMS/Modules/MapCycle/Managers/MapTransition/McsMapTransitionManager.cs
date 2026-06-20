@@ -305,12 +305,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     public void SetCurrentMap(string mapName)
     {
-        if (_mapConfigProvider.TryGetMapConfig(mapName, out var found))
-        {
-            _currentMap = MapInformation.For(found).Build();
-            return;
-        }
-
         string? addonIds = _sharedSystem.GetModSharp().GetAddonName();
         if (addonIds is not null)
         {
@@ -320,12 +314,18 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
                     && _mapConfigProvider.TryGetMapConfig(addonId, out var byWorkshop))
                 {
                     _logger.LogInformation(
-                        "[MapTransition] Map name '{MapName}' not found, matched by addon ID {AddonId} -> '{ConfigMapName}'",
-                        mapName, addonId, byWorkshop.MapName);
+                        "[MapTransition] Matched current map by addon ID {AddonId} -> '{ConfigMapName}'",
+                        addonId, byWorkshop.MapName);
                     _currentMap = MapInformation.For(byWorkshop).Build();
                     return;
                 }
             }
+        }
+
+        if (_mapConfigProvider.TryGetMapConfig(mapName, out var found))
+        {
+            _currentMap = MapInformation.For(found).Build();
+            return;
         }
 
         _logger.LogInformation(
