@@ -4,6 +4,7 @@ using System.Linq;
 using MapChooserSharpMS.Modules.Audit.Collectors;
 using MapChooserSharpMS.Modules.Audit.Services;
 using MapChooserSharpMS.Modules.EventManager;
+using MapChooserSharpMS.Modules.Services;
 using McsCancellableEvent = MapChooserSharpMS.Shared.Events.McsCancellableEvent;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
@@ -131,6 +132,9 @@ internal sealed class McsAuditController
 
     public void OnGameActivate()
     {
+        if (ServiceProvider.GetRequiredService<IMcsBootPhaseTracker>().IsBootPhase)
+            return;
+
         InitializeCollectors();
 
         var transitionManager = ServiceProvider.GetRequiredService<IMcsInternalMapTransitionManager>();
@@ -179,10 +183,13 @@ internal sealed class McsAuditController
 
     public void OnGameDeactivate()
     {
+        if (_mapPlayCollector is null)
+            return;
+
         if (_tracker.MapEndReason == "unknown")
             _tracker.SetMapEndReason("admin");
 
-        var record = _mapPlayCollector?.BuildRecord();
+        var record = _mapPlayCollector.BuildRecord();
         if (record is not null)
             _persistence.InsertMapPlayFireAndForget(record);
     }

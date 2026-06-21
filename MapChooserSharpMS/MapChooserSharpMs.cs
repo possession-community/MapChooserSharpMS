@@ -5,7 +5,9 @@ using MapChooserSharpMS.Modules.MapVote;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.State;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using MapChooserSharpMS.Modules.Services;
 using MapChooserSharpMS.Shared;
+
 using MapChooserSharpMS.Shared.Ui.Menu;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +46,9 @@ public sealed class MapChooserSharpMs(
     {
         collection.AddSingleton<IMcsInternalMainVoteState>(VoteState);
         collection.AddSingleton<IMcsInternalExtendVoteState>(VoteState);
+
+        var bootTracker = new McsBootPhaseTracker(SharedSystem, Logger);
+        collection.AddSingleton<IMcsBootPhaseTracker>(bootTracker);
     }
 
     protected override void TnmsOnPluginLoad(bool hotReload)

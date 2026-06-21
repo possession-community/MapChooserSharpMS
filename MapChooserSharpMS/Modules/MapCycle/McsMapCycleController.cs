@@ -9,6 +9,7 @@ using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
 using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
+using MapChooserSharpMS.Modules.Services;
 using Wuling.Abstract;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
@@ -62,6 +63,7 @@ internal sealed class McsMapCycleController
     private McsMapCooldownLifecycleService _cooldownLifecycleService = null!;
     private MapConfigExecutionService _mapConfigExecutionService = null!;
     private IMcsPluginConfigProvider _pluginConfigProvider = null!;
+    private IMcsBootPhaseTracker _bootPhaseTracker = null!;
     private WorkshopProvisioningService? _workshopProvisioningService;
 
     private MapCycleMode _mode = MapCycleMode.None;
@@ -138,6 +140,7 @@ internal sealed class McsMapCycleController
         _workshopProvisioningService = CreateWorkshopProvisioningService();
         var workshopProvisioning = _workshopProvisioningService;
         _pluginConfigProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+        _bootPhaseTracker = ServiceProvider.GetRequiredService<IMcsBootPhaseTracker>();
         var configProvider = _pluginConfigProvider;
 
         _mapTransitionManager = new McsMapTransitionManager(
@@ -480,7 +483,7 @@ internal sealed class McsMapCycleController
         }
 
         if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap?.MapConfig is { } playedMap
-            && !IsServerEmptyAndPaused())
+            && !IsServerEmptyAndPaused() && !_bootPhaseTracker.IsBootPhase)
             _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);
 
         _internalTimeLimitManager = null;
@@ -583,7 +586,7 @@ internal sealed class McsMapCycleController
         if (_transitionTracker is null || _internalTimeLimitManager is null)
             return;
 
-        if (IsServerEmptyAndPaused())
+        if (IsServerEmptyAndPaused() || _bootPhaseTracker.IsBootPhase)
             return;
 
         var transitions = _transitionTracker.CheckTransitions();
