@@ -583,6 +583,9 @@ internal sealed class McsMapCycleController
         if (_transitionTracker is null || _internalTimeLimitManager is null)
             return;
 
+        if (IsServerEmptyAndPaused())
+            return;
+
         var transitions = _transitionTracker.CheckTransitions();
 
         foreach (var transition in transitions)
@@ -597,9 +600,6 @@ internal sealed class McsMapCycleController
                     break;
 
                 case TimeLimitTransitionState.LimitReached:
-                    if (IsServerEmptyAndPaused())
-                        return;
-
                     _eventManager.Fire<IMapCycleEventListener>(
                         l => l.OnTimeLimitReached(
                             new EventManager.Events.MapCycle.TimeLimitReachedParams(
