@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
@@ -60,6 +61,7 @@ internal sealed class McsMapCycleController
     private McsMapCooldownCommandService _cooldownCommandService = null!;
     private McsMapCooldownLifecycleService _cooldownLifecycleService = null!;
     private MapConfigExecutionService _mapConfigExecutionService = null!;
+    private IMcsPluginConfigProvider _pluginConfigProvider = null!;
     private WorkshopProvisioningService? _workshopProvisioningService;
 
     private MapCycleMode _mode = MapCycleMode.None;
@@ -135,7 +137,8 @@ internal sealed class McsMapCycleController
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         _workshopProvisioningService = CreateWorkshopProvisioningService();
         var workshopProvisioning = _workshopProvisioningService;
-        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+        _pluginConfigProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+        var configProvider = _pluginConfigProvider;
 
         _mapTransitionManager = new McsMapTransitionManager(
             SharedSystem,
@@ -476,7 +479,8 @@ internal sealed class McsMapCycleController
             _tickTimerId = Guid.Empty;
         }
 
-        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap?.MapConfig is { } playedMap)
+        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap?.MapConfig is { } playedMap
+            && !IsServerEmptyAndPaused())
             _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);
 
         _internalTimeLimitManager = null;
@@ -593,6 +597,9 @@ internal sealed class McsMapCycleController
                     break;
 
                 case TimeLimitTransitionState.LimitReached:
+                    if (IsServerEmptyAndPaused())
+                        return;
+
                     _eventManager.Fire<IMapCycleEventListener>(
                         l => l.OnTimeLimitReached(
                             new EventManager.Events.MapCycle.TimeLimitReachedParams(
@@ -603,5 +610,14 @@ internal sealed class McsMapCycleController
                     break;
             }
         }
+    }
+
+    private bool IsServerEmptyAndPaused()
+    {
+        if (!_pluginConfigProvider.PluginConfig.MapCycleConfig.PauseMapCycleWhenServerEmpty)
+            return false;
+
+        return !SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
+            .Any(c => !c.IsFakeClient && !c.IsHltv);
     }
 }

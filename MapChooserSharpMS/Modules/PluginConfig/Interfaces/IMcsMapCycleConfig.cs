@@ -17,4 +17,6 @@ internal interface IMcsMapCycleConfig
     internal McsMapConfigExecutionType MapConfigExecutionType { get; }
 
     internal string MapConfigDirectoryPath { get; }
+
+    internal bool PauseMapCycleWhenServerEmpty { get; }
 }

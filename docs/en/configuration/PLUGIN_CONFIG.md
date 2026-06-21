@@ -43,6 +43,7 @@ MapConfigDirectoryPath = "maps/"
 | ShouldStopSourceTvRecording | bool | false | Whether to execute tv_stoprecord before map change (prevents SourceTV crashes) |
 | MapConfigExecutionType | enum | ExactMatch | Map cfg execution matching method. `ExactMatch` / `StartWithMatch` / `PartialMatch` |
 | MapConfigDirectoryPath | string | maps/ | Map TOML config directory path (relative to the module directory) |
+| PauseMapCycleWhenServerEmpty | bool | false | When enabled, map transitions and cooldown consumption are skipped while no real players are on the server |
 
 ### Map Config Execution (cfg files)
 

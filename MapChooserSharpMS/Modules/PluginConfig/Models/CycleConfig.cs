@@ -10,7 +10,8 @@ internal class McsMapCycleConfig(
     int fallbackExtendRoundsPerExtends,
     bool shouldStopSourceTvRecording,
     McsMapConfigExecutionType mapConfigExecutionType,
-    string mapConfigDirectoryPath)
+    string mapConfigDirectoryPath,
+    bool pauseMapCycleWhenServerEmpty)
     : IMcsMapCycleConfig
 {
     public int FallbackDefaultMaxExtends { get; } = defaultMaxExtends;
@@ -20,4 +21,5 @@ internal class McsMapCycleConfig(
     public string MapConfigDirectoryPath { get; } = mapConfigDirectoryPath;
     public int FallbackExtendTimePerExtends { get; } = fallbackExtendTimePerExtends;
     public int FallbackExtendRoundsPerExtends { get; } = fallbackExtendRoundsPerExtends;
+    public bool PauseMapCycleWhenServerEmpty { get; } = pauseMapCycleWhenServerEmpty;
 }

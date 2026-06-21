@@ -43,6 +43,7 @@ MapConfigDirectoryPath = "maps/"
 | ShouldStopSourceTvRecording | bool | false | マップ変更前に tv_stoprecord を実行するか (SourceTV クラッシュ防止) |
 | MapConfigExecutionType | enum | ExactMatch | マップ cfg 実行マッチング方式。`ExactMatch` / `StartWithMatch` / `PartialMatch` |
 | MapConfigDirectoryPath | string | maps/ | マップ TOML config ディレクトリのパス (モジュールディレクトリからの相対パス) |
+| PauseMapCycleWhenServerEmpty | bool | false | 有効にすると、サーバーに実プレイヤーがいない間はマップ遷移とクールダウン消費をスキップする |
 
 ### マップ config 実行 (cfg ファイル)
 

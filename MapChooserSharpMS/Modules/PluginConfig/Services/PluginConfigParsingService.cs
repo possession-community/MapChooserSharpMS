@@ -58,12 +58,13 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         bool shouldStopSourceTv = GetBool(cycleNode, "ShouldStopSourceTvRecording"u8, false);
         var executionType = GetEnum(cycleNode, "MapConfigExecutionType"u8, McsMapConfigExecutionType.ExactMatch);
         string mapConfigDir = GetString(cycleNode, "MapConfigDirectoryPath"u8, "maps/");
+        bool pauseWhenEmpty = GetBool(cycleNode, "PauseMapCycleWhenServerEmpty"u8, false);
 
         return new McsMapCycleConfig(
             fallbackMaxExtends, fallbackMaxExtCommandUses,
             fallbackExtendTime, fallbackExtendRounds,
             shouldStopSourceTv, executionType,
-            mapConfigDir);
+            mapConfigDir, pauseWhenEmpty);
     }
 
     private VoteConfig ParseVoteConfig(TomlDocumentNode root)

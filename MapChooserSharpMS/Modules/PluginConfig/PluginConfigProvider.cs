@@ -116,6 +116,10 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         # Relative path from the module directory (e.g. if map configs are located in modules/MapChooserSharpMS/maps/, then put maps/)
         MapConfigDirectoryPath = "maps/"
 
+        # Pause map cycle when the server is empty (no real players).
+        # When enabled, map transitions and cooldown consumption are skipped while the server is empty.
+        PauseMapCycleWhenServerEmpty = false
+
 
         [MapVote]
         # How many maps should be appeared in map vote?
