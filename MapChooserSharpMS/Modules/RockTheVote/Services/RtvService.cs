@@ -223,22 +223,23 @@ internal sealed class RtvService(
             .GetRequiredService<IMcsPluginConfigProvider>()
             .PluginConfig.GeneralConfig.RtvMapChangeBehaviour;
 
+        var internalTransitionManager = ServiceProvider
+            .GetRequiredService<MapCycle.Managers.MapTransition.Interfaces.IMcsInternalMapTransitionManager>();
+
         switch (behaviour)
         {
             case RtvMapChangeBehaviourType.Cs2EndMatchScreen:
                 BroadcastToAll("Rtv.Broadcast.ChangeToNextMapCs2EndMatchScreen", mapDisplayName);
-                transitionManager.ChangeMapOnNextRoundEnd = false;
-                transitionManager.ForceEndMatch();
+                internalTransitionManager.BeginMapTransition(
+                    MapCycle.Managers.MapTransition.MapTransitionTrigger.AdminForceEnd);
                 break;
 
             case RtvMapChangeBehaviourType.ImmediatelyWithTime:
             default:
                 float timing = conVars.MapChangeTimingAfterRtvSuccess.GetFloat();
                 BroadcastToAll("Rtv.Broadcast.ChangeToNextMapImmediately", mapDisplayName, timing);
-
-                var internalTransitionManager = ServiceProvider
-                    .GetRequiredService<MapCycle.Managers.MapTransition.Interfaces.IMcsInternalMapTransitionManager>();
-                internalTransitionManager.TerminateAndTransition(timing);
+                internalTransitionManager.BeginMapTransition(
+                    MapCycle.Managers.MapTransition.MapTransitionTrigger.RtvImmediate, timing);
                 break;
         }
     }

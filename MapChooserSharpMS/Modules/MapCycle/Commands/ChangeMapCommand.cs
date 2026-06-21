@@ -1,5 +1,6 @@
 using System;
 using MapChooserSharpMS.Modules.Commands;
+using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
@@ -54,6 +55,6 @@ internal sealed class ChangeMapCommand(IServiceProvider provider) : McsCommandBa
         Logger.LogInformation("Admin {Executor} changing map to {Map} (Workshop ID: {WorkshopId})",
             executorName, mapConfig.MapName, mapConfig.WorkshopId);
 
-        transitionManager.TerminateAndTransition();
+        transitionManager.BeginMapTransition(MapTransitionTrigger.AdminForceEnd);
     }
 }

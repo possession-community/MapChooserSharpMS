@@ -327,22 +327,11 @@ internal sealed class McsMapCycleController
     /// </summary>
     private void OnGameIntermission()
     {
-        var nextMap = _mapTransitionManager.NextMap;
-        if (nextMap is null)
+        if (_mapTransitionManager.NextMap is null)
             return;
 
-        if (_mapTransitionManager.ChangeMapOnNextRoundEnd || _mapTransitionManager.IsIntermissionFired)
-            return;
-
-        float extraTime = SharedSystem.GetConVarManager()
-            .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f;
-        float delay = Math.Max(extraTime - 1.0f, 0f);
-
-        var intermissionParams = new EventManager.Events.MapCycle.McsIntermissionParams(
-            Plugin, this, nextMap.MapConfig);
-        _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
-
-        _mapTransitionManager.TransitionToNextMap(delay);
+        _mapTransitionManager.BeginMapTransition(
+            Managers.MapTransition.MapTransitionTrigger.GameIntermission);
     }
 
     #endregion
@@ -609,7 +598,8 @@ internal sealed class McsMapCycleController
                                 Plugin, this, _internalTimeLimitManager.TimeLimitType)));
 
                     if (_mapTransitionManager.IsNextMapConfirmed)
-                        _mapTransitionManager.ForceEndMatch();
+                        _mapTransitionManager.BeginMapTransition(
+                            Managers.MapTransition.MapTransitionTrigger.TimeLimitReached);
                     break;
             }
         }
