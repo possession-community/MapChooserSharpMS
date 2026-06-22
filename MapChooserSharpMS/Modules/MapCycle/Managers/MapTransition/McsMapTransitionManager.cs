@@ -90,7 +90,12 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     public unsafe void BeginMapTransition(MapTransitionTrigger trigger, float? delayOverride = null)
     {
         if (_intermissionFired || _nextMap is null)
+        {
+            _logger.LogWarning(
+                "[MapTransition] BeginMapTransition({Trigger}) skipped: _intermissionFired={Fired}, _nextMap={HasNext}",
+                trigger, _intermissionFired, _nextMap is not null);
             return;
+        }
 
         _logger.LogInformation("[MapTransition] BeginMapTransition triggered by {Trigger}", trigger);
 
@@ -127,6 +132,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
             modSharp.InvokeFrameAction(() =>
             {
                 nint gameRulesPtr = modSharp.GetGameRules().GetAbsPtr();
+                _logger.LogInformation("[MapTransition] Calling BeginIntermission at 0x{FnAddr:X} with GameRules 0x{GR:X}",
+                    (nint)_beginIntermission, gameRulesPtr);
                 _beginIntermission(gameRulesPtr);
             });
 
@@ -407,6 +414,9 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     public void ClearState()
     {
+        _logger.LogInformation(
+            "[MapTransition] ClearState: _intermissionFired was {Fired}, ChangeMapOnNextRoundEnd was {RoundEnd}",
+            _intermissionFired, ChangeMapOnNextRoundEnd);
         _currentMap = null;
         _nextMap = null;
         _isNextMapConfirmed = false;
