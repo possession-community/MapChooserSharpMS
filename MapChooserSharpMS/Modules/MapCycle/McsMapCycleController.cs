@@ -330,6 +330,9 @@ internal sealed class McsMapCycleController
         if (_mapTransitionManager.NextMap is null)
             return;
 
+        if (_mapTransitionManager.ChangeMapOnNextRoundEnd || _mapTransitionManager.IsIntermissionFired)
+            return;
+
         _mapTransitionManager.BeginMapTransition(
             Managers.MapTransition.MapTransitionTrigger.GameIntermission);
     }

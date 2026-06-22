@@ -92,82 +92,110 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         if (_intermissionFired || _nextMap is null)
             return;
 
-        _intermissionFired = true;
-
         _logger.LogInformation("[MapTransition] BeginMapTransition triggered by {Trigger}", trigger);
-
-        var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap.MapConfig);
-        _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
-
-        var modSharp = _sharedSystem.GetModSharp();
 
         switch (trigger)
         {
             case MapTransitionTrigger.TimeLimitReached:
             case MapTransitionTrigger.AdminForceEnd:
-                if (_conVars.EndMatchImmediately.GetInt32() != 0 && _beginIntermission != null)
-                {
-                    modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
-                    modSharp.InvokeFrameAction(() =>
-                    {
-                        nint gameRulesPtr = modSharp.GetGameRules().GetAbsPtr();
-                        _beginIntermission(gameRulesPtr);
-                    });
-                }
-                else
-                {
-                    ChangeMapOnNextRoundEnd = true;
-                }
+                HandleEndMatch(delayOverride);
                 break;
 
             case MapTransitionTrigger.RtvImmediate:
-            {
-                float delay = delayOverride ?? _conVars.TransitionDelay.GetFloat();
-                string mapDisplay = ResolveDisplayName(_nextMap.MapConfig);
-                for (int i = 0; i < 3; i++)
-                    BroadcastToAll("MapCycle.Broadcast.MapChanging", mapDisplay);
-
-                if (TnmsPluginFoundation.Utils.Entity.GameRulesUtil.IsWarmup())
-                {
-                    modSharp.ServerCommand("mp_warmup_end");
-                    modSharp.PushTimer(() => ForceTerminateRound(delay), 1.0, GameTimerFlags.StopOnMapEnd);
-                }
-                else
-                {
-                    ForceTerminateRound(delay);
-                }
+                HandleRtvImmediate(delayOverride ?? _conVars.TransitionDelay.GetFloat());
                 break;
-            }
 
             case MapTransitionTrigger.RtvRoundEnd:
-                ChangeMapOnNextRoundEnd = true;
+                HandleDeferred();
                 break;
 
             case MapTransitionTrigger.GameIntermission:
+                HandleGameIntermission(delayOverride);
                 break;
         }
-
-        float transitionDelay = delayOverride ?? ResolveTransitionDelay(trigger);
-        TransitionToNextMap(transitionDelay);
     }
 
-    private float ResolveTransitionDelay(MapTransitionTrigger trigger)
+    private unsafe void HandleEndMatch(float? delayOverride)
     {
-        return trigger switch
+        if (_conVars.EndMatchImmediately.GetInt32() != 0 && _beginIntermission != null)
         {
-            MapTransitionTrigger.TimeLimitReached or MapTransitionTrigger.AdminForceEnd
-                => Math.Max((_sharedSystem.GetConVarManager()
-                    .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f) - 1.0f, 0f),
-            MapTransitionTrigger.GameIntermission
-                => Math.Max((_sharedSystem.GetConVarManager()
-                    .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f) - 1.0f, 0f),
-            _ => _conVars.TransitionDelay.GetFloat(),
-        };
+            _intermissionFired = true;
+            FireIntermissionEvent();
+
+            var modSharp = _sharedSystem.GetModSharp();
+            modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
+            modSharp.InvokeFrameAction(() =>
+            {
+                nint gameRulesPtr = modSharp.GetGameRules().GetAbsPtr();
+                _beginIntermission(gameRulesPtr);
+            });
+
+            float delay = delayOverride ?? ResolveIntermissionDelay();
+            TransitionToNextMap(delay);
+        }
+        else
+        {
+            ChangeMapOnNextRoundEnd = true;
+            _logger.LogInformation("[MapTransition] Deferred to round end (EndMatchImmediately=0 or BeginIntermission unavailable)");
+        }
+    }
+
+    private void HandleRtvImmediate(float delay)
+    {
+        _intermissionFired = true;
+        FireIntermissionEvent();
+
+        string mapDisplay = ResolveDisplayName(_nextMap!.MapConfig);
+        for (int i = 0; i < 3; i++)
+            BroadcastToAll("MapCycle.Broadcast.MapChanging", mapDisplay);
+
+        if (TnmsPluginFoundation.Utils.Entity.GameRulesUtil.IsWarmup())
+        {
+            _sharedSystem.GetModSharp().ServerCommand("mp_warmup_end");
+            _sharedSystem.GetModSharp().PushTimer(() => ForceTerminateRound(delay), 1.0, GameTimerFlags.StopOnMapEnd);
+            TransitionToNextMap(delay + 2.0f);
+        }
+        else
+        {
+            ForceTerminateRound(delay);
+            TransitionToNextMap(delay);
+        }
+    }
+
+    private void HandleDeferred()
+    {
+        _intermissionFired = true;
+        FireIntermissionEvent();
+
+        float delay = _conVars.TransitionDelay.GetFloat();
+        TransitionToNextMap(delay);
+    }
+
+    private void HandleGameIntermission(float? delayOverride)
+    {
+        _intermissionFired = true;
+        FireIntermissionEvent();
+
+        float delay = delayOverride ?? ResolveIntermissionDelay();
+        TransitionToNextMap(delay);
+    }
+
+    private void FireIntermissionEvent()
+    {
+        var intermissionParams = new McsIntermissionParams(_plugin, _moduleBase, _nextMap!.MapConfig);
+        _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
+    }
+
+    private float ResolveIntermissionDelay()
+    {
+        float extraTime = _sharedSystem.GetConVarManager()
+            .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f;
+        return Math.Max(extraTime - 1.0f, 0f);
     }
 
     #endregion
 
-    #region OnRoundEnd — delegates to BeginMapTransition
+    #region OnRoundEnd — handles deferred transitions
 
     public void OnRoundEnd()
     {
