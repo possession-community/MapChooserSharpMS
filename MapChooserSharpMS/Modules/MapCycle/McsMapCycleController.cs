@@ -150,8 +150,6 @@ internal sealed class McsMapCycleController
             Plugin,
             this,
             _eventManager,
-            () => _internalTimeLimitManager?.IsLimitReached == true,
-            () => _internalTimeLimitManager?.TimeLimitType,
             _conVars,
             () => configProvider.PluginConfig.MapCycleConfig.ShouldStopSourceTvRecording,
             workshopProvisioning);
@@ -242,6 +240,8 @@ internal sealed class McsMapCycleController
     {
         TearDownCurrentMap();
 
+        if (_mapTransitionManager is McsMapTransitionManager concreteManager)
+            concreteManager.UninstallHook();
         _workshopProvisioningService?.Dispose();
         _eventManager.RemoveListener<IMapVoteEventListener>(this);
         SharedSystem.GetModSharp().RemoveGameListener(this);
@@ -440,6 +440,7 @@ internal sealed class McsMapCycleController
 
         cvm.FindConVar("mp_timelimit")?.Set(99999999.0f);
         cvm.FindConVar("mp_maxrounds")?.Set(99999999);
+        cvm.FindConVar("mp_match_end_changelevel")?.Set(0);
 
         _tickTimerId = SharedSystem.GetModSharp().PushTimer(
             OnTimerTick,

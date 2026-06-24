@@ -58,6 +58,7 @@
     "MapCycle.Broadcast.MapTransitionPending": "{lime}{0}{default} へのマップ移動に時間がかかっています...",
     "MapCycle.Broadcast.MapTransitionRetry": "{lime}{0}{default} への変更が完了していません — 再試行します ({1}/{2})...",
     "MapCycle.Broadcast.MapTransitionFallbackMap": "{lime}{0}{default} への変更に失敗したため {lime}{1}{default} へ移動します",
+    "MapCycle.Panel.MapTransition": "<font class='fontSize-xxl fontWeight-Medium stratum-bold-mono' color='green'>次のマップ: {0}</font><br><br><br><br><br><br>",
     "Rtv.Broadcast.ChangeToNextMapCs2EndMatchScreen": "Rock The Voteによって {lime}{0}{default} にマップを変更します!",
     "Rtv.Broadcast.Admin.ForceRtv": "管理者 {0} が強制的にRTVを使用しました",
     "Rtv.Broadcast.Admin.EnabledRtv": "管理者 {0} がRTVを{green}有効化{default}しました",

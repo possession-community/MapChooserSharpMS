@@ -7,11 +7,12 @@ using MapChooserSharpMS.Modules.WorkshopSync;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
-using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Shared.WorkshopManagement;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared;
 using Sharp.Shared.Enums;
+using Sharp.Shared.Hooks;
 using TnmsPluginFoundation;
 using TnmsPluginFoundation.Extensions.Client;
 using TnmsPluginFoundation.Models.Plugin;
@@ -27,19 +28,20 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly TnmsPlugin _plugin;
     private readonly PluginModuleBase _moduleBase;
     private readonly IInternalEventManager _eventManager;
-    private readonly Func<bool> _isTimeLimitReached;
-    private readonly Func<TimeLimitType?> _timeLimitTypeProvider;
     private readonly MapCycleConVars _conVars;
     private readonly Func<bool> _shouldStopSourceTv;
     private readonly WorkshopProvisioningService? _workshopProvisioning;
+    private readonly IDetourHook? _goToIntermissionHook;
 
-    private readonly unsafe delegate* unmanaged<nint, void> _beginIntermission;
+    private static McsMapTransitionManager? _instance;
+    private static unsafe delegate* unmanaged<nint, byte, void> _goToIntermissionTrampoline;
 
     private IMapInformation? _currentMap;
     private IMapInformation? _nextMap;
     private bool _isNextMapConfirmed;
     private bool _intermissionFired;
     private Guid _retryTimerId;
+    private Guid _transitionTimerId;
     private int _changeAttemptsUsed;
 
     public McsMapTransitionManager(
@@ -49,8 +51,6 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         TnmsPlugin plugin,
         PluginModuleBase moduleBase,
         IInternalEventManager eventManager,
-        Func<bool> isTimeLimitReached,
-        Func<TimeLimitType?> timeLimitTypeProvider,
         MapCycleConVars conVars,
         Func<bool> shouldStopSourceTv,
         WorkshopProvisioningService? workshopProvisioning)
@@ -61,21 +61,30 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _plugin = plugin;
         _moduleBase = moduleBase;
         _eventManager = eventManager;
-        _isTimeLimitReached = isTimeLimitReached;
-        _timeLimitTypeProvider = timeLimitTypeProvider;
         _conVars = conVars;
         _shouldStopSourceTv = shouldStopSourceTv;
         _workshopProvisioning = workshopProvisioning;
+        _instance = this;
 
         unsafe
         {
             var server = sharedSystem.GetLibraryModuleManager().Server;
-            nint fnAddr = server.FindFunction("GMR_BeginIntermission\n");
-            if (fnAddr == nint.Zero)
-                logger.LogError("[MapTransition] Failed to resolve BeginIntermission function address");
+            nint goToIntermissionAddr = server.FindFunction("Going to intermission...\n");
+            if (goToIntermissionAddr != nint.Zero)
+            {
+                logger.LogInformation("[MapTransition] Resolved GoToIntermission at 0x{Addr:X}", goToIntermissionAddr);
+                var hookManager = sharedSystem.GetHookManager();
+                _goToIntermissionHook = hookManager.CreateDetourHook();
+                _goToIntermissionHook.Prepare(goToIntermissionAddr,
+                    (nint)(delegate* unmanaged[Cdecl]<nint, byte, void>)&OnGoToIntermissionDetour);
+                _goToIntermissionHook.Install();
+                _goToIntermissionTrampoline = (delegate* unmanaged<nint, byte, void>)_goToIntermissionHook.Trampoline;
+                logger.LogInformation("[MapTransition] GoToIntermission detour installed");
+            }
             else
-                logger.LogInformation("[MapTransition] Resolved BeginIntermission at 0x{Addr:X}", fnAddr);
-            _beginIntermission = (delegate* unmanaged<nint, void>)fnAddr;
+            {
+                logger.LogError("[MapTransition] Failed to resolve GoToIntermission — detour not installed");
+            }
         }
     }
 
@@ -87,7 +96,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     #region BeginMapTransition — single entry point
 
-    public unsafe void BeginMapTransition(MapTransitionTrigger trigger, float? delayOverride = null)
+    public void BeginMapTransition(MapTransitionTrigger trigger, float? delayOverride = null)
     {
         if (_intermissionFired || _nextMap is null)
         {
@@ -120,71 +129,69 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         }
     }
 
-    private unsafe void HandleEndMatch(float? delayOverride)
+    private void HandleEndMatch(float? delayOverride)
     {
-        if (_conVars.EndMatchImmediately.GetInt32() != 0 && _beginIntermission != null)
+        if (_conVars.EndMatchImmediately.GetInt32() != 0)
         {
-            _intermissionFired = true;
-            FireIntermissionEvent();
-
-            var modSharp = _sharedSystem.GetModSharp();
-            modSharp.GetGameRules().TerminateRound(0.0f, RoundEndReason.RoundDraw);
-            modSharp.InvokeFrameAction(() =>
-            {
-                nint gameRulesPtr = modSharp.GetGameRules().GetAbsPtr();
-                _logger.LogInformation("[MapTransition] Calling BeginIntermission at 0x{FnAddr:X} with GameRules 0x{GR:X}",
-                    (nint)_beginIntermission, gameRulesPtr);
-                _beginIntermission(gameRulesPtr);
-            });
-
             float delay = delayOverride ?? ResolveIntermissionDelay();
+            ForceMatchEnd(delay);
+            ShowMapTransitionPanel(delay);
             TransitionToNextMap(delay);
         }
         else
         {
             ChangeMapOnNextRoundEnd = true;
-            _logger.LogInformation("[MapTransition] Deferred to round end (EndMatchImmediately=0 or BeginIntermission unavailable)");
+            ForceMatchLimitsForRoundEnd();
+            _logger.LogInformation("[MapTransition] Deferred to round end");
         }
     }
 
     private void HandleRtvImmediate(float delay)
     {
-        _intermissionFired = true;
-        FireIntermissionEvent();
-
         string mapDisplay = ResolveDisplayName(_nextMap!.MapConfig);
         for (int i = 0; i < 3; i++)
             BroadcastToAll("MapCycle.Broadcast.MapChanging", mapDisplay);
 
         if (TnmsPluginFoundation.Utils.Entity.GameRulesUtil.IsWarmup())
-        {
             _sharedSystem.GetModSharp().ServerCommand("mp_warmup_end");
-            _sharedSystem.GetModSharp().PushTimer(() => ForceTerminateRound(delay), 1.0, GameTimerFlags.StopOnMapEnd);
-            TransitionToNextMap(delay + 2.0f);
-        }
-        else
-        {
-            ForceTerminateRound(delay);
-            TransitionToNextMap(delay);
-        }
+
+        ForceMatchEnd(delay);
+        ShowMapTransitionPanel(delay);
+        TransitionToNextMap(delay);
     }
 
     private void HandleDeferred()
     {
-        _intermissionFired = true;
-        FireIntermissionEvent();
-
         float delay = _conVars.TransitionDelay.GetFloat();
+        ShowMapTransitionPanel(delay);
         TransitionToNextMap(delay);
     }
 
     private void HandleGameIntermission(float? delayOverride)
     {
-        _intermissionFired = true;
-        FireIntermissionEvent();
 
         float delay = delayOverride ?? ResolveIntermissionDelay();
+        ShowMapTransitionPanel(delay);
         TransitionToNextMap(delay);
+    }
+
+    private void ForceMatchEnd(float terminateDelay)
+    {
+        var cvm = _sharedSystem.GetConVarManager();
+        cvm.FindConVar("mp_timelimit")?.Set(0.01f);
+        cvm.FindConVar("mp_maxrounds")?.Set(1);
+        _logger.LogInformation("[MapTransition] Set mp_timelimit=0.01, mp_maxrounds=1");
+
+        _logger.LogInformation("[MapTransition] TerminateRound in {Delay}s", terminateDelay);
+        TnmsPluginFoundation.Utils.Entity.GameRulesUtil.TerminateRound(terminateDelay, RoundEndReason.RoundDraw);
+    }
+
+    private void ForceMatchLimitsForRoundEnd()
+    {
+        var cvm = _sharedSystem.GetConVarManager();
+        cvm.FindConVar("mp_timelimit")?.Set(0.01f);
+        cvm.FindConVar("mp_maxrounds")?.Set(1);
+        _logger.LogInformation("[MapTransition] Set mp_timelimit=0.01, mp_maxrounds=1 (deferred)");
     }
 
     private void FireIntermissionEvent()
@@ -195,9 +202,10 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     private float ResolveIntermissionDelay()
     {
-        float extraTime = _sharedSystem.GetConVarManager()
-            .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f;
-        return Math.Max(extraTime - 1.0f, 0f);
+        var cvm = _sharedSystem.GetConVarManager();
+        float voteTime = cvm.FindConVar("mp_endmatch_votenextleveltime")?.GetFloat() ?? 10.0f;
+        float restartDelay = cvm.FindConVar("mp_match_restart_delay")?.GetFloat() ?? 5.0f;
+        return Math.Max(Math.Max(voteTime, restartDelay) - 3.0f, 0f);
     }
 
     #endregion
@@ -360,7 +368,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
             return;
         }
 
-        _sharedSystem.GetModSharp().PushTimer(ChangeNow, seconds, GameTimerFlags.None);
+        _transitionTimerId = _sharedSystem.GetModSharp().PushTimer(
+            ChangeNow, seconds, GameTimerFlags.StopOnMapEnd);
     }
 
     private void IssueMapChange(IMapConfig target)
@@ -422,18 +431,50 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _isNextMapConfirmed = false;
         _intermissionFired = false;
         ChangeMapOnNextRoundEnd = false;
+        StopTransitionTimer();
         StopRetryWatchdog(resetAttempts: true);
     }
 
     #endregion
 
-    #region Internal helpers
+    #region GoToIntermission detour
 
-    private void ForceTerminateRound(float terminateDelay)
+    [UnmanagedCallersOnly(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
+    private static unsafe void OnGoToIntermissionDetour(nint gameRules, byte bAbortedMatch)
     {
-        _logger.LogInformation("[MapTransition] Forcing round termination in {Delay}s", terminateDelay);
-        TnmsPluginFoundation.Utils.Entity.GameRulesUtil.TerminateRound(terminateDelay, RoundEndReason.RoundDraw);
+        var self = _instance;
+        if (self is null)
+        {
+            _goToIntermissionTrampoline(gameRules, bAbortedMatch);
+            return;
+        }
+
+        if (self._intermissionFired)
+        {
+            self._logger.LogInformation("[MapTransition] GoToIntermission blocked (already fired)");
+            return;
+        }
+
+        self._intermissionFired = true;
+        self._logger.LogInformation("[MapTransition] GoToIntermission allowed (first call)");
+
+        if (self._nextMap is not null)
+            self.FireIntermissionEvent();
+
+        _goToIntermissionTrampoline(gameRules, bAbortedMatch);
     }
+
+    public void UninstallHook()
+    {
+        _goToIntermissionHook?.Uninstall();
+        _goToIntermissionHook?.Dispose();
+        if (_instance == this)
+            _instance = null;
+    }
+
+    #endregion
+
+    #region Internal helpers
 
     private void ArmEarlyTransitionNotice(IMapConfig target)
     {
@@ -476,6 +517,15 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         }, interval, GameTimerFlags.Repeatable | GameTimerFlags.StopOnMapEnd);
     }
 
+    private void StopTransitionTimer()
+    {
+        if (_transitionTimerId != Guid.Empty)
+        {
+            _sharedSystem.GetModSharp().StopTimer(_transitionTimerId);
+            _transitionTimerId = Guid.Empty;
+        }
+    }
+
     private void StopRetryWatchdog(bool resetAttempts)
     {
         if (_retryTimerId != Guid.Empty)
@@ -486,6 +536,67 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
         if (resetAttempts)
             _changeAttemptsUsed = 0;
+    }
+
+    private void ShowMapTransitionPanel(float duration)
+    {
+        if (_nextMap is null)
+            return;
+
+        string mapDisplay = ResolveDisplayName(_nextMap.MapConfig);
+        var em = _sharedSystem.GetEventManager();
+        var clients = _sharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+
+        foreach (var client in clients)
+        {
+            if (client.IsFakeClient || client.IsHltv)
+                continue;
+
+            var controller = client.GetPlayerController();
+            if (controller is null)
+                continue;
+
+            string html = _plugin.LocalizeStringForPlayer(
+                client, "MapCycle.Panel.MapTransition", mapDisplay);
+
+            var gameEvent = em.CreateEvent("cs_win_panel_round", true);
+            if (gameEvent is null)
+                continue;
+
+            gameEvent.SetBool("show_timer_defend", false);
+            gameEvent.SetBool("show_timer_attack", false);
+            gameEvent.SetInt("timer_time", -1);
+            gameEvent.SetInt("final_event", -1);
+            gameEvent.SetPlayer("funfact_player", controller);
+            gameEvent.SetString("funfact_token", html);
+            gameEvent.FireToClient(client);
+            gameEvent.Dispose();
+        }
+
+        if (duration > 0f)
+        {
+            _sharedSystem.GetModSharp().PushTimer(
+                CleanupTransitionPanel, duration, GameTimerFlags.StopOnMapEnd);
+        }
+    }
+
+    private void CleanupTransitionPanel()
+    {
+        var em = _sharedSystem.GetEventManager();
+        var clients = _sharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+
+        foreach (var client in clients)
+        {
+            if (client.IsFakeClient || client.IsHltv)
+                continue;
+
+            var gameEvent = em.CreateEvent("round_freeze_end", true);
+            if (gameEvent is null)
+                continue;
+
+            gameEvent.FireToClient(client);
+            gameEvent.Dispose();
+        }
     }
 
     private string ResolveDisplayName(IMapConfig map)

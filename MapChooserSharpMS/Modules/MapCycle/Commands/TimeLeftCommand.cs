@@ -36,15 +36,25 @@ internal sealed class TimeLeftCommand(IServiceProvider provider) : TnmsAbstractC
             return;
         }
 
-        // Exhausted limit reads as "Last round!" like old MCS, not a raw
-        // sentinel string from the manager.
+        string lastRound = LocalizeString(client, "Word.LastRound");
+
+        if (_controller.MapTransitionManager.ChangeMapOnNextRoundEnd)
+        {
+            string key2 = manager.TimeLimitType == TimeLimitType.Time
+                ? "MapCycle.Command.Notification.TimeLeft"
+                : "MapCycle.Command.Notification.RoundsLeft";
+            PrintMessageToServerOrPlayerChat(client,
+                LocalizeWithPluginPrefix(client, key2, lastRound));
+            return;
+        }
+
         string formatted = manager switch
         {
             ITimeBasedTimeLimitManager time => time.TimeLeft <= TimeSpan.Zero
-                ? LocalizeString(client, "Word.LastRound")
+                ? lastRound
                 : time.GetFormattedTimeLeft(),
             IRoundTimeLimitManager round => round.RoundsLeft <= 0
-                ? LocalizeString(client, "Word.LastRound")
+                ? lastRound
                 : round.GetFormattedRoundsLeft(),
             _ => "?"
         };
