@@ -118,7 +118,7 @@ RTV イベントのリスナーインターフェースです。`IMcsRtvControll
 
 | メソッド | 戻り値 | 説明 |
 |---|---|---|
-| `OnClientRtvCast(IClientRtvCastParams)` | `bool` | プレイヤーが RTV に参加しようとしたとき。`true` を返すとキャンセル |
-| `OnClientRtvUnCast(IClientRtvUnCastParams)` | `bool` | プレイヤーが RTV から離脱しようとしたとき。`true` を返すとキャンセル |
-| `OnForceRtv(IForceRtvParam)` | `bool` | 強制 RTV が発動されようとしたとき。`true` を返すとキャンセル |
+| `OnClientRtvCast(IClientRtvCastParams)` | `McsCancellableEvent` | プレイヤーが RTV に参加しようとしたとき。`Stop` を返すとキャンセル |
+| `OnClientRtvUnCast(IClientRtvUnCastParams)` | `McsCancellableEvent` | プレイヤーが RTV から離脱しようとしたとき。`Stop` を返すとキャンセル |
+| `OnForceRtv(IForceRtvParam)` | `McsCancellableEvent` | 強制 RTV が発動されようとしたとき。`Stop` を返すとキャンセル |
 | `OnRtvConfirmed(IRtvConfirmedParams)` | `void` | RTV が確定したとき (閾値到達または強制 RTV)。キャンセル不可。MapVoteController はこのイベントを購読してマップ投票を開始する |

@@ -147,7 +147,7 @@ Even Workshop maps not registered in the config can be used by fetching informat
 
 | Command | Description |
 |---|---|
-| `!setnextmap <workshopId>` | Set as next map (name search first, then API fetch if numeric and not found) |
+| `!setnextwsmap <workshopId>` | Set as next map by Workshop ID (API fetch if not in config) |
 | `!wsmap <workshopId>` | Immediately change map (API fetch + transition watchdog) |
 | `!nominate_addwsmap <workshopId>` | Add as admin nomination |
 

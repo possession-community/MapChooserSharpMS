@@ -164,8 +164,8 @@ Listener interface registered via `IMcsMapVoteController.InstallEventListener`. 
 
 | Method | Return Type | Description |
 |---|---|---|
-| `OnMapVoteStart(IMapVoteStartParams)` | `bool` | Fires before a vote starts. Return `true` to cancel |
-| `OnRandomMapPick(IMapVoteRandomMapPickParams)` | `List<IMapConfig>` | Fires during random map selection. Return a non-empty list to override the vote candidates |
+| `OnMapVoteStart(IMapVoteStartParams)` | `McsCancellableEvent` | Fires before a vote starts. Return `Stop` to cancel |
+| `OnRandomMapPick(IMapVoteRandomMapPickParams)` | `McsValueOverrideEvent<List<IMapConfig>>` | Fires during random map selection. Return a value to override the vote candidates, or `NoOverride` to use the default |
 | `OnMapVoteFinished(IMapVoteFinishedEventParams)` | `void` | Fires when the vote completes (before individual result events) |
 | `OnMapVoteCancelled(IMapVoteCancelledParams)` | `void` | Fires when the vote is cancelled |
 | `OnMapExtended(IMapVoteExtendParams)` | `void` | Fires when the vote result is map extension |

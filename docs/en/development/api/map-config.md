@@ -27,6 +27,7 @@ Access via `IMapChooserSharpShared.McsMapConfigProvider`.
 |---|---|---|
 | `ResolveMapDisplayName(IMapConfig)` | `string` | Returns `MapNameAlias` if set, otherwise `MapName` |
 | `GetHighestCooldown(IMapConfig)` | `int` | Returns the most restrictive cooldown across the map and all its groups |
+| `FindMapsBySearchTag(string, IEnumerable<IMapConfig>)` | `List<IMapConfig>` | Returns maps whose `SearchTags` contain the given tag |
 
 ---
 
@@ -41,6 +42,7 @@ Represents an individual map's configuration. Inherits from `IBaseMapConfig`.
 | `MapDescription` | `string` | Description displayed by the `!mapinfo` command |
 | `WorkshopId` | `long` | Steam Workshop ID. `0` when not specified |
 | `GroupSettings` | `List<IMapGroupConfig>` | Groups this map belongs to. Earlier groups in the list have higher priority |
+| `SearchTags` | `IReadOnlyList<string>` | Tags for nomination search (e.g. `!nominate <tag>`). Group tags are merged into maps |
 
 Properties inherited from `IBaseMapConfig`:
 
@@ -70,6 +72,7 @@ Represents group-level configuration. Inherits all `IBaseMapConfig` properties p
 | `ShortGroupName` | `string` | Short display tag for the vote screen. Maximum 4 characters. Values longer than 4 characters in TOML are truncated to 4 |
 | `MapCooldownOverride` | `int` | When set to a positive value, overrides the cooldown of maps belonging to this group. Takes priority over the map's own `Cooldown` |
 | `NominationLimit` | `int` | Maximum number of maps that can be nominated from this group. `0` = unlimited |
+| `SearchTags` | `IReadOnlyList<string>` | Tags for nomination search at the group level. Merged into each map's `SearchTags` |
 
 ---
 
@@ -84,6 +87,7 @@ Nomination restriction rules that can be configured on maps and groups.
 | `ProhibitAdminNomination` | `bool` | When `true`, even admin nomination via `!nominate_addmap` is rejected (console nomination remains possible) |
 | `DaysAllowed` | `IReadOnlyList<DayOfWeek>` | Days of the week when nomination is allowed. Empty list = all days |
 | `AllowedTimeRanges` | `IReadOnlyList<ITimeRange>` | Time-of-day windows when nomination is allowed. Empty list = all times |
+| `RestrictToAllowedUsersOnly` | `bool` | When `true`, only players with `mcs.nominate.*.allow.*` permission can nominate this map. Default `false` |
 
 ### ITimeRange
 

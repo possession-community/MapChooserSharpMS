@@ -76,8 +76,13 @@
 | `IsGreaterThanMinPlayers(IMapConfig)` | `bool` | 現在のプレイヤー数が最小人数以上か |
 | `IsLowerThanMaxPlayers(IMapConfig)` | `bool` | 現在のプレイヤー数が最大人数以下か |
 | `IsMapInCooldown(IMapConfig)` | `bool` | マップがクールダウン中か |
+| `IsMapInNominationCooldown(IMapConfig)` | `bool` | マップがノミネーション専用クールダウン中か |
+| `IsPlayerInNominationCooldown(ulong)` | `bool` | プレイヤー (SteamID) がプレイヤー単位のノミネーションクールダウン中か |
+| `GetPlayerCooldownState(ulong)` | `IPlayerNominationCooldownState?` | プレイヤーのノミネーションクールダウン状態を返す。クールダウン中でなければ `null` |
 | `HasReachedGroupNominationLimit(IMapConfig)` | `bool` | マップの所属グループがノミネーション上限に達しているか |
-| `IsPlayerDeniedByPermission(IMapConfig, IGameClient)` | `bool` | 権限ノードにより拒否されているか。解決順: Deny > Allow > Default (許可) |
+| `HasBypassPermission(IMapConfig, IGameClient)` | `bool` | 全ノミネーションチェックをスキップするバイパス権限を持っているか (exact match) |
+| `IsPlayerAllowedByPermission(IMapConfig, IGameClient)` | `bool` | 制限付きマップへの allow 権限を持っているか (ワイルドカード対応) |
+| `IsPlayerDeniedByPermission(IMapConfig, IGameClient)` | `bool` | 権限ノードにより拒否されているか (exact match)。解決順: Deny > Allow > Default (許可) |
 | `GetCooldownInformations(IMapConfig)` | `IDetailedCooldownResult` | マップの詳細なクールダウン状態を取得する |
 
 ---
@@ -167,6 +172,18 @@ MCS のクールダウンには 2 つの軸があります:
 | `GroupNominationLimitReached` | マップの所属グループのノミネーション上限に到達している |
 | `CancelledByExternalPlugin` | 外部プラグインのイベントリスナーによりキャンセルされた |
 | `ProhibitAdminNomination` | マップ設定で管理者ノミネーションが禁止されている |
+| `PlayerCooldownActive` | プレイヤーがプレイヤー単位のノミネーションクールダウン中 |
+
+---
+
+## IPlayerNominationCooldownState
+
+プレイヤー単位のノミネーションクールダウン状態です。
+
+| プロパティ | 型 | 説明 |
+|---|---|---|
+| `RemainingCount` | `int` | 残りクールダウンカウント |
+| `CooldownUntil` | `DateTime` | クールダウン終了時刻 |
 
 ---
 
@@ -202,9 +219,10 @@ MCS のクールダウンには 2 つの軸があります:
 
 | メソッド | 戻り値 | 説明 |
 |---|---|---|
-| `OnNominationCheckPassed(INominationCheckPassedEventParams)` | `bool` | バリデーション通過後に発火。`true` を返すとノミネーションを拒否する (外部プラグインによる追加バリデーション用) |
-| `OnNomination(INominationParams)` | `bool` | 通常ノミネーション直前に発火。`true` を返すとキャンセル |
-| `OnAdminNomination(IAdminNominationParams)` | `bool` | 管理者ノミネーション直前に発火。`true` を返すとキャンセル |
+| `OnNominationCheckPassed(INominationCheckPassedEventParams)` | `McsCancellableEvent` | バリデーション通過後に発火。`Stop` を返すとノミネーションを拒否する (外部プラグインによる追加バリデーション用) |
+| `OnNomination(INominationParams)` | `McsCancellableEvent` | 通常ノミネーション直前に発火。`Stop` を返すとキャンセル |
+| `OnAdminNomination(IAdminNominationParams)` | `McsCancellableEvent` | 管理者ノミネーション直前に発火。`Stop` を返すとキャンセル |
 | `OnNominationChanged(INominationChangeParams)` | `void` | ノミネーション状態に変更があったとき (追加・参加者変更) に発火 |
 | `OnNominationRemoved(INominationRemovedParams)` | `void` | ノミネーションが削除されたときに発火 |
 | `OnUnNominate(IUnNominateParams)` | `void` | プレイヤーのノミネーション参加が解除されたときに発火。参加者ごとに個別に呼ばれる |
+| `OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams)` | `void` | ノミネーション詳細メニューが開かれる直前に発火。`ExtraItems` に `McsMenuItem` を追加できる |

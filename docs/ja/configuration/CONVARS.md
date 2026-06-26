@@ -72,6 +72,8 @@
 |---|---|---|---|
 | mcs_nomination_broadcast_enabled | 1 | 0-1 | ノミネーション時の全体通知を有効にするか |
 | mcs_nomination_confirm_menu | 0 | 0-1 | ノミネーション時に確認メニューを表示するか |
+| mcs_nomination_player_cooldown | 0 | 0-MaxInt | プレイヤーごとのノミネーションクールダウン (マップ回数ベース、0 = 無効) |
+| mcs_nomination_player_timed_cooldown | 0.0 | 0-MaxFloat | プレイヤーごとのノミネーション時間クールダウン (秒、0 = 無効) |
 
 ## ChatListener
 

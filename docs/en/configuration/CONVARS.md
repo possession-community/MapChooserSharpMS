@@ -72,6 +72,8 @@ Set to 0.0 to disable decay (the configured threshold applies from the start).
 |---|---|---|---|
 | mcs_nomination_broadcast_enabled | 1 | 0-1 | Whether to enable broadcast notifications on nomination |
 | mcs_nomination_confirm_menu | 0 | 0-1 | Whether to show a confirmation menu on nomination |
+| mcs_nomination_player_cooldown | 0 | 0-MaxInt | Per-player nomination cooldown in map count (0 = disabled) |
+| mcs_nomination_player_timed_cooldown | 0.0 | 0-MaxFloat | Per-player nomination timed cooldown in seconds (0 = disabled) |
 
 ## ChatListener
 

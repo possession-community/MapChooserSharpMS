@@ -164,8 +164,8 @@ NoActiveVote
 
 | メソッド | 戻り値 | 説明 |
 |---|---|---|
-| `OnMapVoteStart(IMapVoteStartParams)` | `bool` | 投票開始前に発火。`true` を返すとキャンセル |
-| `OnRandomMapPick(IMapVoteRandomMapPickParams)` | `List<IMapConfig>` | ランダムマップ選択時に発火。空でないリストを返すと、その内容が投票候補として使用される |
+| `OnMapVoteStart(IMapVoteStartParams)` | `McsCancellableEvent` | 投票開始前に発火。`Stop` を返すとキャンセル |
+| `OnRandomMapPick(IMapVoteRandomMapPickParams)` | `McsValueOverrideEvent<List<IMapConfig>>` | ランダムマップ選択時に発火。値を返すと投票候補を差し替え、`NoOverride` でデフォルト選択を使用 |
 | `OnMapVoteFinished(IMapVoteFinishedEventParams)` | `void` | 投票完了時に発火 |
 | `OnMapVoteCancelled(IMapVoteCancelledParams)` | `void` | 投票がキャンセルされたときに発火 |
 | `OnMapExtended(IMapVoteExtendParams)` | `void` | 投票結果がマップ延長になったときに発火 |

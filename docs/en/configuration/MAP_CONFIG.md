@@ -1,5 +1,7 @@
 # Map Configuration
 
+> A dedicated config editor is available at [MapChooserSharpMSEditor](https://github.com/possession-community/MapChooserSharpMSEditor).
+
 ## How to Place Map Configs
 
 This plugin supports the following two methods.
@@ -373,6 +375,8 @@ MinPlayers = 10
 ProhibitAdminNomination = false
 DaysAllowed = ["wednesday", "monday"]
 AllowedTimeRanges = ["10:00-12:00", "20:00-22:00", "22:00-03:00"]
+RestrictToAllowedUsersOnly = false
+SearchTags = ["hard", "ze"]
 GroupSettings = ["HardZeMap"]
 
 [ze_example_abc.extra.shop]
@@ -389,6 +393,7 @@ CooldownOverride = 30
 Cooldown = 15
 MinPlayers = 16
 OnlyNomination = true
+SearchTags = ["hard"]
 ```
 
 ## General Map Settings
@@ -501,6 +506,16 @@ Nomination is allowed only on the days listed here. Note that this is applied in
 Nomination is allowed only during the time ranges listed here. Note that this is applied in conjunction with DaysAllowed, so be careful when specifying time ranges.
 
 `AllowedTimeRanges = ["10:00-12:00", "22:00-03:00"]` allows nomination only between 10:00-12:00 or 22:00-03:00.
+
+### RestrictToAllowedUsersOnly
+
+When set to `true`, only players with the `mcs.nominate.map.allow.<map>` or `mcs.nominate.group.allow.<group>` permission can nominate this map/group. Default is `false`.
+
+### SearchTags
+
+Tags used for nomination search via `!nominate <tag>`. Group-level tags are merged into all maps belonging to that group.
+
+`SearchTags = ["hard", "ze"]` allows players to find this map by typing `!nominate hard` or `!nominate ze`.
 
 ## Group-Only Settings
 

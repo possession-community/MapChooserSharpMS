@@ -76,8 +76,13 @@ Service exposing individual validation conditions. Provides both composite check
 | `IsGreaterThanMinPlayers(IMapConfig)` | `bool` | Whether the current player count meets the minimum |
 | `IsLowerThanMaxPlayers(IMapConfig)` | `bool` | Whether the current player count is below the maximum |
 | `IsMapInCooldown(IMapConfig)` | `bool` | Whether the map is on cooldown |
+| `IsMapInNominationCooldown(IMapConfig)` | `bool` | Whether the map is on nomination-specific cooldown |
+| `IsPlayerInNominationCooldown(ulong)` | `bool` | Whether the player (by SteamID) is on per-player nomination cooldown |
+| `GetPlayerCooldownState(ulong)` | `IPlayerNominationCooldownState?` | Returns the player's nomination cooldown state, or `null` if not on cooldown |
 | `HasReachedGroupNominationLimit(IMapConfig)` | `bool` | Whether the map's group has reached its nomination limit |
-| `IsPlayerDeniedByPermission(IMapConfig, IGameClient)` | `bool` | Whether the player is denied by permission nodes. Resolution order: Any Deny > Any Allow > Default (allowed) |
+| `HasBypassPermission(IMapConfig, IGameClient)` | `bool` | Whether the player has a bypass permission that skips all nomination checks (exact match) |
+| `IsPlayerAllowedByPermission(IMapConfig, IGameClient)` | `bool` | Whether the player has an allow permission for restricted maps (wildcard-capable) |
+| `IsPlayerDeniedByPermission(IMapConfig, IGameClient)` | `bool` | Whether the player is denied by permission nodes (exact match). Resolution order: Any Deny > Any Allow > Default (allowed) |
 | `GetCooldownInformations(IMapConfig)` | `IDetailedCooldownResult` | Detailed cooldown breakdown for the map |
 
 ---
@@ -167,6 +172,18 @@ Enum representing reasons why a nomination was rejected. Methods like `TryNomina
 | `GroupNominationLimitReached` | The map's group has reached its nomination limit |
 | `CancelledByExternalPlugin` | Cancelled by an external plugin's event listener |
 | `ProhibitAdminNomination` | Admin nomination is prohibited for this map in its configuration |
+| `PlayerCooldownActive` | The player is on per-player nomination cooldown |
+
+---
+
+## IPlayerNominationCooldownState
+
+Per-player nomination cooldown state.
+
+| Property | Type | Description |
+|---|---|---|
+| `RemainingCount` | `int` | Remaining cooldown count |
+| `CooldownUntil` | `DateTime` | Cooldown expiration time |
 
 ---
 
@@ -202,9 +219,10 @@ Listener interface registered via `IMcsNominationController.InstallEventListener
 
 | Method | Return Type | Description |
 |---|---|---|
-| `OnNominationCheckPassed(INominationCheckPassedEventParams)` | `bool` | Fires after internal validation passes. Return `true` to reject the nomination (for external plugin additional validation) |
-| `OnNomination(INominationParams)` | `bool` | Fires just before a normal nomination is committed. Return `true` to cancel |
-| `OnAdminNomination(IAdminNominationParams)` | `bool` | Fires just before an admin nomination is committed. Return `true` to cancel |
+| `OnNominationCheckPassed(INominationCheckPassedEventParams)` | `McsCancellableEvent` | Fires after internal validation passes. Return `Stop` to reject the nomination (for external plugin additional validation) |
+| `OnNomination(INominationParams)` | `McsCancellableEvent` | Fires just before a normal nomination is committed. Return `Stop` to cancel |
+| `OnAdminNomination(IAdminNominationParams)` | `McsCancellableEvent` | Fires just before an admin nomination is committed. Return `Stop` to cancel |
 | `OnNominationChanged(INominationChangeParams)` | `void` | Fires when nomination state changes (addition or participant change) |
 | `OnNominationRemoved(INominationRemovedParams)` | `void` | Fires when a nomination entry is removed |
 | `OnUnNominate(IUnNominateParams)` | `void` | Fires when a player's nomination participation is removed. Called per client -- if the last participant leaves a non-admin nomination, an additional `OnNominationRemoved` fires for the whole entry |
+| `OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams)` | `void` | Fires when a nomination detail menu is about to open. Add extra `McsMenuItem` via `ExtraItems` |

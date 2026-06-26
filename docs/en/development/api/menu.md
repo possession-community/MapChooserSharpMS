@@ -1,8 +1,9 @@
-# Menu Integration
+# Nomination Menu Compat API
 
 MCS separates menu rendering from the plugin core through an abstraction layer.
 This allows server operators to choose their preferred menu plugin (FPM MenuManager, Wuling IMenu, etc.).
-MCS internally builds `McsMenuDefinition` instances and delegates actual rendering to the registered compat implementation.
+
+Access via `IMapChooserSharpShared.SetNominationMenuCompat()`.
 
 ---
 
@@ -10,71 +11,65 @@ MCS internally builds `McsMenuDefinition` instances and delegates actual renderi
 
 1. A companion module (e.g. `McsFPMCompat`) creates an `IMcsNominationMenuCompat` implementation in `OnAllModulesLoaded`
 2. It registers it via `IMapChooserSharpShared.SetNominationMenuCompat()`
-3. When MCS needs to display a menu, it calls `ShowMenu()` on the appropriate registered implementation
+3. When MCS needs to display a nomination menu, it calls `ShowNominationMenu()` on the registered implementation
 
 If MCS attempts to display a menu before any implementation is registered, an `InvalidOperationException` is thrown.
 
 ---
 
-## IMcsMenuCompat (Base)
+## IMcsNominationMenuCompat
 
-Base interface for all menu compat adapters.
+Menu compat adapter for nomination-related menus.
 
 **Namespace**: `MapChooserSharpMS.Shared.Ui.Menu`
 
-| Method | Description |
-|---|---|
-| `ShowMenu(IGameClient target, McsMenuDefinition menu)` | Display `menu` to `target`. Close any existing menu for this client first |
-| `CloseMenu(IGameClient target)` | Close the currently open MCS menu for `target`. No-op when no menu is open |
-| `Cleanup()` | Discard all cached menu state. Called during plugin unload or map changes |
-
----
-
-## IMcsNominationMenuCompat
-
-Nomination-specific menu compat. Extends `IMcsMenuCompat`.
-
-| Property | Type | Description |
+| Member | Type | Description |
 |---|---|---|
 | `NominationMenuService` | `INominationMenuManagementService` | Set by MCS during registration. Initialize with `null!` — MCS sets this before any menu is shown |
 
-### CollectExtraMenuItems Example
-
-External plugins can add items to the nomination confirm menu via the `OnNominationMenuDetailsOpening` event.
-The compat implementation can also collect these items directly:
-
-```csharp
-// Inside your IMcsNominationMenuCompat.ShowMenu implementation:
-var extras = NominationMenuService.CollectExtraMenuItems(mapConfig, target);
-foreach (var extra in extras)
-{
-    builder.AddItem(extra.DisplayText, () =>
-    {
-        extra.OnSelect?.Invoke(target);
-    });
-}
-```
+| Method | Return Type | Description |
+|---|---|---|
+| `ShowNominationMenu(IGameClient, McsNominationMenuContext)` | `void` | Display the nomination menu to the target client |
+| `CloseMenu(IGameClient)` | `void` | Close the currently open MCS menu for the client. No-op when no menu is open |
+| `Cleanup()` | `void` | Discard all cached menu state. Called during plugin unload or map changes |
 
 ---
 
-## McsMenuDefinition
+## McsNominationMenuContext
 
-Declarative definition for a single menu. Built internally by MCS and passed to compat implementations.
+Context passed to `ShowNominationMenu`. Contains all data and services the compat needs to build a rich nomination menu.
 
 **Namespace**: `MapChooserSharpMS.Shared.Ui.Menu`
 
 | Property | Type | Description |
 |---|---|---|
 | `Title` | `string` | Menu title string |
-| `Items` | `IReadOnlyList<McsMenuItem>` | List of menu items |
+| `Items` | `IReadOnlyList<McsNominationMenuItem>` | List of nomination menu items |
+| `ToolingService` | `IMapConfigToolingService` | Utilities for resolving display names, checking Workshop IDs, etc. |
+| `CooldownQueryService` | `IMapCooldownQueryService` | Query cooldown state for maps |
+| `NominationMenuService` | `INominationMenuManagementService` | Same service as the property on the compat interface |
 
-Both `Title` and `Items` are `required init` properties.
+All properties are `required init`.
+
+---
+
+## McsNominationMenuItem
+
+A single row in a nomination menu.
+
+**Namespace**: `MapChooserSharpMS.Shared.Ui.Menu`
+
+| Property | Type | Description |
+|---|---|---|
+| `DisplayText` | `string` | Display text (already translated) |
+| `MapConfig` | `IMapConfig` | The map configuration associated with this item |
+| `OnNominate` | `Action<IGameClient>?` | Callback invoked when the client selects this item. `null` means no-op |
 
 ---
 
 ## McsMenuItem
 
-A single row in a `McsMenuDefinition`. Display text is pre-resolved by MCS (no translation key indirection at this layer).
+A generic menu item used by nomination detail menus and events (e.g. `OnNominationMenuDetailsOpening`).
 
 **Namespace**: `MapChooserSharpMS.Shared.Ui.Menu`
 
@@ -85,9 +80,26 @@ A single row in a `McsMenuDefinition`. Display text is pre-resolved by MCS (no t
 
 ---
 
-## Registration Flow
+## INominationMenuManagementService
 
-Register menu implementations via `IMapChooserSharpShared`:
+Service for showing and managing nomination menus. Available via `IMcsNominationMenuCompat.NominationMenuService` (set by MCS during registration) and `IMcsNominationController.NominationMenuManagementService`.
+
+| Method | Return Type | Description |
+|---|---|---|
+| `ShowNominationMenu(IGameClient, List<IMapConfig>)` | `void` | Show nomination menu with the specified map list |
+| `ShowNominationMenu(IGameClient)` | `void` | Show nomination menu with all maps |
+| `ShowAdminNominationMenu(IGameClient, List<IMapConfig>)` | `void` | Show admin nomination menu with the specified map list |
+| `ShowAdminNominationMenu(IGameClient)` | `void` | Show admin nomination menu with all maps |
+| `ShowRemoveNominationMenu(IGameClient, List<IMcsNominationData>)` | `void` | Show nomination removal menu with the specified nominations |
+| `ShowRemoveNominationMenu(IGameClient)` | `void` | Show nomination removal menu with all nominations |
+| `NominateOrConfirm(IGameClient, IMapConfig, bool)` | `void` | Nominate a map or show a confirm menu. `isAdmin` controls whether admin nomination logic is used |
+| `CollectExtraMenuItems(IMapConfig, IGameClient)` | `List<McsMenuItem>` | Fire `OnNominationMenuDetailsOpening` and return the collected extra items |
+
+---
+
+## Registration
+
+Register the nomination menu compat via `IMapChooserSharpShared`:
 
 ```csharp
 public void OnAllModulesLoaded()
@@ -106,14 +118,13 @@ public void OnAllModulesLoaded()
 
 ## OnNominationMenuDetailsOpening Event
 
-Fired when a nomination confirm menu is about to be shown. External plugins can add extra items.
+Fired when a nomination detail/confirm menu is about to be shown. External plugins can append extra `McsMenuItem` items.
 
 Implement `INominationEventListener.OnNominationMenuDetailsOpening`:
 
 ```csharp
 public void OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams @params)
 {
-    // Add a "Map Info" item to the confirm menu
     @params.ExtraItems.Add(new McsMenuItem
     {
         DisplayText = $"Cooldown: {@params.MapConfig.CooldownConfig.CurrentCooldown}",
@@ -122,34 +133,37 @@ public void OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams @
 }
 ```
 
+| Parameter | Type | Description |
+|---|---|---|
+| `MapConfig` | `IMapConfig` | The map whose detail menu is being shown |
+| `Client` | `IGameClient` | The client who is opening the menu |
+| `ExtraItems` | `List<McsMenuItem>` | Mutable list — append your extra items here |
+
 ---
 
 ## Implementation Example
-
-Below is a nomination menu compat implementation example:
 
 ```csharp
 public sealed class MyNominationMenuCompat : IMcsNominationMenuCompat
 {
     private readonly Dictionary<IGameClient, object> _activeMenus = new();
 
-    // Initialized with null! — MCS sets this during registration
     public INominationMenuManagementService NominationMenuService { get; set; } = null!;
 
-    public void ShowMenu(IGameClient target, McsMenuDefinition menu)
+    public void ShowNominationMenu(IGameClient target, McsNominationMenuContext context)
     {
         CloseMenu(target);
 
         var builder = new SomeMenuBuilder();
-        builder.SetTitle(menu.Title);
+        builder.SetTitle(context.Title);
 
-        foreach (var item in menu.Items)
+        foreach (var item in context.Items)
         {
-            var onSelect = item.OnSelect;
+            var onNominate = item.OnNominate;
             builder.AddItem(item.DisplayText, () =>
             {
                 CloseMenu(target);
-                onSelect?.Invoke(target);
+                onNominate?.Invoke(target);
             });
         }
 

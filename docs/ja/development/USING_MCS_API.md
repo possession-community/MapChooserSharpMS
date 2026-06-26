@@ -50,7 +50,7 @@ protected override void OnAllModulesLoaded()
 加えて、以下のメソッドでメニュー描画のカスタム実装を登録できます:
 
 ```csharp
-_mcs.SetDefaultMenuCompat(new MyMenuCompat());
+_mcs.SetNominationMenuCompat(new MyNominationMenuCompat());
 ```
 
 詳細は [メニュー連携](api/menu.md) を参照してください。
@@ -95,7 +95,7 @@ if (configProvider.TryGetMapConfig("ze_example_v1", out var mapConfig))
 ### イベントを監視する
 
 各サブシステムにはイベントリスナーを登録できます。
-`bool` を返すメソッドはキャンセル可能で、`true` を返すとそのアクションを中止できます。
+`McsCancellableEvent` を返すメソッドはキャンセル可能です。`Continue` で許可、`Handled` で処理済みマーク、`Stop` でアクションをキャンセルできます。
 
 ```csharp
 public class MyVoteListener : IMapVoteEventListener
@@ -189,5 +189,5 @@ if (rtv.RtvStatus == RtvStatus.Enabled)
 | [マップサイクル](api/map-cycle.md) | `IMapCycleController`, `IMapCycleExtendController`, タイムリミット、マップ遷移、クールダウン操作 |
 | [Rock The Vote](api/rtv.md) | `IMcsRtvController`, `IRtvService`, `IRtvManager`, RTV ステータス |
 | [イベント](api/events.md) | 全イベントリスナー、キャンセル可能イベント、編集可能イベント、イベントパラメータ一覧 |
-| [メニュー連携](api/menu.md) | `IMcsMenuCompat` の実装方法、`McsMenuDefinition`, `McsMenuItem` |
+| [メニュー連携](api/menu.md) | `IMcsNominationMenuCompat` の実装方法、`McsNominationMenuContext`, `McsNominationMenuItem` |
 | [Workshop](api/workshop.md) | `IWorkshopFetchResult`, `ExistenceStatus`, Workshop ID によるマップ設定 |

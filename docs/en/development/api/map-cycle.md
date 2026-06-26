@@ -243,7 +243,7 @@ Listener interface registered via `IMapCycleController.InstallEventListener`. Al
 
 | Method | Return Type | Description |
 |---|---|---|
-| `OnExtCommandExecute(IExtCommandExecuteEventParams)` | `bool` | Fires when `!ext` is executed. Return `true` to cancel |
+| `OnExtCommandExecute(IExtCommandExecuteEventParams)` | `McsCancellableEvent` | Fires when `!ext` is executed. Return `Stop` to cancel |
 | `OnMapInfoCommandExecuted(IMapInfoCommandExecutedParams)` | `void` | Fires after `!mapinfo` completes. Use to output additional information |
 | `OnExtendVoteStarted(IExtendVoteStartedEventParams)` | `void` | Fires when an extend vote starts |
 | `OnExtendVoteCancelled(IExtendVoteCancelledEventParams)` | `void` | Fires when an extend vote is cancelled |

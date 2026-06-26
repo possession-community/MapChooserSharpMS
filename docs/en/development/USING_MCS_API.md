@@ -50,7 +50,7 @@ The retrieved `IMapChooserSharpShared` instance provides access to all subsystem
 Additionally, you can register a custom menu rendering implementation:
 
 ```csharp
-_mcs.SetDefaultMenuCompat(new MyMenuCompat());
+_mcs.SetNominationMenuCompat(new MyNominationMenuCompat());
 ```
 
 See [Menu Integration](api/menu.md) for details.
@@ -94,7 +94,7 @@ if (configProvider.TryGetMapConfig("ze_example_v1", out var mapConfig))
 
 ### Listen to Events
 
-Each subsystem supports event listeners. Methods returning `bool` are cancellable -- returning `true` cancels the action.
+Each subsystem supports event listeners. Methods returning `McsCancellableEvent` are cancellable — return `Continue` to allow, `Handled` to mark as handled, or `Stop` to cancel the action.
 
 ```csharp
 public class MyVoteListener : IMapVoteEventListener
@@ -188,5 +188,5 @@ For detailed interface definitions, see the following pages.
 | [Map Cycle](api/map-cycle.md) | `IMapCycleController`, `IMapCycleExtendController`, time limits, map transitions, cooldown operations |
 | [Rock The Vote](api/rtv.md) | `IMcsRtvController`, `IRtvService`, `IRtvManager`, RTV status |
 | [Events](api/events.md) | All event listeners, cancellable events, editable events, event parameter reference |
-| [Menu Integration](api/menu.md) | Implementing `IMcsMenuCompat`, `McsMenuDefinition`, `McsMenuItem` |
+| [Menu Integration](api/menu.md) | Implementing `IMcsNominationMenuCompat`, `McsNominationMenuContext`, `McsNominationMenuItem` |
 | [Workshop](api/workshop.md) | `IWorkshopFetchResult`, `ExistenceStatus`, Workshop ID-based map configuration |

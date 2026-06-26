@@ -117,7 +117,7 @@ Listener interface registered via `IMcsRtvController.InstallEventListener`. All 
 
 | Method | Return Type | Description |
 |---|---|---|
-| `OnClientRtvCast(IClientRtvCastParams)` | `bool` | Fires when a player attempts to join RTV. Return `true` to cancel |
-| `OnClientRtvUnCast(IClientRtvUnCastParams)` | `bool` | Fires when a player attempts to leave RTV. Return `true` to cancel |
-| `OnForceRtv(IForceRtvParam)` | `bool` | Fires when a force RTV is about to be triggered. Return `true` to cancel |
+| `OnClientRtvCast(IClientRtvCastParams)` | `McsCancellableEvent` | Fires when a player attempts to join RTV. Return `Stop` to cancel |
+| `OnClientRtvUnCast(IClientRtvUnCastParams)` | `McsCancellableEvent` | Fires when a player attempts to leave RTV. Return `Stop` to cancel |
+| `OnForceRtv(IForceRtvParam)` | `McsCancellableEvent` | Fires when a force RTV is about to be triggered. Return `Stop` to cancel |
 | `OnRtvConfirmed(IRtvConfirmedParams)` | `void` | Fires when RTV is confirmed (threshold reached or forced). Non-cancellable. The MapVoteController listens to this event to initiate a map vote |

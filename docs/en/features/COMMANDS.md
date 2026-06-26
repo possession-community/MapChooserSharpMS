@@ -19,7 +19,7 @@ In chat, `!nominate` / `css_nominate` can also be used.
 | !mapinfo \<map\> | - | Show map information. Without arguments, shows the current map |
 | !extends | - | Show remaining extend count |
 | !thetime | chat "thetime" | Show the current server time |
-| !mcs_settings \<subcommand\> [value] | !mcss | Change personal settings. `volume <0-100>` for vote sound volume, `countdown <type>` for countdown UI. No arguments shows current settings |
+| !mcs_settings \<subcommand\> [value] | !mcss | Change personal settings. `volume` (`vol`) \<0-100\> for vote sound volume, `countdown` (`cd`) \<type\> for countdown UI. No arguments shows current settings |
 
 ## Admin Commands
 
@@ -47,6 +47,7 @@ In chat, `!nominate` / `css_nominate` can also be used.
 | !enableext | - | mcs.admin.command.mapcycle.enableext | Enable !ext |
 | !disableext | - | mcs.admin.command.mapcycle.disableext | Disable !ext |
 | !setext \<count\> | - | mcs.admin.command.mapcycle.setext | Set the remaining !ext count |
+| !mcsdebug \<subcommand\> | - | mcs.admin.command.mapcycle.mcsdebug | Debug command. `config <map>` shows map config details, `state` shows internal MCS state |
 
 ## Permission Nodes (Nomination)
 

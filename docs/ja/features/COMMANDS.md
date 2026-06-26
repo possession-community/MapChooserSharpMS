@@ -19,7 +19,7 @@
 | !mapinfo \<map\> | - | マップ情報を表示。引数なしで現在のマップ |
 | !extends | - | 残りの延長回数を表示 |
 | !thetime | チャット "thetime" | 現在のサーバー時刻を表示 |
-| !mcs_settings \<subcommand\> [value] | !mcss | 個人設定を変更。`volume <0-100>` で投票サウンド音量、`countdown <type>` でカウントダウンUI変更。引数なしで現在設定表示 |
+| !mcs_settings \<subcommand\> [value] | !mcss | 個人設定を変更。`volume` (`vol`) \<0-100\> で投票サウンド音量、`countdown` (`cd`) \<type\> でカウントダウン UI 変更。引数なしで現在設定表示 |
 
 ## 管理者コマンド
 
@@ -47,6 +47,7 @@
 | !enableext | - | mcs.admin.command.mapcycle.enableext | !ext を有効化 |
 | !disableext | - | mcs.admin.command.mapcycle.disableext | !ext を無効化 |
 | !setext \<count\> | - | mcs.admin.command.mapcycle.setext | !ext の残り回数を設定 |
+| !mcsdebug \<subcommand\> | - | mcs.admin.command.mapcycle.mcsdebug | デバッグコマンド。`config <map>` でマップ config の詳細表示、`state` で MCS 内部状態を表示 |
 
 ## 権限ノード (Nomination)
 

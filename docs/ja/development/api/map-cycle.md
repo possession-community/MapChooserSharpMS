@@ -266,7 +266,7 @@ switch (manager.TimeLimitType)
 
 | メソッド | 戻り値 | 説明 |
 |---|---|---|
-| `OnExtCommandExecute(IExtCommandExecuteEventParams)` | `bool` | `!ext` コマンド実行時。`true` を返すとキャンセル |
+| `OnExtCommandExecute(IExtCommandExecuteEventParams)` | `McsCancellableEvent` | `!ext` コマンド実行時。`Stop` を返すとキャンセル |
 | `OnMapInfoCommandExecuted(IMapInfoCommandExecutedParams)` | `void` | `!mapinfo` コマンド実行後。追加情報の出力に使用できる |
 | `OnExtendVoteStarted(IExtendVoteStartedEventParams)` | `void` | 延長投票の開始時 |
 | `OnExtendVoteCancelled(IExtendVoteCancelledEventParams)` | `void` | 延長投票のキャンセル時 |

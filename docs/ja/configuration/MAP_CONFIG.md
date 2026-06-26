@@ -1,5 +1,7 @@
 # Mapコンフィグのカスタマイズ
 
+> 専用エディタ [MapChooserSharpMSEditor](https://github.com/possession-community/MapChooserSharpMSEditor) を利用するとマップ設定の編集が便利です。
+
 ## Mapコンフィグの配置方法
 
 このプラグインでは以下の2つの方法をサポートしています。
@@ -374,6 +376,8 @@ MinPlayers = 10
 ProhibitAdminNomination = false
 DaysAllowed = ["wednesday", "monday"]
 AllowedTimeRanges = ["10:00-12:00", "20:00-22:00", "22:00-03:00"]
+RestrictToAllowedUsersOnly = false
+SearchTags = ["hard", "ze"]
 GroupSettings = ["HardZeMap"]
 
 [ze_example_abc.extra.shop]
@@ -390,6 +394,7 @@ CooldownOverride = 30
 Cooldown = 15
 MinPlayers = 16
 OnlyNomination = true
+SearchTags = ["hard"]
 ```
 
 ## マップ全般
@@ -502,6 +507,16 @@ OnlyNomination = true
 ここに記載された時間帯のみノミネートを可能にします。 また、DaysAllowedと同時に適用されるため時間帯の指定にはご注意ください。
 
 `AllowedTimeRanges = ["10:00-12:00", "22:00-03:00"]` は 10:00 - 12:00 か 22:00 - 03:00 の間にのみノミネートが可能になります。
+
+### RestrictToAllowedUsersOnly
+
+`true` に設定すると、`mcs.nominate.map.allow.<map>` または `mcs.nominate.group.allow.<group>` 権限を持つプレイヤーのみがこのマップ/グループをノミネートできます。デフォルトは `false`。
+
+### SearchTags
+
+`!nominate <tag>` によるノミネーション検索に使用されるタグです。グループレベルのタグは、そのグループに所属する全マップにマージされます。
+
+`SearchTags = ["hard", "ze"]` と設定すると、`!nominate hard` や `!nominate ze` でこのマップを検索できるようになります。
 
 ## グループ専用設定
 

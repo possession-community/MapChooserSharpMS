@@ -1,74 +1,105 @@
-# メニュー連携
+# ノミネーションメニュー互換 API
 
 MCS はメニュー描画をプラグイン本体から切り離した抽象レイヤーを持っています。
-サーバー運営者が好みのメニュープラグイン (FPM MenuManager、Wuling IMenu など) を選択できるよう、
-MCS 内部では `McsMenuDefinition` を組み立てるだけで、実際の描画は `IMcsMenuCompat` の実装に委譲します。
+サーバー運営者が好みのメニュープラグイン (FPM MenuManager、Wuling IMenu など) を選択できるようになっています。
+
+登録は `IMapChooserSharpShared.SetNominationMenuCompat()` で行います。
 
 ---
 
 ## 全体の流れ
 
-1. コンパニオンモジュール (例: `McsFPMCompat`) が `OnAllModulesLoaded` で `IMcsMenuCompat` の実装を生成する
-2. `IMapChooserSharpShared.SetDefaultMenuCompat()` に渡して登録する
-3. MCS がメニューを表示する際、登録された実装の `ShowMenu()` が呼ばれる
+1. コンパニオンモジュール (例: `McsFPMCompat`) が `OnAllModulesLoaded` で `IMcsNominationMenuCompat` の実装を生成する
+2. `IMapChooserSharpShared.SetNominationMenuCompat()` に渡して登録する
+3. MCS がノミネーションメニューを表示する際、登録された実装の `ShowNominationMenu()` が呼ばれる
 
 メニュー未登録のまま MCS がメニューを表示しようとした場合は `InvalidOperationException` がスローされます。
 
 ---
 
-## IMcsMenuCompat
+## IMcsNominationMenuCompat
 
-メニュー描画の抽象インターフェースです。メニュープラグインごとに 1 つの実装を用意します。
+ノミネーション関連メニューの互換アダプターインターフェースです。
 
 **名前空間**: `MapChooserSharpMS.Shared.Ui.Menu`
 
-| メソッド | 説明 |
-|---|---|
-| `ShowMenu(IGameClient target, McsMenuDefinition menu)` | `target` に `menu` を表示する。同じクライアントに対して既にメニューが開かれている場合は、先に閉じてから新しいメニューを表示すること |
-| `CloseMenu(IGameClient target)` | `target` に対して開いている MCS メニューを閉じる。メニューが開かれていない場合は何もしない |
-| `Cleanup()` | 全てのキャッシュ済みメニュー状態を破棄する。プラグインのアンロードやマップ遷移時に MCS から呼び出される |
+| メンバー | 型 | 説明 |
+|---|---|---|
+| `NominationMenuService` | `INominationMenuManagementService` | MCS が登録時にセットします。コンストラクタでは `null!` で初期化してください |
 
-### MCS が各メソッドを呼び出すタイミング
-
-- **ShowMenu** -- ノミネーションメニュー (`!nominate`)、管理者ノミネーションメニュー (`!nominate_addmap`)、ノミネーション削除メニュー (`!nominate_removemap`)、ノミネーション確認メニューの表示時
-- **CloseMenu** -- MCS が明示的にメニューを閉じる必要がある場合 (現在は実装側の `OnSelect` コールバック内で閉じるパターンが主流)
-- **Cleanup** -- プラグインのシャットダウンやマップ変更時にキャッシュをクリアする目的で呼ばれる
+| メソッド | 戻り値 | 説明 |
+|---|---|---|
+| `ShowNominationMenu(IGameClient, McsNominationMenuContext)` | `void` | 対象クライアントにノミネーションメニューを表示する |
+| `CloseMenu(IGameClient)` | `void` | 対象クライアントの MCS メニューを閉じる。開いていない場合は何もしない |
+| `Cleanup()` | `void` | キャッシュ済みメニュー状態を全て破棄する。プラグインのアンロードやマップ遷移時に呼ばれる |
 
 ---
 
-## McsMenuDefinition
+## McsNominationMenuContext
 
-メニュー 1 つ分の宣言的な定義です。MCS 内部で組み立てられ、`IMcsMenuCompat` の実装に渡されます。
+`ShowNominationMenu` に渡されるコンテキスト。メニューの構築に必要なデータとサービスを含みます。
 
 **名前空間**: `MapChooserSharpMS.Shared.Ui.Menu`
 
 | プロパティ | 型 | 説明 |
 |---|---|---|
 | `Title` | `string` | メニューのタイトル文字列 |
-| `Items` | `IReadOnlyList<McsMenuItem>` | メニュー項目のリスト |
+| `Items` | `IReadOnlyList<McsNominationMenuItem>` | ノミネーションメニュー項目のリスト |
+| `ToolingService` | `IMapConfigToolingService` | 表示名の解決や Workshop ID の確認などのユーティリティ |
+| `CooldownQueryService` | `IMapCooldownQueryService` | マップのクールダウン状態を問い合わせるサービス |
+| `NominationMenuService` | `INominationMenuManagementService` | 互換インターフェースのプロパティと同じサービス |
 
-`Title` と `Items` はどちらも `required init` プロパティです。
+全プロパティは `required init` です。
 
 ---
 
-## McsMenuItem
+## McsNominationMenuItem
 
-メニュー内の 1 行分の項目です。表示テキストは MCS 側で翻訳済みの文字列が設定されます (翻訳キーの間接参照はこのレイヤーでは行いません)。
+ノミネーションメニュー内の 1 行分の項目です。
 
 **名前空間**: `MapChooserSharpMS.Shared.Ui.Menu`
 
 | プロパティ | 型 | 説明 |
 |---|---|---|
 | `DisplayText` | `string` | 表示テキスト (翻訳済み) |
-| `OnSelect` | `Action<IGameClient>?` | クライアントがこの項目を選択したときに呼ばれるコールバック。引数は `ShowMenu` に渡されたクライアントと同一。`null` の場合は選択しても何も起きない |
+| `MapConfig` | `IMapConfig` | この項目に関連付けられたマップ設定 |
+| `OnNominate` | `Action<IGameClient>?` | クライアントがこの項目を選択したときに呼ばれるコールバック。`null` の場合は何もしない |
 
 ---
 
-## SetDefaultMenuCompat の登録フロー
+## McsMenuItem
 
-メニュー実装の登録は `IMapChooserSharpShared.SetDefaultMenuCompat(IMcsMenuCompat)` で行います。
-呼び出しは `OnAllModulesLoaded` のタイミングで 1 回だけ行うのが基本です。
-再度呼び出すと以前の実装が置き換えられます。
+ノミネーション確認メニューやイベント (`OnNominationMenuDetailsOpening` 等) で使われる汎用メニュー項目です。
+
+**名前空間**: `MapChooserSharpMS.Shared.Ui.Menu`
+
+| プロパティ | 型 | 説明 |
+|---|---|---|
+| `DisplayText` | `string` | 表示テキスト (翻訳済み) |
+| `OnSelect` | `Action<IGameClient>?` | クライアントがこの項目を選択したときに呼ばれるコールバック。`null` の場合は何もしない |
+
+---
+
+## INominationMenuManagementService
+
+ノミネーションメニューの表示・管理サービス。`IMcsNominationMenuCompat.NominationMenuService` (MCS が登録時にセット) および `IMcsNominationController.NominationMenuManagementService` から利用できます。
+
+| メソッド | 戻り値 | 説明 |
+|---|---|---|
+| `ShowNominationMenu(IGameClient, List<IMapConfig>)` | `void` | 指定マップリストでノミネーションメニューを表示 |
+| `ShowNominationMenu(IGameClient)` | `void` | 全マップでノミネーションメニューを表示 |
+| `ShowAdminNominationMenu(IGameClient, List<IMapConfig>)` | `void` | 指定マップリストで管理者ノミネーションメニューを表示 |
+| `ShowAdminNominationMenu(IGameClient)` | `void` | 全マップで管理者ノミネーションメニューを表示 |
+| `ShowRemoveNominationMenu(IGameClient, List<IMcsNominationData>)` | `void` | 指定ノミネーションで削除メニューを表示 |
+| `ShowRemoveNominationMenu(IGameClient)` | `void` | 全ノミネーションで削除メニューを表示 |
+| `NominateOrConfirm(IGameClient, IMapConfig, bool)` | `void` | マップをノミネートするか確認メニューを表示。`isAdmin` で管理者ノミネーションロジックを切り替え |
+| `CollectExtraMenuItems(IMapConfig, IGameClient)` | `List<McsMenuItem>` | `OnNominationMenuDetailsOpening` を発火し、収集された追加項目を返す |
+
+---
+
+## 登録フロー
+
+ノミネーションメニュー互換の登録は `IMapChooserSharpShared` で行います:
 
 ```csharp
 public void OnAllModulesLoaded()
@@ -77,55 +108,67 @@ public void OnAllModulesLoaded()
         .GetRequiredSharpModuleInterface<IMapChooserSharpShared>(
             IMapChooserSharpShared.ModSharpModuleIdentity).Instance!;
 
-    mcs.SetDefaultMenuCompat(new MyMenuCompat());
+    var menuManager = GetMenuManager(); // メニュープラグインの API
+
+    mcs.SetNominationMenuCompat(new MyNominationMenuCompat(menuManager));
 }
 ```
 
-登録された `IMcsMenuCompat` インスタンスは MCS 内部でのみ使用されます。
-外部から取得する API は公開されていません。
+---
+
+## OnNominationMenuDetailsOpening イベント
+
+ノミネーション確認メニューが表示される直前に発火されます。外部プラグインは `McsMenuItem` を追加できます。
+
+`INominationEventListener.OnNominationMenuDetailsOpening` を実装してください:
+
+```csharp
+public void OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams @params)
+{
+    @params.ExtraItems.Add(new McsMenuItem
+    {
+        DisplayText = $"Cooldown: {@params.MapConfig.CooldownConfig.CurrentCooldown}",
+        OnSelect = _ => { },
+    });
+}
+```
+
+| パラメータ | 型 | 説明 |
+|---|---|---|
+| `MapConfig` | `IMapConfig` | 確認メニューが表示されるマップ |
+| `Client` | `IGameClient` | メニューを開いたクライアント |
+| `ExtraItems` | `List<McsMenuItem>` | 変更可能なリスト — ここに追加項目を追加する |
 
 ---
 
 ## 実装例
 
-以下は `IMcsMenuCompat` の完全な実装例です。
-実際のメニュープラグインの API に合わせて描画処理を記述してください。
-
 ```csharp
-using System.Collections.Generic;
-using MapChooserSharpMS.Shared.Ui.Menu;
-using Sharp.Shared.Objects;
-
-public sealed class MyMenuCompat : IMcsMenuCompat
+public sealed class MyNominationMenuCompat : IMcsNominationMenuCompat
 {
-    // クライアントごとに現在表示中のメニューを追跡する
     private readonly Dictionary<IGameClient, object> _activeMenus = new();
 
-    public void ShowMenu(IGameClient target, McsMenuDefinition menu)
+    public INominationMenuManagementService NominationMenuService { get; set; } = null!;
+
+    public void ShowNominationMenu(IGameClient target, McsNominationMenuContext context)
     {
-        // 既に開いているメニューがあれば閉じる
         CloseMenu(target);
 
-        // メニュープラグインの API を使ってメニューを構築する
-        // (ここでは仮のメニュービルダーで例示)
         var builder = new SomeMenuBuilder();
-        builder.SetTitle(menu.Title);
+        builder.SetTitle(context.Title);
 
-        foreach (var item in menu.Items)
+        foreach (var item in context.Items)
         {
-            var onSelect = item.OnSelect;
+            var onNominate = item.OnNominate;
             builder.AddItem(item.DisplayText, () =>
             {
-                // メニューを閉じてからコールバックを実行する
                 CloseMenu(target);
-                onSelect?.Invoke(target);
+                onNominate?.Invoke(target);
             });
         }
 
         var built = builder.Build();
         _activeMenus[target] = built;
-
-        // メニュープラグインの API で表示する
         SomeMenuPlugin.Display(target, built);
     }
 
@@ -133,21 +176,10 @@ public sealed class MyMenuCompat : IMcsMenuCompat
     {
         if (!_activeMenus.TryGetValue(target, out var menu))
             return;
-
-        // メニュープラグインの API で閉じる
         SomeMenuPlugin.Close(target, menu);
         _activeMenus.Remove(target);
     }
 
-    public void Cleanup()
-    {
-        _activeMenus.Clear();
-    }
+    public void Cleanup() => _activeMenus.Clear();
 }
 ```
-
-### 実装上の注意
-
-- `ShowMenu` が呼ばれた時点で、同じクライアントに対して前のメニューが残っている場合は先に閉じること
-- `OnSelect` コールバックはゲームサーバーのメインスレッドから呼び出されることを想定している。メニュープラグインがワーカースレッドでコールバックを呼ぶ場合は、呼び出し側でメインスレッドへのディスパッチが必要になる
-- `Cleanup` はプラグイン全体のライフサイクルに関わるため、ここで破棄を忘れるとマップ遷移後にメニュー状態が残留する可能性がある

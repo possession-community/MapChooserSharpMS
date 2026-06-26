@@ -19,15 +19,17 @@ Higher values execute first. When two listeners have the same priority, executio
 
 ### Cancellable Events
 
-Methods returning `bool` are cancellable. Return `true` to cancel the action:
+Methods returning `McsCancellableEvent` are cancellable. Return `Stop` to cancel the action:
 
 ```csharp
-public bool OnMapVoteStart(IMapVoteStartParams @params)
+public McsCancellableEvent OnMapVoteStart(IMapVoteStartParams @params)
 {
-    // return true to cancel the vote, false to allow
-    return false;
+    // return Stop to cancel the vote, Continue to allow
+    return McsCancellableEvent.Continue;
 }
 ```
+
+`McsCancellableEvent` is an enum with three values: `Continue` (allow), `Handled` (mark as handled but don't stop), `Stop` (cancel).
 
 ### Void Events
 
@@ -65,12 +67,13 @@ Install via `IMcsNominationController.InstallEventListener`.
 
 | Method | Return | Type | Description |
 |---|---|---|---|
-| `OnNominationCheckPassed` | `bool` | Cancellable | Fires after internal validation passes. Return `true` to add an external rejection (results in `CancelledByExternalPlugin`) |
-| `OnNomination` | `bool` | Cancellable | Fires just before a normal nomination commits. Return `true` to cancel |
-| `OnAdminNomination` | `bool` | Cancellable | Fires just before an admin nomination commits. Return `true` to cancel |
+| `OnNominationCheckPassed` | `McsCancellableEvent` | Cancellable | Fires after internal validation passes. Return `Stop` to add an external rejection (results in `CancelledByExternalPlugin`) |
+| `OnNomination` | `McsCancellableEvent` | Cancellable | Fires just before a normal nomination commits. Return `Stop` to cancel |
+| `OnAdminNomination` | `McsCancellableEvent` | Cancellable | Fires just before an admin nomination commits. Return `Stop` to cancel |
 | `OnNominationChanged` | `void` | Notification | Fires when nomination state changes (new nomination or participant change) |
 | `OnNominationRemoved` | `void` | Notification | Fires when a nomination entry is removed entirely |
 | `OnUnNominate` | `void` | Notification | Fires per client when a player's participation in a nomination is removed |
+| `OnNominationMenuDetailsOpening` | `void` | Notification | Fires when a nomination detail menu is about to open. Add extra items via `ExtraItems` |
 
 ### IMapVoteEventListener
 
@@ -78,8 +81,8 @@ Install via `IMcsMapVoteController.InstallEventListener`.
 
 | Method | Return | Type | Description |
 |---|---|---|---|
-| `OnMapVoteStart` | `bool` | Cancellable | Fires before a vote starts. Return `true` to cancel |
-| `OnRandomMapPick` | `List<IMapConfig>` | Override | Fires during candidate selection. Return a non-empty list to override candidates |
+| `OnMapVoteStart` | `McsCancellableEvent` | Cancellable | Fires before a vote starts. Return `Stop` to cancel |
+| `OnRandomMapPick` | `McsValueOverrideEvent<List<IMapConfig>>` | Override | Fires during candidate selection. Return a value to override candidates, or `NoOverride` for default |
 | `OnMapVoteFinished` | `void` | Notification | Fires when the vote completes (before individual result events) |
 | `OnMapVoteCancelled` | `void` | Notification | Fires when the vote is cancelled |
 | `OnMapExtended` | `void` | Notification | Fires when the vote result is map extension |
@@ -92,7 +95,7 @@ Install via `IMapCycleController.InstallEventListener`.
 
 | Method | Return | Type | Description |
 |---|---|---|---|
-| `OnExtCommandExecute` | `bool` | Cancellable | Fires when `!ext` is executed. Return `true` to cancel |
+| `OnExtCommandExecute` | `McsCancellableEvent` | Cancellable | Fires when `!ext` is executed. Return `Stop` to cancel |
 | `OnMapInfoCommandExecuted` | `void` | Notification | Fires after `!mapinfo` completes. Use to print additional information |
 | `OnExtendVoteStarted` | `void` | Notification | Fires when an extend vote starts |
 | `OnExtendVoteCancelled` | `void` | Notification | Fires when an extend vote is cancelled |
@@ -110,9 +113,9 @@ Install via `IMcsRtvController.InstallEventListener`.
 
 | Method | Return | Type | Description |
 |---|---|---|---|
-| `OnClientRtvCast` | `bool` | Cancellable | Fires when a player attempts to join RTV. Return `true` to cancel |
-| `OnClientRtvUnCast` | `bool` | Cancellable | Fires when a player attempts to leave RTV. Return `true` to cancel |
-| `OnForceRtv` | `bool` | Cancellable | Fires when force RTV is about to trigger. Return `true` to cancel |
+| `OnClientRtvCast` | `McsCancellableEvent` | Cancellable | Fires when a player attempts to join RTV. Return `Stop` to cancel |
+| `OnClientRtvUnCast` | `McsCancellableEvent` | Cancellable | Fires when a player attempts to leave RTV. Return `Stop` to cancel |
+| `OnForceRtv` | `McsCancellableEvent` | Cancellable | Fires when force RTV is about to trigger. Return `Stop` to cancel |
 | `OnRtvConfirmed` | `void` | Notification | Fires when RTV is confirmed. Non-cancellable |
 
 ---
@@ -132,7 +135,7 @@ Install via `IMcsRtvController.InstallEventListener`.
 | Interface | Inherits | Properties |
 |---|---|---|
 | `IMcsNominationEventBaseParams` | -- | `Client` (`IGameClient?`), `NominationData` (`IMcsNominationData`) |
-| `INominationCheckPassedEventParams` | `IEventBaseParams` | `Client` (`IGameClient?`) |
+| `INominationCheckPassedEventParams` | `IEventBaseParams` | `Client` (`IGameClient?`), `MapConfig` (`IMapConfig`) |
 | `INominationParams` | `IEventBaseParams`, `IMcsNominationEventBaseParams` | (see base) |
 | `IAdminNominationParams` | `IEventBaseParams`, `IMcsNominationEventBaseParams` | (see base) |
 | `INominationChangeParams` | `IEventBaseParams`, `IMcsNominationEventBaseParams`, `IEnforceableEvent` | (see bases) |
@@ -145,11 +148,11 @@ Install via `IMcsRtvController.InstallEventListener`.
 |---|---|---|
 | `IMapVoteStartParams` | `IEventBaseParams` | `MapsToVote` (`IReadOnlyList<IMapConfig>`), `VoteParticipants` (`IReadOnlyList<PlayerSlot>`) |
 | `IMapVoteRandomMapPickParams` | `IEventBaseParams` | `MinimumMapCounts` (`int`), `MapConfigs` (`IReadOnlyDictionary<string, IMapConfig>`) |
-| `IMapVoteFinishedEventParams` | `IEventBaseParams` | `VoteInformation` (`IMapVoteInformation`), `IsRtvVote` (`bool`) |
-| `IMapVoteCancelledParams` | `IEventBaseParams` | `CancelledBy` (`IGameClient?`) |
+| `IMapVoteFinishedEventParams` | `IEventBaseParams` | `VoteInformation` (`IMapVoteInformation`), `IsRtvVote` (`bool`), `NominatedMaps` (`IReadOnlyDictionary<string, IMcsNominationData>`) |
+| `IMapVoteCancelledParams` | `IEventBaseParams` | `CancelledBy` (`IGameClient?`), `NominatedMaps` (`IReadOnlyDictionary<string, IMcsNominationData>`) |
 | `IMapVoteExtendParams` | `IEventBaseParams` | `ExtendTime` (`int` -- minutes or rounds), `TimeLimitType` (`TimeLimitType`) |
 | `IMapVoteNotChangedParams` | `IEventBaseParams` | (no additional properties) |
-| `IMapVoteMapConfirmedEventParams` | `IEventBaseParams` | `ConfirmedMap` (`IMapConfig`), `IsRtvVote` (`bool`) |
+| `IMapVoteMapConfirmedEventParams` | `IEventBaseParams` | `ConfirmedMap` (`IMapConfig`), `MapInformation` (`IMapInformation`), `IsRtvVote` (`bool`) |
 
 ### Map Cycle Event Parameters
 
@@ -187,13 +190,13 @@ public class MyVoteListener : IMapVoteEventListener
 {
     public int ListenerPriority => 100; // high priority
 
-    public bool OnMapVoteStart(IMapVoteStartParams @params)
+    public McsCancellableEvent OnMapVoteStart(IMapVoteStartParams @params)
     {
         // Block votes with fewer than 3 candidates
         if (@params.MapsToVote.Count < 3)
-            return true; // cancel
+            return McsCancellableEvent.Stop; // cancel
 
-        return false; // allow
+        return McsCancellableEvent.Continue; // allow
     }
 }
 ```
@@ -223,7 +226,7 @@ public class MyVoteListener : IMapVoteEventListener
 {
     public int ListenerPriority => 0;
 
-    public List<IMapConfig> OnRandomMapPick(IMapVoteRandomMapPickParams @params)
+    public McsValueOverrideEvent<List<IMapConfig>> OnRandomMapPick(IMapVoteRandomMapPickParams @params)
     {
         // Filter candidates to only maps starting with "ze_"
         var filtered = @params.MapConfigs.Values
@@ -231,9 +234,9 @@ public class MyVoteListener : IMapVoteEventListener
             .ToList();
 
         if (filtered.Count >= @params.MinimumMapCounts)
-            return filtered;
+            return new McsValueOverrideEvent<List<IMapConfig>>(filtered);
 
-        return []; // empty = use default selection
+        return McsValueOverrideEvent<List<IMapConfig>>.NoOverride; // use default selection
     }
 }
 ```

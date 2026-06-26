@@ -97,7 +97,7 @@ Note that this only checks in-memory configuration. Workshop-only maps that are 
 
 MCS provides several built-in commands that use Workshop ID resolution:
 
-- `!setnextmap <workshopId>` -- Set next map by Workshop ID (admin)
+- `!setnextwsmap <workshopId>` -- Set next map by Workshop ID (admin)
 - `!wsmap <workshopId>` -- Immediately change to a Workshop map (admin)
 - `!nominate_addwsmap <workshopId>` -- Admin-nominate a Workshop map (admin)
 

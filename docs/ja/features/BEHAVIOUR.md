@@ -39,11 +39,10 @@ MCS はマップのタイム/ラウンドリミットを完全に管理します
 
 ## マッチ終了フロー
 
-タイム/ラウンドリミットに到達し、次のマップが確定している場合:
+MCS は起動時に `server.dll` の `GoToIntermission` 関数に **detour** (フック) を設置します。タイム/ラウンドリミットに到達し、次のマップが確定している場合:
 
-- MCS はエンジンの `BeginIntermission` 関数をネイティブ関数ポインタ経由で直接呼び出します (起動時に `server.dll` から解決)
-- `mcs_end_match_immediately = 1` (デフォルト): まず `TerminateRound` を呼んでラウンド終了演出 (Round Won/Lost) を表示し、次の tick で `BeginIntermission` を呼び出します
-- `mcs_end_match_immediately = 0`: 現在のラウンドの自然終了を待ちます
+- `mcs_end_match_immediately = 1` (デフォルト): `ForceMatchEnd()` が `mp_timelimit=0.01`、`mp_maxrounds=1` を設定し、`TerminateRound` を呼んでラウンド終了演出 (Round Won/Lost) を表示します。ゲームエンジンがラウンド終了後に自然に `GoToIntermission` を呼び出し、MCS の detour がそれをインターセプトして intermission イベントを発火します。
+- `mcs_end_match_immediately = 0`: 遅延遷移フラグをセットし、`mp_timelimit=0.01, mp_maxrounds=1` を適用します。次のラウンドが自然に終了した時点で遅延ハンドラが発火し、遷移をトリガーします。
 
 冪等性ガードにより、複数のコードパスが intermission をトリガーしようとしても、マップごとに 1 回だけ発火します。
 

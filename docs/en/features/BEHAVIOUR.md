@@ -39,11 +39,10 @@ Map config execution (cfg files) runs **before** the MapTime/MapRounds applicati
 
 ## End Match Flow
 
-When the time/round limit is reached and the next map is confirmed:
+MCS installs a **`GoToIntermission` detour** (hook on `server.dll`'s `GoToIntermission` function, resolved at startup). When the time/round limit is reached and the next map is confirmed:
 
-- MCS calls the engine's `BeginIntermission` function directly via a native function pointer (resolved at startup from `server.dll`)
-- If `mcs_end_match_immediately = 1` (default): `TerminateRound` is called first for the end-of-round visual (Round Won/Lost), then `BeginIntermission` is called on the next tick
-- If `mcs_end_match_immediately = 0`: the ConVars are set to trigger the game's native end-match detection at the end of the current round
+- If `mcs_end_match_immediately = 1` (default): `ForceMatchEnd()` sets `mp_timelimit=0.01` and `mp_maxrounds=1`, then calls `TerminateRound` for the end-of-round visual (Round Won/Lost). The game engine naturally invokes `GoToIntermission` after the round ends, and the MCS detour intercepts it to fire the intermission event.
+- If `mcs_end_match_immediately = 0`: the deferred transition flag is set and `mp_timelimit=0.01, mp_maxrounds=1` are applied. On the next natural round end, the deferred handler fires and triggers the transition.
 
 An idempotency guard ensures that intermission is only fired once per map, even if multiple code paths attempt to trigger it.
 

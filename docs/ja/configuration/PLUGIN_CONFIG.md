@@ -32,6 +32,7 @@ FallbackExtendRoundsPerExtends = 5
 ShouldStopSourceTvRecording = false
 MapConfigExecutionType = "ExactMatch"
 MapConfigDirectoryPath = "maps/"
+PauseMapCycleWhenServerEmpty = false
 ```
 
 | キー | 型 | デフォルト | 説明 |

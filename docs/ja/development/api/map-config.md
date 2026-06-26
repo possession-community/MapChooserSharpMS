@@ -27,6 +27,7 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 |---|---|
 | `ResolveMapDisplayName(IMapConfig)` | `MapNameAlias` が設定されていればそれを、なければ `MapName` を返す |
 | `GetHighestCooldown(IMapConfig)` | マップ本体とグループのクールダウンを比較して最も大きい値を返す |
+| `FindMapsBySearchTag(string, IEnumerable<IMapConfig>)` | `SearchTags` に指定タグを含むマップのリストを返す |
 
 ---
 
@@ -41,6 +42,7 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 | `MapDescription` | `string` | `!mapinfo` コマンドで表示される説明文 |
 | `WorkshopId` | `long` | Steam Workshop ID。未指定の場合は `0` |
 | `GroupSettings` | `List<IMapGroupConfig>` | このマップが所属するグループ設定のリスト。先頭のグループほど優先度が高い |
+| `SearchTags` | `IReadOnlyList<string>` | ノミネーション検索用タグ (例: `!nominate <tag>`)。グループのタグはマップにマージされる |
 
 `IBaseMapConfig` から継承されるプロパティ:
 
@@ -70,6 +72,7 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 | `ShortGroupName` | `string` | 投票画面で表示される短縮タグ。最大 4 文字。TOML で 5 文字以上を指定した場合は先頭 4 文字に切り詰められる |
 | `MapCooldownOverride` | `int` | 正の値を指定すると、このグループに所属するマップのクールダウンをこの値で上書きする。マップ側の `Cooldown` よりも優先される |
 | `NominationLimit` | `int` | このグループからノミネートできるマップの最大数。`0` は無制限。グループごとに異なる値を設定可能 |
+| `SearchTags` | `IReadOnlyList<string>` | グループレベルのノミネーション検索用タグ。各マップの `SearchTags` にマージされる |
 
 ---
 
@@ -84,6 +87,7 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 | `ProhibitAdminNomination` | `bool` | `true` にすると `!nominate_addmap` による管理者ノミネーションも拒否する (コンソールからは可能) |
 | `DaysAllowed` | `IReadOnlyList<DayOfWeek>` | ノミネーション可能な曜日。空リストなら全曜日で許可 |
 | `AllowedTimeRanges` | `IReadOnlyList<ITimeRange>` | ノミネーション可能な時間帯。空リストなら全時間帯で許可 |
+| `RestrictToAllowedUsersOnly` | `bool` | `true` の場合、`mcs.nominate.*.allow.*` 権限を持つプレイヤーのみがこのマップをノミネートできる。デフォルト `false` |
 
 ### ITimeRange
 
