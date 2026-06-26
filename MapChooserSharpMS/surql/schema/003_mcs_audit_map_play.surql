@@ -1,0 +1,21 @@
+DEFINE TABLE IF NOT EXISTS mcs_audit_map_play SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS map_name ON mcs_audit_map_play TYPE string DEFAULT '';
+DEFINE FIELD IF NOT EXISTS workshop_id ON mcs_audit_map_play TYPE option<int> DEFAULT NONE;
+DEFINE FIELD IF NOT EXISTS group_names ON mcs_audit_map_play TYPE array<string> DEFAULT [];
+DEFINE FIELD IF NOT EXISTS peak_player_count ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS end_player_count ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS map_started_at ON mcs_audit_map_play TYPE datetime DEFAULT d'1970-01-01T00:00:00Z';
+DEFINE FIELD IF NOT EXISTS map_ended_at ON mcs_audit_map_play TYPE datetime DEFAULT d'1970-01-01T00:00:00Z';
+DEFINE FIELD IF NOT EXISTS map_end_reason ON mcs_audit_map_play TYPE string DEFAULT 'unknown';
+DEFINE FIELD IF NOT EXISTS round_count ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS timelimit_type ON mcs_audit_map_play TYPE string DEFAULT '';
+DEFINE FIELD IF NOT EXISTS configured_timelimit ON mcs_audit_map_play TYPE float DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS server_id ON mcs_audit_map_play TYPE string DEFAULT '';
+DEFINE FIELD IF NOT EXISTS extend_count ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS max_normal_extends ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS normal_extends_used ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS admin_vote_extend_count ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS user_ext_extends_used ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS max_user_ext_extends ON mcs_audit_map_play TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS created_at ON mcs_audit_map_play TYPE datetime DEFAULT time::now();

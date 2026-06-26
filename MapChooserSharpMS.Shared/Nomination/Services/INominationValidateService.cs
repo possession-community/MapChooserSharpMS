@@ -21,21 +21,18 @@ public interface INominationValidateService
 
     /// <summary>
     /// Checks whether an admin-forced nomination is allowed for the given map.<br/>
-    /// Admin nominations bypass player-oriented gameplay restrictions (player
-    /// count, day/time, permission). The only shared hard stops are
+    /// Admin nominations bypass most restrictions (disabled, cooldown, player
+    /// count, day/time, permission). The only hard stops are
     /// <see cref="NominationCheckResult.ProhibitAdminNomination"/> (map-level
     /// opt-out) and <see cref="NominationCheckResult.SameMap"/>.<br/>
     /// <br/>
     /// When <paramref name="nominator"/> is <c>null</c> the call is treated as
-    /// a console invocation (server operator): extra integrity checks are
-    /// skipped, but any pre-existing nomination blocks with
-    /// <see cref="NominationCheckResult.AlreadyNominated"/> to prevent
-    /// clobbering live state. When non-null (player-initiated admin), the
-    /// validator additionally rejects <see cref="NominationCheckResult.Disabled"/>
-    /// / <see cref="NominationCheckResult.MapIsInCooldown"/>, and returns
-    /// <see cref="NominationCheckResult.NominatedByAdmin"/> only when another
-    /// admin has already locked the map — a non-admin existing nomination is
-    /// considered upgradable and passes.
+    /// a console invocation (server operator): the only block is a pre-existing
+    /// nomination (<see cref="NominationCheckResult.AlreadyNominated"/>).
+    /// When non-null (player-initiated admin),
+    /// <see cref="NominationCheckResult.ProhibitAdminNomination"/> is checked,
+    /// and <see cref="NominationCheckResult.NominatedByAdmin"/> is returned only
+    /// when another admin has already locked the map.
     /// </summary>
     IReadOnlyList<NominationCheckResult> CanAdminNominateMap(IMapConfig mapConfig, IGameClient? nominator);
 
@@ -49,18 +46,39 @@ public interface INominationValidateService
 
     bool IsWithinAllowedDays(IMapConfig mapConfig);
 
-    bool IsGreaterThanMinPlayers(IMapConfig mapConfig, bool includeBots = false);
+    bool IsGreaterThanMinPlayers(IMapConfig mapConfig);
 
-    bool IsLowerThanMaxPlayers(IMapConfig mapConfig, bool includeBots = false);
+    bool IsLowerThanMaxPlayers(IMapConfig mapConfig);
 
     bool IsMapInCooldown(IMapConfig mapConfig);
+
+    bool IsMapInNominationCooldown(IMapConfig mapConfig);
+
+    bool IsPlayerInNominationCooldown(ulong steamId);
+
+    IPlayerNominationCooldownState? GetPlayerCooldownState(ulong steamId);
 
     bool HasReachedGroupNominationLimit(IMapConfig mapConfig);
 
     /// <summary>
+    /// Checks if the player has a bypass permission that skips all nomination checks.<br/>
+    /// Bypass nodes: mcs.nominate.map.bypass.{map}, mcs.nominate.group.bypass.{group}<br/>
+    /// Uses exact matching (PlayerHasPermissionExact) — root wildcard does not auto-match.
+    /// </summary>
+    bool HasBypassPermission(IMapConfig mapConfig, IGameClient client);
+
+    /// <summary>
+    /// Checks if the player has an allow permission for restricted maps.<br/>
+    /// Only checked when <see cref="IMapConfig.NominationConfig"/>.<see cref="INominationConfig.RestrictToAllowedUsersOnly"/> is true.<br/>
+    /// Allow nodes: mcs.nominate.map.allow.{map}, mcs.nominate.group.allow.{group}<br/>
+    /// Uses wildcard-capable matching (PlayerHasPermission).
+    /// </summary>
+    bool IsPlayerAllowedByPermission(IMapConfig mapConfig, IGameClient client);
+
+    /// <summary>
     /// Checks if the player is denied from nominating this map by permission nodes.<br/>
-    /// Resolution order: Any Deny > Any Allow > Default (allowed).<br/>
     /// Deny nodes: mcs.nominate.map.deny.{map}, mcs.nominate.group.deny.{group}<br/>
+    /// Uses exact matching (PlayerHasPermissionExact).
     /// </summary>
     bool IsPlayerDeniedByPermission(IMapConfig mapConfig, IGameClient client);
 

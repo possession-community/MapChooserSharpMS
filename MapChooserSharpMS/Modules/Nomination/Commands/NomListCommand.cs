@@ -12,7 +12,7 @@ using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
+internal sealed class NomListCommand(IServiceProvider provider) : NominationCommandBase(provider)
 {
     public override string CommandName => "nomlist";
     public override string CommandDescription => "Shows current nomination list";
@@ -32,7 +32,7 @@ internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCo
         if (nominations.Count == 0)
         {
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "NominationList.Command.Notification.ThereIsNoNomination"));
+                LocalizeWithNominationPrefix(client, "NominationList.Command.Notification.ThereIsNoNomination"));
             return;
         }
 
@@ -41,7 +41,7 @@ internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCo
                          && TnmsPluginFoundation.TnmsPlugin.AdminManager.PlayerHasPermission(client.SteamId, "mcs.admin.command.nomination.nomlist.verbose");
 
         client.GetPlayerController()?.PrintToChat(
-            LocalizeWithPluginPrefix(client, "NominationList.Command.Notification.ListHeader"));
+            LocalizeWithNominationPrefix(client, "NominationList.Command.Notification.ListHeader"));
 
         int index = 1;
         foreach (var (_, nomination) in nominations)
@@ -75,7 +75,7 @@ internal sealed class NomListCommand(IServiceProvider provider) : TnmsAbstractCo
 
         foreach (int slot in nomination.NominationParticipants)
         {
-            var participant = clientManager.GetGameClient(new PlayerSlot(slot));
+            var participant = clientManager.GetGameClient(new PlayerSlot((byte)slot));
             if (participant is null) continue;
 
             if (sb.Length > 0)

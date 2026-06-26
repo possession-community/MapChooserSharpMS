@@ -39,8 +39,8 @@ internal sealed class RemoveNextMapCommand(IServiceProvider provider) : McsComma
             return;
         }
 
-        string mapDisplay = _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap);
-        string mapActualName = nextMap.MapName;
+        string mapDisplay = _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap.MapConfig);
+        string mapActualName = nextMap.MapConfig.MapName;
 
         if (!transitionManager.TryRemoveNextMap())
             return;

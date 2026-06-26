@@ -14,7 +14,7 @@ using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class AdminNominateCommand(IServiceProvider provider) : McsCommandBase(provider)
+internal sealed class AdminNominateCommand(IServiceProvider provider) : NominationCommandBase(provider)
 {
     public override string CommandName => "nominate_addmap";
     public override string CommandDescription => "Admin: force-add a map to nomination";
@@ -39,17 +39,17 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
         if (_voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
         {
             string nextMapDisplay = _transitionManager.NextMap is { } nextMap
-                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap.MapConfig)
                 : LocalizeString(client, "Word.VotePending");
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
+                LocalizeWithNominationPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
             return;
         }
 
         if (commandInfo.ArgCount < 1)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "NominationAddMap.Command.Notification.Usage"));
+                LocalizeWithNominationPrefix(client, "NominationAddMap.Command.Notification.Usage"));
             if (client is not null)
                 _controller.NominationMenuManagementService.ShowAdminNominationMenu(client);
             return;
@@ -74,14 +74,14 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : McsComma
         if (matched.Count == 0)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
             return;
         }
 
         if (matched.Count > 1)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, mapName));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, mapName));
             if (client is not null)
                 _controller.NominationMenuManagementService.ShowAdminNominationMenu(client, matched);
             return;

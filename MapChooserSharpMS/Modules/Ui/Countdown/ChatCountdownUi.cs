@@ -12,16 +12,30 @@ public class ChatCountdownUi(IServiceProvider provider): IMcsCountdownUi
 {
     private readonly TnmsPlugin _plugin = provider.GetRequiredService<TnmsPlugin>();
 
-    private bool _isFirstNotificationNotified = false;
-    
+    private bool _isFirstNotificationNotified;
+
     public void ShowCountdownToPlayer(IGameClient client, int secondsLeft, McsCountdownType countdownType)
     {
-        if (!_isFirstNotificationNotified || secondsLeft <= 10)
+        switch (countdownType)
         {
-            client.GetPlayerController()?.PrintToChat(_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Countdown", secondsLeft));
-            _isFirstNotificationNotified = true;
+            case McsCountdownType.VoteStart:
+                if (!_isFirstNotificationNotified || secondsLeft <= 10)
+                {
+                    client.GetPlayerController()?.PrintToChat(
+                        $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Countdown", secondsLeft)}");
+                    _isFirstNotificationNotified = true;
+                }
+                break;
+
+            case McsCountdownType.Voting:
+                client.GetPlayerController()?.PrintToChat(
+                    $" {_plugin.GetPluginPrefix(client)} {_plugin.LocalizeStringForPlayer(client, "MapVote.Broadcast.Voting.VoteEndCountdown", secondsLeft)}");
+                break;
         }
     }
 
-    public void Close(IGameClient client){}
+    public void Close(IGameClient client)
+    {
+        _isFirstNotificationNotified = false;
+    }
 }

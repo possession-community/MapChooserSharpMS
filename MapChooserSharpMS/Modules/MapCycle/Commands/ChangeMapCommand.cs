@@ -1,5 +1,7 @@
 using System;
 using MapChooserSharpMS.Modules.Commands;
+using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
+using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,7 +47,7 @@ internal sealed class ChangeMapCommand(IServiceProvider provider) : McsCommandBa
         string executorName = client?.Name ?? "Console";
         string mapDisplay = _mapConfigProvider.ToolingService.ResolveMapDisplayName(mapConfig);
 
-        var transitionManager = _controller.MapTransitionManager;
+        var transitionManager = ServiceProvider.GetRequiredService<IMcsInternalMapTransitionManager>();
         transitionManager.TrySetNextMap(mapConfig);
 
         PrintLocalizedChatToAll("MapCycle.Broadcast.Admin.ChangingMap", executorName, mapDisplay);
@@ -53,6 +55,6 @@ internal sealed class ChangeMapCommand(IServiceProvider provider) : McsCommandBa
         Logger.LogInformation("Admin {Executor} changing map to {Map} (Workshop ID: {WorkshopId})",
             executorName, mapConfig.MapName, mapConfig.WorkshopId);
 
-        transitionManager.TransitionToNextMap(0f);
+        transitionManager.BeginMapTransition(MapTransitionTrigger.AdminForceEnd);
     }
 }

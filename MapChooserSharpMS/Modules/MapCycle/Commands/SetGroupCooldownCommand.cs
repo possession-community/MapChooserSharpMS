@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.Commands;
 using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Shared.MapConfig;
@@ -16,6 +18,7 @@ namespace MapChooserSharpMS.Modules.MapCycle.Commands;
 internal sealed class SetGroupCooldownCommand(IServiceProvider provider) : McsCommandBase(provider)
 {
     public override string CommandName => "setgroupcooldown";
+    public override List<string> CommandAliases => ["setgroupcd"];
     public override string CommandDescription => "Admin: set a group's current cooldown";
     public override TnmsCommandRegistrationType CommandRegistrationType =>
         TnmsCommandRegistrationType.Client | TnmsCommandRegistrationType.Server;
@@ -48,19 +51,21 @@ internal sealed class SetGroupCooldownCommand(IServiceProvider provider) : McsCo
         }
 
         string resolvedGroupName = groupVariants.First().GroupConfig.GroupName;
-
-        if (!_cooldownCommandService.SetGroupCooldown(resolvedGroupName, cooldown))
-        {
-            PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetGroupCooldown.Failed"));
-            return;
-        }
-
         string executorName = client?.Name ?? "Console";
 
-        PrintLocalizedChatToAll("MapCycle.Broadcast.Admin.SetGroupCooldown", executorName, resolvedGroupName, cooldown);
-        Logger.LogInformation(
-            "Admin {Executor} updated group {Group} cooldown to {Cooldown}",
-            executorName, resolvedGroupName, cooldown);
+        _ = Task.Run(async () =>
+        {
+            if (!await _cooldownCommandService.SetGroupCooldown(resolvedGroupName, cooldown))
+            {
+                PrintMessageToServerOrPlayerChat(client,
+                    LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetGroupCooldown.Failed"));
+                return;
+            }
+
+            PrintLocalizedChatToAll("MapCycle.Broadcast.Admin.SetGroupCooldown", executorName, resolvedGroupName, cooldown);
+            Logger.LogInformation(
+                "Admin {Executor} updated group {Group} cooldown to {Cooldown}",
+                executorName, resolvedGroupName, cooldown);
+        });
     }
 }

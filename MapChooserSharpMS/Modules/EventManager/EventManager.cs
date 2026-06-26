@@ -140,9 +140,9 @@ internal sealed class EventManager(IServiceProvider serviceProvider, bool hotRel
     }
 
     /// <summary>
-    /// Fires a cancellable event to registered listeners (bool return type)
+    /// Fires a cancellable event to registered listeners.
     /// </summary>
-    public bool FireCancellable<TListener>(Func<TListener, bool> predicate)
+    public McsCancellableEvent FireCancellable<TListener>(Func<TListener, McsCancellableEvent> handler)
         where TListener : IEventListenerBase
     {
         var listeners = GetSortedListeners<TListener>();
@@ -151,24 +151,32 @@ internal sealed class EventManager(IServiceProvider serviceProvider, bool hotRel
         {
             try
             {
-                bool shouldCancel = predicate((TListener)listener);
-                if (shouldCancel)
+                var result = handler((TListener)listener);
+
+                if (result == McsCancellableEvent.Stop)
                 {
                     Logger.LogDebug(
                         $"Event cancelled by {listener.GetType().Name} " +
                         $"(Priority: {listener.ListenerPriority})");
-                    return true; // Event cancelled
+                    return McsCancellableEvent.Stop;
+                }
+
+                if (result == McsCancellableEvent.Handled)
+                {
+                    Logger.LogDebug(
+                        $"Event handled by {listener.GetType().Name} " +
+                        $"(Priority: {listener.ListenerPriority})");
+                    return McsCancellableEvent.Handled;
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex,
                     $"Error in event listener {listener.GetType().Name}");
-                // Continue to next listener even if exception occurs
             }
         }
 
-        return false; // Not cancelled
+        return McsCancellableEvent.Continue;
     }
 
     /// <summary>

@@ -9,8 +9,6 @@ using MapChooserSharp.Modules.MapVote.Countdown;
 using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Modules.PluginConfig.Models;
-using MapChooserSharpMS.Modules.Ui.Menu;
-
 namespace MapChooserSharpMS.Modules.PluginConfig.Services;
 
 internal sealed class PluginConfigParsingService : IPluginConfigParsingService
@@ -28,9 +26,8 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         var generalConfig = ParseGeneralConfig(root);
         var mapCycleConfig = ParseMapCycleConfig(root);
         var voteConfig = ParseVoteConfig(root);
-        var nominationConfig = ParseNominationConfig(root);
 
-        return new Models.PluginConfig(voteConfig, nominationConfig, mapCycleConfig, generalConfig);
+        return new Models.PluginConfig(voteConfig, mapCycleConfig, generalConfig);
     }
 
     private GeneralConfig ParseGeneralConfig(TomlDocumentNode root)
@@ -47,23 +44,7 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         if (string.IsNullOrWhiteSpace(steamWebApiKey))
             steamWebApiKey = System.Environment.GetEnvironmentVariable("STEAM_WEB_API_KEY") ?? "";
 
-        var sqlConfig = ParseSqlConfig(generalNode);
-
-        return new GeneralConfig(shouldUseAlias, verboseCooldown, workshopCollectionIds, shouldAutoFix, sqlConfig, rtvBehaviour, steamWebApiKey);
-    }
-
-    private SqlConfig ParseSqlConfig(TomlDocumentNode generalNode)
-    {
-        var sqlNode = TryGetSection(generalNode, "Sql"u8);
-
-        var dbType = GetEnum(sqlNode, "Type"u8, McsSupportedSqlType.Sqlite);
-        string databaseName = GetString(sqlNode, "DatabaseName"u8, "MapChooserSharp.db");
-        string host = GetString(sqlNode, "Address"u8, "");
-        string port = GetString(sqlNode, "Port"u8, "");
-        string user = GetString(sqlNode, "User"u8, "");
-        string password = GetString(sqlNode, "Password"u8, "");
-
-        return new SqlConfig(host, port, databaseName, user, ref password, dbType);
+        return new GeneralConfig(shouldUseAlias, verboseCooldown, workshopCollectionIds, shouldAutoFix, rtvBehaviour, steamWebApiKey);
     }
 
     private McsMapCycleConfig ParseMapCycleConfig(TomlDocumentNode root)
@@ -77,32 +58,27 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         bool shouldStopSourceTv = GetBool(cycleNode, "ShouldStopSourceTvRecording"u8, false);
         var executionType = GetEnum(cycleNode, "MapConfigExecutionType"u8, McsMapConfigExecutionType.ExactMatch);
         string mapConfigDir = GetString(cycleNode, "MapConfigDirectoryPath"u8, "maps/");
-        string groupConfigDir = GetString(cycleNode, "GroupConfigDirectoryPath"u8, "groups/");
+        bool pauseWhenEmpty = GetBool(cycleNode, "PauseMapCycleWhenServerEmpty"u8, false);
 
         return new McsMapCycleConfig(
             fallbackMaxExtends, fallbackMaxExtCommandUses,
             fallbackExtendTime, fallbackExtendRounds,
             shouldStopSourceTv, executionType,
-            mapConfigDir, groupConfigDir);
+            mapConfigDir, pauseWhenEmpty);
     }
 
     private VoteConfig ParseVoteConfig(TomlDocumentNode root)
     {
         var voteNode = TryGetSection(root, "MapVote"u8);
 
-        var menuType = GetEnum(voteNode, "MenuType"u8, McsSupportedMenuType.Default);
         int maxVoteElements = GetInt(voteNode, "MaxVoteElements"u8, 5);
         bool shouldPrintVote = GetBool(voteNode, "ShouldPrintVoteToChat"u8, true);
         bool shouldPrintRemaining = GetBool(voteNode, "ShouldPrintVoteRemainingTime"u8, true);
-        var countdownUiType = GetEnum(voteNode, "CountdownUiType"u8, McsCountdownUiType.CenterHtml);
+        var countdownUiType = GetEnum(voteNode, "CountdownUiType"u8, McsCountdownUiType.Center);
 
         var voteSoundConfig = ParseVoteSoundConfig(voteNode);
 
-        // AvailableMenuTypes is hardcoded to [Default]
-        var availableMenuTypes = new List<McsSupportedMenuType> { McsSupportedMenuType.Default };
-
         return new VoteConfig(
-            availableMenuTypes, menuType,
             maxVoteElements, shouldPrintVote, shouldPrintRemaining,
             voteSoundConfig, countdownUiType);
     }
@@ -133,16 +109,6 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         }
 
         return new VoteSound(countdownStartSound, voteStartSound, voteFinishSound, countdownSounds);
-    }
-
-    private NominationConfig ParseNominationConfig(TomlDocumentNode root)
-    {
-        var nominationNode = TryGetSection(root, "Nomination"u8);
-
-        var menuType = GetEnum(nominationNode, "MenuType"u8, McsSupportedMenuType.Default);
-        var availableMenuTypes = new List<McsSupportedMenuType> { McsSupportedMenuType.Default };
-
-        return new NominationConfig(availableMenuTypes, menuType);
     }
 
     #region Helpers

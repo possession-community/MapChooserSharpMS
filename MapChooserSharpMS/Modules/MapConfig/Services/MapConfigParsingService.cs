@@ -23,7 +23,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
 
     public IMapConfigParsingResult? ParseConfigs(string configPath)
     {
-        var documents = LoadTomlDocuments(configPath);
+        var documents = LoadTomlDocuments(configPath, Warnings);
         if (documents.Count == 0)
             return null;
 
@@ -143,6 +143,11 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             var groupName = TomlSectionClassifier.ExtractGroupName(fullKey);
             var groupProps = TomlPropertyMapper.ExtractProperties(node);
             var mergedProps = MapConfigBuilder.MergeProperties(defaultProps, groupProps);
+
+            mergedProps.Cooldown = groupProps.Cooldown;
+            mergedProps.CooldownDateTime = groupProps.CooldownDateTime;
+            mergedProps.NominationCooldown = groupProps.NominationCooldown;
+            mergedProps.NominationCooldownDateTime = groupProps.NominationCooldownDateTime;
 
             // Build extra: merge default → group extras
             var extraBuilder = new ExtraConfigBuilder().Merge(defaultExtra);
@@ -290,12 +295,25 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
 
             // Merge: default → group base → override
             var mergedProps = CloneProperties(defaultProps);
+            int? groupBaseCooldown = null;
+            string? groupBaseCooldownDateTime = null;
+            int? groupBaseNomCooldown = null;
+            string? groupBaseNomCooldownDateTime = null;
             if (FindSection(allSections, TomlSectionType.GroupSetting, groupName, isGroup: true, out var groupSection))
             {
                 var groupRawProps = TomlPropertyMapper.ExtractProperties(groupSection);
+                groupBaseCooldown = groupRawProps.Cooldown;
+                groupBaseCooldownDateTime = groupRawProps.CooldownDateTime;
+                groupBaseNomCooldown = groupRawProps.NominationCooldown;
+                groupBaseNomCooldownDateTime = groupRawProps.NominationCooldownDateTime;
                 mergedProps = MapConfigBuilder.MergeProperties(mergedProps, groupRawProps);
             }
             mergedProps = MapConfigBuilder.MergeProperties(mergedProps, overrideProps);
+
+            mergedProps.Cooldown = overrideProps.Cooldown ?? groupBaseCooldown;
+            mergedProps.CooldownDateTime = overrideProps.CooldownDateTime ?? groupBaseCooldownDateTime;
+            mergedProps.NominationCooldown = overrideProps.NominationCooldown ?? groupBaseNomCooldown;
+            mergedProps.NominationCooldownDateTime = overrideProps.NominationCooldownDateTime ?? groupBaseNomCooldownDateTime;
 
             // Build extra for override
             var extraBuilder = new ExtraConfigBuilder().Merge(baseGroupConfig.ExtraConfiguration);
@@ -707,6 +725,7 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             MaxPlayers = source.MaxPlayers,
             MinPlayers = source.MinPlayers,
             ProhibitAdminNomination = source.ProhibitAdminNomination,
+            RestrictToAllowedUsersOnly = source.RestrictToAllowedUsersOnly,
             DaysAllowed = source.DaysAllowed is not null ? new List<DayOfWeek>(source.DaysAllowed) : null,
             AllowedTimeRanges = source.AllowedTimeRanges is not null ? new List<ITimeRange>(source.AllowedTimeRanges) : null,
             Cooldown = source.Cooldown,
@@ -718,10 +737,14 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             OverridePriority = source.OverridePriority,
             TargetDays = source.TargetDays is not null ? new List<DayOfWeek>(source.TargetDays) : null,
             TargetTimeRanges = source.TargetTimeRanges is not null ? new List<ITimeRange>(source.TargetTimeRanges) : null,
+            MapSelectionWeight = source.MapSelectionWeight,
+            ShortGroupName = source.ShortGroupName,
+            NominationLimit = source.NominationLimit,
+            SearchTags = source.SearchTags is not null ? new List<string>(source.SearchTags) : null,
         };
     }
 
-    private static List<TomlDocument> LoadTomlDocuments(string configPath)
+    private static List<TomlDocument> LoadTomlDocuments(string configPath, List<string> warnings)
     {
         var documents = new List<TomlDocument>();
         var mapsTomlPath = Path.Combine(configPath, "maps.toml");
@@ -738,8 +761,15 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             var tomlFiles = Directory.GetFiles(configPath, "*.toml", SearchOption.AllDirectories);
             foreach (var file in tomlFiles)
             {
-                var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(file);
-                documents.Add(doc);
+                try
+                {
+                    var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(file);
+                    documents.Add(doc);
+                }
+                catch (Exception ex)
+                {
+                    warnings.Add($"Failed to parse TOML file '{file}': {ex.Message}");
+                }
             }
         }
 

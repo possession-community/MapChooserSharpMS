@@ -19,4 +19,5 @@ internal sealed record MapConfig(
     IRandomPickConfig RandomPickConfig,
     INominationConfig NominationConfig,
     ICooldownConfig CooldownConfig,
-    IExtraConfigAccessor ExtraConfiguration) : IMapConfig;
+    IExtraConfigAccessor ExtraConfiguration,
+    IReadOnlyList<string> SearchTags) : IMapConfig;

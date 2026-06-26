@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using MapChooserSharpMS.Modules.Commands;
 using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Shared.MapConfig;
@@ -15,6 +16,7 @@ namespace MapChooserSharpMS.Modules.MapCycle.Commands;
 internal sealed class SetMapCooldownCommand(IServiceProvider provider) : McsCommandBase(provider)
 {
     public override string CommandName => "setmapcooldown";
+    public override List<string> CommandAliases => ["setmapcd"];
     public override string CommandDescription => "Admin: set a map's current cooldown";
     public override TnmsCommandRegistrationType CommandRegistrationType =>
         TnmsCommandRegistrationType.Client | TnmsCommandRegistrationType.Server;

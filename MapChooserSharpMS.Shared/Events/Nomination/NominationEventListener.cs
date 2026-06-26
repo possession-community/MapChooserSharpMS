@@ -1,30 +1,30 @@
 ﻿using MapChooserSharpMS.Shared.Events.Nomination.Params;
+using MapChooserSharpMS.Shared.Ui.Menu;
 
 namespace MapChooserSharpMS.Shared.Events.Nomination;
 
 public interface INominationEventListener: IEventListenerBase
 {
     /// <summary>
-    /// You can add additional nomination validation in here <br/>
-    /// This event will fire before OnNomination and OnAdminNomination <br/>
-    /// If return true, nomination check will fail <br/>
+    /// Fired during nomination validation, before OnNomination / OnAdminNomination.
+    /// Return <see cref="McsCancellableEvent.Stop"/> to fail the nomination check.
     /// </summary>
-    /// <param name="params"></param>
-    /// <returns></returns>
-    bool OnNominationCheckPassed(INominationCheckPassedEventParams @params)
-        => false;
-    
+    McsCancellableEvent OnNominationCheckPassed(INominationCheckPassedEventParams @params)
+        => McsCancellableEvent.Continue;
+
     /// <summary>
-    /// If return true, nomination will be cancelled
+    /// Fired when a player nominates a map.
+    /// Return <see cref="McsCancellableEvent.Stop"/> to cancel the nomination.
     /// </summary>
-    bool OnNomination(INominationParams @params)
-        => false;
-    
+    McsCancellableEvent OnNomination(INominationParams @params)
+        => McsCancellableEvent.Continue;
+
     /// <summary>
-    /// If return true, nomination will be cancelled
+    /// Fired when an admin nominates a map.
+    /// Return <see cref="McsCancellableEvent.Stop"/> to cancel the nomination.
     /// </summary>
-    bool OnAdminNomination(IAdminNominationParams @params)
-        => false;
+    McsCancellableEvent OnAdminNomination(IAdminNominationParams @params)
+        => McsCancellableEvent.Continue;
     
     void OnNominationChanged(INominationChangeParams @params) {}
 
@@ -38,4 +38,10 @@ public interface INominationEventListener: IEventListenerBase
     /// entry.
     /// </summary>
     void OnUnNominate(IUnNominateParams @params) {}
+
+    /// <summary>
+    /// Fired when a nomination detail menu is about to open.
+    /// Add extra <see cref="McsMenuItem"/> via <see cref="INominationMenuDetailsOpeningParams.ExtraItems"/>.
+    /// </summary>
+    void OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams @params) {}
 }

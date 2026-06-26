@@ -1,0 +1,20 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[MapChooserSharpSettings.Groups.HardGroup]
+ShortGroupName = "HD"
+
+[MapChooserSharpSettings.Groups.LongNameGroup]
+ShortGroupName = "TOOLONG"
+
+[MapChooserSharpSettings.Groups.NoShortName]
+MaxExtends = 5
+
+[ze_hard]
+GroupSettings = ["HardGroup"]
+
+[ze_longname]
+GroupSettings = ["LongNameGroup"]
+
+[ze_noshort]
+GroupSettings = ["NoShortName"]

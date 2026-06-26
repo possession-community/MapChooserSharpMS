@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapVote;
+using MapChooserSharpMS.Shared.Events;
+using McsCancellableEvent = MapChooserSharpMS.Shared.Events.McsCancellableEvent;
 using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.Handlers;
@@ -12,8 +15,10 @@ using MapChooserSharpMS.Modules.MapVote.Models;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapVote;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.MapVote.Services;
+using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
 using Microsoft.Extensions.Logging;
 using NativeVoteManagerMS.Shared;
@@ -43,8 +48,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private readonly IMcsMapConfigProvider _mapConfigProvider;
     private readonly IMcsInternalMapExtendService _mapExtendService;
     private readonly McsMapCooldownLifecycleService _cooldownLifecycleService;
-    private readonly McsMapVoteSoundPlayer? _soundPlayer;
-    private readonly Ui.Countdown.McsCountdownUiController? _countdownUi;
+    private readonly McsMapVoteSoundPlayer _soundPlayer;
+    private readonly Ui.Countdown.McsCountdownUiController _countdownUi;
 
     private Guid _countdownTimerId = Guid.Empty;
     private Guid _voteEndTimerId = Guid.Empty;
@@ -68,8 +73,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         IMcsMapConfigProvider mapConfigProvider,
         IMcsInternalMapExtendService mapExtendService,
         McsMapCooldownLifecycleService cooldownLifecycleService,
-        McsMapVoteSoundPlayer? soundPlayer,
-        Ui.Countdown.McsCountdownUiController? countdownUi)
+        McsMapVoteSoundPlayer soundPlayer,
+        Ui.Countdown.McsCountdownUiController countdownUi)
     {
         _plugin = plugin;
         _moduleBase = moduleBase;
@@ -107,66 +112,22 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         session.CurrentState = McsMapVoteState.Initializing;
         _voteState.SetState(McsMapVoteState.Initializing);
 
-        int maxElements = _configProvider.PluginConfig.VoteConfig.MaxMenuElements;
-        var candidates = BuildCandidateList(isActivatedByRtv, maxElements);
-
-        if (candidates.Count < 2)
-        {
-            _logger.LogWarning("Not enough maps to start vote ({Count} candidates)", candidates.Count);
-            BroadcastToAll("MapVote.Broadcast.NotEnoughMapsToStartVote");
-
-            session.CurrentState = McsMapVoteState.NotEnoughMapsToStartVote;
-            _voteState.SetState(McsMapVoteState.NotEnoughMapsToStartVote);
-
-            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
-            _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
-
-            _voteState.Reset();
-            _voteManager.ClearSession();
-            return McsMapVoteState.NotEnoughMapsToStartVote;
-        }
-
-        session.SetVoteOptions(candidates);
-
-        var realMapConfigs = candidates
-            .Where(c => c.MapConfig is not null)
-            .Select(c => c.MapConfig!)
-            .ToList();
-
-        var participants = GetVoteParticipants();
-
-        var participantSlots = participants.Select(c => c.Slot).ToList();
-        var startParams = new MapVoteStartParams(_plugin, _moduleBase, realMapConfigs, participantSlots);
-        bool cancelled = _eventManager.FireCancellable<IMapVoteEventListener>(e => e.OnMapVoteStart(startParams));
-        if (cancelled)
-        {
-            _logger.LogInformation("Vote start cancelled by event listener");
-            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
-            _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
-            session.CurrentState = McsMapVoteState.NoActiveVote;
-            _voteState.Reset();
-            _voteManager.ClearSession();
-            return McsMapVoteState.NoActiveVote;
-        }
-
         session.CurrentState = McsMapVoteState.InitializeAccepted;
-        session.ParticipantCount = participants.Count;
         _voteState.SetState(McsMapVoteState.InitializeAccepted);
 
         int countdownSeconds = _conVars.VoteCountdownTime.GetInt32();
         if (countdownSeconds > 0)
         {
-            _soundPlayer?.SetRunoff(false);
-            _soundPlayer?.PlayVoteCountdownStartSoundToAll();
-            StartPreVoteCountdown(session, candidates, participants, countdownSeconds);
+            _soundPlayer.SetRunoff(false);
+            _soundPlayer.PlayVoteCountdownStartSoundToAll();
+            StartPreVoteCountdown(session, countdownSeconds);
         }
         else
         {
-            if (!StartNativeVote(session, candidates, participants, false))
-                return McsMapVoteState.NoActiveVote;
+            OnCountdownFinished(session);
         }
 
-        return McsMapVoteState.InitializeAccepted;
+        return session.CurrentState;
     }
 
     public McsMapVoteState CancelVote(IGameClient? client)
@@ -188,7 +149,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         _nativeVoteManager.CancelVote();
 
-        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, client);
+        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, client, SnapshotNominations());
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
 
         return McsMapVoteState.Cancelling;
@@ -206,7 +167,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         _nativeVoteManager.CancelVote();
 
-        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
 
         return true;
@@ -215,7 +176,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     internal void HandleExternalCancel(MapVoteInformation session)
     {
         StopCountdownTimer();
-        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+        var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
 
         session.CurrentState = McsMapVoteState.NoActiveVote;
@@ -312,7 +273,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private void HandleWinner(MapVoteInformation session, MapVoteOption? winner)
     {
         StopCountdownTimer();
-        _soundPlayer?.PlayVoteFinishedSoundToAll();
+        _soundPlayer.PlayVoteFinishedSoundToAll();
 
         session.SetWinner(winner);
 
@@ -357,7 +318,9 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             }
         }
 
-        var finishedParams = new MapVoteFinishedParams(_plugin, _moduleBase, session, session.IsRtvVote);
+        ApplyNominationCooldownToNominatedMaps();
+
+        var finishedParams = new MapVoteFinishedParams(_plugin, _moduleBase, session, session.IsRtvVote, SnapshotNominations());
         _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteFinished(finishedParams));
 
         if (winner is null)
@@ -369,8 +332,6 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         else if (winner.MapName == MapVoteConstants.ExtendMapInternalName)
         {
             _logger.LogInformation("Vote result: Extend current map");
-            // The extend service applies the extension and fires OnMapExtended
-            // with the real amount/type, consuming the vote-extend budget.
             var extendResult = _mapExtendService.TryExtend(McsExtendTrigger.MapVote);
             if (extendResult != Shared.MapCycle.McsMapExtendResult.Extended)
             {
@@ -388,10 +349,9 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         else if (winner.MapConfig is not null)
         {
             _logger.LogInformation("Vote result: Next map confirmed as {MapName}", winner.MapName);
-            var confirmedParams = new MapVoteMapConfirmedParams(_plugin, _moduleBase, winner.MapConfig, session.IsRtvVote);
+            var mapInfo = BuildMapInformation(winner.MapConfig);
+            var confirmedParams = new MapVoteMapConfirmedParams(_plugin, _moduleBase, mapInfo, session.IsRtvVote);
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapConfirmed(confirmedParams));
-
-            ApplyNominationCooldownToNominatedMaps();
 
             session.CurrentState = McsMapVoteState.NextMapConfirmed;
             _voteState.SetState(McsMapVoteState.NextMapConfirmed);
@@ -399,14 +359,12 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             return;
         }
 
-        ApplyNominationCooldownToNominatedMaps();
-
         session.CurrentState = McsMapVoteState.NoActiveVote;
         _voteState.Reset();
         _voteManager.ClearSession();
     }
 
-    private List<IMapVoteOption> BuildCandidateList(bool isRtvVote, int maxElements)
+    private async Task<List<IMapVoteOption>> BuildCandidateListAsync(bool isRtvVote, int maxElements)
     {
         var candidates = new List<IMapVoteOption>();
         var usedMapNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -465,22 +423,19 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             var pickParams = new MapVoteRandomMapPickParams(
                 _plugin, _moduleBase, remaining, allConfigs);
 
-            List<IMapConfig>? overrideList = null;
-            _eventManager.Fire<IMapVoteEventListener>(e =>
-            {
-                var result = e.OnRandomMapPick(pickParams);
-                if (result.Count > 0)
-                    overrideList = result;
-            });
+            var overrideResult = _eventManager.FireWithResult<IMapVoteEventListener, McsValueOverrideEvent<List<IMapConfig>>>(
+                e => e.OnRandomMapPick(pickParams),
+                r => r.HasValue,
+                McsValueOverrideEvent<List<IMapConfig>>.NoOverride);
 
             IEnumerable<IMapConfig> mapsToAdd;
-            if (overrideList is not null)
+            if (overrideResult.HasValue)
             {
-                mapsToAdd = overrideList;
+                mapsToAdd = overrideResult.Value;
             }
             else
             {
-                mapsToAdd = _randomMapPicker.PickRandomMaps(remaining, usedMapNames);
+                mapsToAdd = await _randomMapPicker.PickRandomMapsAsync(remaining, usedMapNames);
             }
 
             foreach (var map in mapsToAdd)
@@ -581,7 +536,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         if (result != VoteInitiateResult.Success)
         {
             _logger.LogWarning("Failed to initiate native vote: {Result}", result);
-            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null);
+            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
             _voteState.Reset();
             _voteManager.ClearSession();
@@ -591,8 +546,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         session.CurrentState = isRunoff ? McsMapVoteState.RunoffVoting : McsMapVoteState.Voting;
         _voteState.SetState(session.CurrentState);
 
-        _soundPlayer?.SetRunoff(isRunoff);
-        _soundPlayer?.PlayVoteStartSoundToAll();
+        _soundPlayer.SetRunoff(isRunoff);
+        _soundPlayer.PlayVoteStartSoundToAll();
 
         if (_configProvider.PluginConfig.VoteConfig.ShouldPrintVoteRemainingTime)
             StartVoteEndCountdown(session, voteDuration);
@@ -610,10 +565,38 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         }
     }
 
+    private IReadOnlyDictionary<string, IMcsNominationData> SnapshotNominations()
+        => new Dictionary<string, IMcsNominationData>(_nominationManager.NominatedMaps, StringComparer.OrdinalIgnoreCase);
+
+    private IMapInformation BuildMapInformation(IMapConfig mapConfig)
+    {
+        var builder = MapInformation.For(mapConfig);
+
+        if (_nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var nomination))
+        {
+            var clients = _plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+            var steamIds = new List<ulong>();
+            foreach (int slot in nomination.NominationParticipants)
+            {
+                foreach (var client in clients)
+                {
+                    if (client.Slot == slot)
+                    {
+                        steamIds.Add(client.SteamId);
+                        break;
+                    }
+                }
+            }
+
+            if (steamIds.Count > 0)
+                builder.WithNominators(steamIds);
+        }
+
+        return builder.Build();
+    }
+
     private void StartPreVoteCountdown(
         MapVoteInformation session,
-        IReadOnlyList<IMapVoteOption> candidates,
-        List<IGameClient> participants,
         int totalSeconds)
     {
         _voteDuration = totalSeconds;
@@ -627,27 +610,94 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
                 return;
             }
 
+            var readOnlyState = _voteState as IMcsReadOnlyVoteState;
+            if (readOnlyState?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
+            {
+                StopCountdownTimer();
+                _countdownUi.CloseCountdownUiAll();
+
+                var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
+                _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
+
+                session.CurrentState = McsMapVoteState.NoActiveVote;
+                _voteState.Reset();
+                _voteManager.ClearSession();
+                return;
+            }
+
             int elapsed = (int)(DateTime.UtcNow - _voteStartTime).TotalSeconds;
             int remaining = totalSeconds - elapsed;
 
             if (remaining <= 0)
             {
                 StopCountdownTimer();
-                _countdownUi?.CloseCountdownUiAll();
-
-                if (!StartNativeVote(session, candidates, participants, false))
-                {
-                    session.CurrentState = McsMapVoteState.NoActiveVote;
-                    _voteState.Reset();
-                    _voteManager.ClearSession();
-                }
+                _countdownUi.CloseCountdownUiAll();
+                OnCountdownFinished(session);
                 return;
             }
 
-            _countdownUi?.ShowCountdownToAll(remaining, Ui.Countdown.McsCountdownType.VoteStart);
-            _soundPlayer?.PlayVoteCountdownSoundToAll(remaining);
+            _countdownUi.ShowCountdownToAll(remaining, Ui.Countdown.McsCountdownType.VoteStart);
+            _soundPlayer.PlayVoteCountdownSoundToAll(remaining);
 
         }, 1.0, Sharp.Shared.Enums.GameTimerFlags.Repeatable | Sharp.Shared.Enums.GameTimerFlags.StopOnMapEnd);
+    }
+
+    private void OnCountdownFinished(MapVoteInformation session)
+    {
+        int maxElements = _configProvider.PluginConfig.VoteConfig.MaxMenuElements;
+        List<IMapVoteOption> candidates;
+        try
+        {
+            candidates = BuildCandidateListAsync(session.IsRtvVote, maxElements).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to build candidate list after countdown");
+            session.CurrentState = McsMapVoteState.NoActiveVote;
+            _voteState.Reset();
+            _voteManager.ClearSession();
+            return;
+        }
+
+        if (candidates.Count < 2)
+        {
+            _logger.LogWarning("Not enough maps to start vote after countdown ({Count} candidates)", candidates.Count);
+            BroadcastToAll("MapVote.Broadcast.NotEnoughMapsToStartVote");
+            session.CurrentState = McsMapVoteState.NoActiveVote;
+            _voteState.Reset();
+            _voteManager.ClearSession();
+            return;
+        }
+
+        session.SetVoteOptions(candidates);
+
+        var realMapConfigs = candidates
+            .Where(c => c.MapConfig is not null)
+            .Select(c => c.MapConfig!)
+            .ToList();
+
+        var participants = GetVoteParticipants();
+        session.ParticipantCount = participants.Count;
+
+        var participantSlots = participants.Select(c => c.Slot).ToList();
+        var startParams = new MapVoteStartParams(_plugin, _moduleBase, realMapConfigs, participantSlots);
+        if (_eventManager.FireCancellable<IMapVoteEventListener>(e => e.OnMapVoteStart(startParams)) == McsCancellableEvent.Stop)
+        {
+            _logger.LogInformation("Vote start cancelled by event listener");
+            var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
+            _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
+            session.CurrentState = McsMapVoteState.NoActiveVote;
+            _voteState.Reset();
+            _voteManager.ClearSession();
+            return;
+        }
+
+        if (!StartNativeVote(session, candidates, participants, false))
+        {
+            session.CurrentState = McsMapVoteState.NoActiveVote;
+            _voteState.Reset();
+            _voteManager.ClearSession();
+        }
     }
 
     private void StopCountdownTimer()
@@ -657,7 +707,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             _plugin.SharedSystem.GetModSharp().StopTimer(_countdownTimerId);
             _countdownTimerId = Guid.Empty;
         }
-        _countdownUi?.CloseCountdownUiAll();
+        _countdownUi.CloseCountdownUiAll();
         StopVoteEndTimer();
     }
 
@@ -692,7 +742,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
                 return;
             }
 
-            BroadcastToAll("MapVote.Broadcast.Voting.VoteEndCountdown", remaining);
+            _countdownUi.ShowCountdownToAll(remaining, Ui.Countdown.McsCountdownType.Voting);
+            _soundPlayer.PlayVoteCountdownSoundToAll(remaining);
         }, 1.0, Sharp.Shared.Enums.GameTimerFlags.Repeatable | Sharp.Shared.Enums.GameTimerFlags.StopOnMapEnd);
     }
 

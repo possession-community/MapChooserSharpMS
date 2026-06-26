@@ -1,6 +1,7 @@
 <Project>
     <PropertyGroup>
-        <Version>0.0.1</Version>
+        <Version>26.6.22</Version>
+        <InformationalVersion>26.06.22a</InformationalVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Copyright>© 2025 faketuna</Copyright>
         <RepositoryUrl>https://github.com/fltuna/MapChooserSharpMS</RepositoryUrl>

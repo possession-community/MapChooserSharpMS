@@ -27,7 +27,7 @@ internal sealed class NextMapCommand(IServiceProvider provider) : TnmsAbstractCo
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
 
         string mapDisplay = _controller.MapTransitionManager.NextMap is { } nextMap
-            ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+            ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap.MapConfig)
             : LocalizeString(client, "Word.VotePending");
 
         PrintMessageToServerOrPlayerChat(client,

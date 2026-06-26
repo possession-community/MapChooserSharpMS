@@ -24,7 +24,7 @@ internal sealed class CurrentMapCommand(IServiceProvider provider) : TnmsAbstrac
         _controller ??= ServiceProvider.GetRequiredService<IMapCycleController>();
 
         var currentMap = _controller.MapTransitionManager.CurrentMap;
-        string mapDisplay = currentMap?.MapName
+        string mapDisplay = currentMap?.MapConfig.MapName
             ?? Plugin.SharedSystem.GetModSharp().GetMapName()
             ?? "Unknown";
 

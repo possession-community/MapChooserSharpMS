@@ -8,7 +8,7 @@ namespace MapChooserSharpMS.Shared.Events.MapCycle.Params;
 /// Listeners can modify <see cref="Cooldown"/>, <see cref="TimedCooldownDuration"/>,
 /// or set <see cref="IsCancelled"/> to prevent cooldown application.
 /// </summary>
-public interface IMapCooldownApplyEventParams : IEventBaseParams
+public interface IMapCooldownApplyEventParams : IEventBaseParams, IMcsEditableEvent
 {
     /// <summary>
     /// Map cooldown application target.
@@ -26,9 +26,4 @@ public interface IMapCooldownApplyEventParams : IEventBaseParams
     /// Initialized to <see cref="IBaseMapConfig.CooldownConfig"/>.<c>TimedCooldown</c>.
     /// </summary>
     TimeSpan TimedCooldownDuration { get; set; }
-
-    /// <summary>
-    /// When set to true, cooldown application is skipped entirely for this map.
-    /// </summary>
-    bool IsCancelled { get; set; }
 }

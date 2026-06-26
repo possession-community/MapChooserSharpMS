@@ -7,16 +7,16 @@ namespace MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 public interface IMapTransitionManager
 {
     /// <summary>
-    /// Next map of IMapConfig.
-    /// null until MapChange -> Next map confirmed.
+    /// Next map information including nominator metadata.
+    /// null until next map is confirmed.
     /// </summary>
-    IMapConfig? NextMap { get; }
-    
+    IMapInformation? NextMap { get; }
+
     /// <summary>
-    /// Current map of IMapConfig.
+    /// Current map information.
     /// null if MCS couldn't find map config for current map.
     /// </summary>
-    IMapConfig? CurrentMap { get; }
+    IMapInformation? CurrentMap { get; }
     
     /// <summary>
     /// True if next map confirmed
@@ -29,7 +29,12 @@ public interface IMapTransitionManager
     bool ChangeMapOnNextRoundEnd { get; set; }
     
     /// <summary>
-    /// Set next map to specified map config
+    /// Set next map with full metadata (nominator info, etc.).
+    /// </summary>
+    bool TrySetNextMap(IMapInformation mapInformation);
+
+    /// <summary>
+    /// Set next map to specified map config (no nominator metadata).
     /// </summary>
     /// <param name="mapConfig">Map Config</param>
     /// <returns>True if map is valid and next map successfully changed, otherwise false</returns>

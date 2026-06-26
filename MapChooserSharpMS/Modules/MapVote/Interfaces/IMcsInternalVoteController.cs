@@ -13,7 +13,5 @@ internal interface IMcsInternalVoteController : IMcsMapVoteController
 {
     IVoteControllingManager MapVoteManager { get; }
 
-    IMapVoteControllingService MapVoteControllingService { get; }
-
     IClientVoteHandlingService ClientVoteHandlingService { get; }
 }

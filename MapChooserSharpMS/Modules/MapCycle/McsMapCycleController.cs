@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
@@ -7,6 +9,8 @@ using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Modules.MapCycle.Managers.TimeLimit.Interfaces;
 using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
+using MapChooserSharpMS.Modules.Services;
+using Wuling.Abstract;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapCycle;
@@ -57,6 +61,10 @@ internal sealed class McsMapCycleController
     private McsMapCooldownQueryService _cooldownQueryService = null!;
     private McsMapCooldownCommandService _cooldownCommandService = null!;
     private McsMapCooldownLifecycleService _cooldownLifecycleService = null!;
+    private MapConfigExecutionService _mapConfigExecutionService = null!;
+    private IMcsPluginConfigProvider _pluginConfigProvider = null!;
+    private IMcsBootPhaseTracker _bootPhaseTracker = null!;
+    private WorkshopProvisioningService? _workshopProvisioningService;
 
     private MapCycleMode _mode = MapCycleMode.None;
     private Guid _tickTimerId = Guid.Empty;
@@ -123,12 +131,18 @@ internal sealed class McsMapCycleController
         services.AddSingleton<McsExtCommandService>(_ => _extCommandService);
         services.AddSingleton<McsMapCooldownLifecycleService>(_ => _cooldownLifecycleService);
         services.AddSingleton<McsMapCooldownCommandService>(_ => _cooldownCommandService);
+        services.AddSingleton<IMapCooldownQueryService>(_ => _cooldownQueryService);
     }
 
     protected override void OnInitialize()
     {
         _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
-        var workshopProvisioning = CreateWorkshopProvisioningService();
+        _workshopProvisioningService = CreateWorkshopProvisioningService();
+        var workshopProvisioning = _workshopProvisioningService;
+        _pluginConfigProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
+        _bootPhaseTracker = ServiceProvider.GetRequiredService<IMcsBootPhaseTracker>();
+        var configProvider = _pluginConfigProvider;
+
         _mapTransitionManager = new McsMapTransitionManager(
             SharedSystem,
             ServiceProvider.GetRequiredService<IMcsMapConfigProvider>(),
@@ -136,12 +150,9 @@ internal sealed class McsMapCycleController
             Plugin,
             this,
             _eventManager,
-            () => _internalTimeLimitManager?.IsLimitReached == true,
-            () => _internalTimeLimitManager?.TimeLimitType,
             _conVars,
+            () => configProvider.PluginConfig.MapCycleConfig.ShouldStopSourceTvRecording,
             workshopProvisioning);
-
-        var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         var readOnlyVoteState = ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
 
         _extendService = new McsMapExtendService(
@@ -155,7 +166,11 @@ internal sealed class McsMapCycleController
         _extendVoteService = new McsExtendVoteService(
             Plugin, this, Logger, _eventManager, _extendService,
             _conVars,
-            () => _mapTransitionManager.CurrentMap);
+            () => _mapTransitionManager.CurrentMap?.MapConfig);
+
+        _mapConfigExecutionService = new MapConfigExecutionService(
+            SharedSystem, Logger,
+            () => configProvider.PluginConfig.MapCycleConfig.MapConfigExecutionType);
 
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _cooldownQueryService = new McsMapCooldownQueryService();
@@ -184,15 +199,50 @@ internal sealed class McsMapCycleController
             .GetRequiredSharpModuleInterface<INativeVoteManager>(INativeVoteManager.ModSharpModuleIdentity)
             .Instance;
 
+        InitializeCooldownPersistence();
+
         _eventManager.RegisterListener<IMapVoteEventListener>(this);
 
         AddCommandsUnderNamespace("MapChooserSharpMS.Modules.MapCycle.Commands");
+    }
+
+    private void InitializeCooldownPersistence()
+    {
+        var wulingModule = SharedSystem.GetSharpModuleManager()
+            .GetOptionalSharpModuleInterface<IWuling>(IWuling.Identity);
+
+        if (wulingModule?.Instance is not { } wuling)
+        {
+            Logger.LogInformation("[MapCycle] Wuling not available — cooldown persistence disabled");
+            return;
+        }
+
+        var surreal = wuling.Surreal;
+        var persistence = new SurrealCooldownRepository(surreal, Logger, Plugin.ModuleDirectory);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await persistence.EnsureSchemasAsync();
+                _cooldownLifecycleService.SetPersistence(persistence);
+                _cooldownCommandService.SetPersistence(persistence);
+                Logger.LogInformation("[MapCycle] Cooldown persistence initialized via Wuling SurrealDB");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "[MapCycle] Failed to initialize cooldown persistence — falling back to in-memory only");
+            }
+        });
     }
 
     protected override void OnUnloadModule()
     {
         TearDownCurrentMap();
 
+        if (_mapTransitionManager is McsMapTransitionManager concreteManager)
+            concreteManager.UninstallHook();
+        _workshopProvisioningService?.Dispose();
         _eventManager.RemoveListener<IMapVoteEventListener>(this);
         SharedSystem.GetModSharp().RemoveGameListener(this);
         SharedSystem.GetClientManager().RemoveClientListener(this);
@@ -203,7 +253,16 @@ internal sealed class McsMapCycleController
 
     public void OnMapConfirmed(IMapVoteMapConfirmedEventParams @params)
     {
-        _mapTransitionManager.TrySetNextMap(@params.ConfirmedMap);
+        _mapTransitionManager.TrySetNextMap(@params.MapInformation);
+    }
+
+    public void OnMapNotChanged(IMapVoteNotChangedParams @params)
+    {
+        if (_transitionTracker is null)
+            return;
+
+        _transitionTracker.ResetVoteThresholdFlag();
+        SharedSystem.GetModSharp().InvokeFrameAction(() => FireTransitions());
     }
 
     #endregion
@@ -268,23 +327,14 @@ internal sealed class McsMapCycleController
     /// </summary>
     private void OnGameIntermission()
     {
-        var nextMap = _mapTransitionManager.NextMap;
-        if (nextMap is null)
+        if (_mapTransitionManager.NextMap is null)
             return;
 
-        // The round_end transition path is armed and owns this change.
-        if (_mapTransitionManager.ChangeMapOnNextRoundEnd)
+        if (_mapTransitionManager.ChangeMapOnNextRoundEnd || _mapTransitionManager.IsIntermissionFired)
             return;
 
-        float extraTime = SharedSystem.GetConVarManager()
-            .FindConVar("mp_competitive_endofmatch_extra_time")?.GetFloat() ?? 5.0f;
-        float delay = Math.Max(extraTime - 1.0f, 0f);
-
-        var intermissionParams = new EventManager.Events.MapCycle.McsIntermissionParams(
-            Plugin, this, nextMap);
-        _eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
-
-        _mapTransitionManager.TransitionToNextMap(delay);
+        _mapTransitionManager.BeginMapTransition(
+            Managers.MapTransition.MapTransitionTrigger.GameIntermission);
     }
 
     #endregion
@@ -295,13 +345,44 @@ internal sealed class McsMapCycleController
     {
         TearDownCurrentMap();
 
+        _ = Task.Run(async () =>
+        {
+            await _cooldownLifecycleService.LoadFromDatabaseAsync();
+            SharedSystem.GetModSharp().InvokeFrameAction(() =>
+            {
+                _cooldownLifecycleService.DecrementAllCooldowns();
+            });
+        });
+
         var currentMapName = SharedSystem.GetModSharp().GetMapName() ?? string.Empty;
         _mapTransitionManager.SetCurrentMap(currentMapName);
-        _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap);
+        _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap?.MapConfig);
         _extCommandService.ClearParticipants();
+
+        var mapConfig = _mapTransitionManager.CurrentMap?.MapConfig;
+        if (mapConfig is not null)
+            _mapConfigExecutionService.ExecuteConfigsForMap(mapConfig);
 
         var mode = ParseMode(_conVars.Mode.GetString());
         var cvm = SharedSystem.GetConVarManager();
+        if (mapConfig is not null)
+        {
+            switch (mode)
+            {
+                case MapCycleMode.Time:
+                    cvm.FindConVar("mp_timelimit")?.Set((float)mapConfig.MapTime);
+                    Logger.LogInformation(
+                        "[MapCycle] Applied MapTime={MapTime} from map config to mp_timelimit",
+                        mapConfig.MapTime);
+                    break;
+                case MapCycleMode.Round:
+                    cvm.FindConVar("mp_maxrounds")?.Set(mapConfig.MapRounds);
+                    Logger.LogInformation(
+                        "[MapCycle] Applied MapRounds={MapRounds} from map config to mp_maxrounds",
+                        mapConfig.MapRounds);
+                    break;
+            }
+        }
 
         switch (mode)
         {
@@ -357,6 +438,10 @@ internal sealed class McsMapCycleController
                 return;
         }
 
+        cvm.FindConVar("mp_timelimit")?.Set(99999999.0f);
+        cvm.FindConVar("mp_maxrounds")?.Set(99999999);
+        cvm.FindConVar("mp_match_end_changelevel")?.Set(0);
+
         _tickTimerId = SharedSystem.GetModSharp().PushTimer(
             OnTimerTick,
             1.0,
@@ -390,9 +475,8 @@ internal sealed class McsMapCycleController
             _tickTimerId = Guid.Empty;
         }
 
-        _cooldownLifecycleService?.DecrementAllCooldowns();
-
-        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap is { } playedMap)
+        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap?.MapConfig is { } playedMap
+            && !IsServerEmptyAndPaused() && !_bootPhaseTracker.IsBootPhase)
             _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);
 
         _internalTimeLimitManager = null;
@@ -495,6 +579,9 @@ internal sealed class McsMapCycleController
         if (_transitionTracker is null || _internalTimeLimitManager is null)
             return;
 
+        if (IsServerEmptyAndPaused() || _bootPhaseTracker.IsBootPhase)
+            return;
+
         var transitions = _transitionTracker.CheckTransitions();
 
         foreach (var transition in transitions)
@@ -515,9 +602,19 @@ internal sealed class McsMapCycleController
                                 Plugin, this, _internalTimeLimitManager.TimeLimitType)));
 
                     if (_mapTransitionManager.IsNextMapConfirmed)
-                        _mapTransitionManager.ChangeMapOnNextRoundEnd = true;
+                        _mapTransitionManager.BeginMapTransition(
+                            Managers.MapTransition.MapTransitionTrigger.TimeLimitReached);
                     break;
             }
         }
+    }
+
+    private bool IsServerEmptyAndPaused()
+    {
+        if (!_pluginConfigProvider.PluginConfig.MapCycleConfig.PauseMapCycleWhenServerEmpty)
+            return false;
+
+        return !SharedSystem.GetModSharp().GetIServer().GetGameClients(true)
+            .Any(c => !c.IsFakeClient && !c.IsHltv);
     }
 }

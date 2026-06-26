@@ -42,11 +42,18 @@ internal sealed class ParsedProperties
     public int? MaxPlayers { get; set; }
     public int? MinPlayers { get; set; }
     public bool? ProhibitAdminNomination { get; set; }
+    public bool? RestrictToAllowedUsersOnly { get; set; }
     public List<DayOfWeek>? DaysAllowed { get; set; }
     public List<ITimeRange>? AllowedTimeRanges { get; set; }
 
+    // Group-specific nomination
+    public int? NominationLimit { get; set; }
+
     // Group display
     public string? ShortGroupName { get; set; }
+
+    // Search tags
+    public List<string>? SearchTags { get; set; }
 
     // Cooldown
     public int? Cooldown { get; set; }
@@ -93,12 +100,15 @@ internal static class TomlPropertyMapper
         "MaxPlayers",
         "MinPlayers",
         "ProhibitAdminNomination",
+        "RestrictToAllowedUsersOnly",
         "DaysAllowed",
         "AllowedTimeRanges",
         "Cooldown",
         "CooldownDateTime",
         "NominationCooldown",
         "NominationCooldownDateTime",
+        "NominationLimit",
+        "SearchTags",
     };
 
     public static ParsedProperties ExtractProperties(TomlDocumentNode node)
@@ -213,6 +223,11 @@ internal static class TomlPropertyMapper
                     props.ProhibitAdminNomination = prohibit;
                 break;
 
+            case "RestrictToAllowedUsersOnly":
+                if (valueNode.TryGetBool(out var restrict))
+                    props.RestrictToAllowedUsersOnly = restrict;
+                break;
+
             case "DaysAllowed":
                 props.DaysAllowed = ExtractDaysArray(valueNode);
                 break;
@@ -239,6 +254,15 @@ internal static class TomlPropertyMapper
             case "NominationCooldownDateTime":
                 if (valueNode.TryGetString(out var ncdDt))
                     props.NominationCooldownDateTime = ncdDt;
+                break;
+
+            case "NominationLimit":
+                if (valueNode.TryGetInt64(out var nomLimit))
+                    props.NominationLimit = Math.Max(0, (int)nomLimit);
+                break;
+
+            case "SearchTags":
+                props.SearchTags = ExtractStringArray(valueNode);
                 break;
 
             // Override properties
@@ -313,8 +337,15 @@ internal static class TomlPropertyMapper
             var array = node.GetArray();
             foreach (var item in array)
             {
-                if (item.TryGetString(out var rangeStr))
-                    result.Add(TimeRange.Parse(rangeStr));
+                try
+                {
+                    if (item.TryGetString(out var rangeStr))
+                        result.Add(TimeRange.Parse(rangeStr));
+                }
+                catch
+                {
+                    // Skip malformed time range entry
+                }
             }
         }
         catch

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
+using McsCancellableEvent = MapChooserSharpMS.Shared.Events.McsCancellableEvent;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapCycle;
@@ -133,9 +134,8 @@ internal sealed class McsExtCommandService
 
         var @params = new ExtCommandExecuteParams(
             _plugin, _moduleBase, client, command, RequiredExtVotes, CurrentExtVotes);
-        bool cancelled = _eventManager.FireCancellable<IMapCycleEventListener>(
-            e => e.OnExtCommandExecute(@params));
-        if (cancelled)
+        if (_eventManager.FireCancellable<IMapCycleEventListener>(
+                e => e.OnExtCommandExecute(@params)) == McsCancellableEvent.Stop)
             return McsExtCommandResult.CancelledByListener;
 
         _participants.Add(client.Slot);

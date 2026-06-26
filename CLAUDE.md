@@ -44,10 +44,15 @@ New infrastructure-level design in this project builds on **Wuling**, an
 internal CS2 server framework cloned at `D:\myworks\github\cs2\ModSharp\Wuling`
 (local clone, not a submodule — not publicly licensed).
 
+- **Wuling is a hard dependency** — always use
+  `GetRequiredSharpModuleInterface<IWuling>`, never `GetOptional`.
+  Do NOT add graceful degradation, NullObject fallbacks, or nullable
+  references for Wuling-dependent services. If Wuling is absent the
+  plugin simply does not start.
 - External modules reference **`Wuling.Abstract` only**. Browse
   `Wuling.Abstract/Tianshi/<Module>/` for the contract of each module.
 - Obtain the facade via ModSharp's module system:
-  `GetOptionalSharpModuleInterface<IWuling>(IWuling.Identity)` in
+  `GetRequiredSharpModuleInterface<IWuling>(IWuling.Identity)` in
   `OnAllModulesLoaded`. Simple per-player operations are also available as
   extension methods on `IPlayerEntry` with zero setup.
 - Persistence backend is SurrealDB (`Wuling/Core/Infrastructure/Surreal/`) —
@@ -76,6 +81,19 @@ When copying build outputs to the game server:
   - e.g. `shared\MapChooserSharpMS.Shared\MapChooserSharpMS.Shared.dll`
   - **Never place Shared DLLs inside `modules/`.**
 - **Lang files** → `%MOD_SHARP_DIR%\modules\<ModuleName>\lang\*.json`
+
+## Documentation
+
+When adding new features or changing existing behavior, update the
+relevant documentation under `docs/`:
+
+- Check the diff of the current changes to identify what needs documenting.
+- `docs/en/` and `docs/ja/` must both be updated (EN and JA).
+- Common files to check:
+  - `configuration/CONVARS.md` — new or changed ConVars
+  - `configuration/MAP_CONFIG.md` — map/group config property changes
+  - `features/COMMANDS.md` — new or changed commands
+  - `development/api/` — public API changes
 
 ## Git commit rules
 

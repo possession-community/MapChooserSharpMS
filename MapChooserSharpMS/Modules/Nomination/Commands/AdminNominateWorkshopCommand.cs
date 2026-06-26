@@ -17,7 +17,7 @@ using TnmsPluginFoundation.Models.Command.Validators;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : McsCommandBase(provider)
+internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : NominationCommandBase(provider)
 {
     public override string CommandName => "nominate_addwsmap";
     public override string CommandDescription => "Admin: force-add a workshop map to nomination";
@@ -54,10 +54,10 @@ internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : 
         if (_voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
         {
             string nextMapDisplay = _transitionManager.NextMap is { } nextMap
-                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap.MapConfig)
                 : LocalizeString(client, "Word.VotePending");
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
+                LocalizeWithNominationPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
             return;
         }
 
@@ -66,7 +66,7 @@ internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : 
         if (!long.TryParse(arg, out long workshopId) || workshopId <= 0)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "NominationAddWsMap.Command.Notification.Usage"));
+                LocalizeWithNominationPrefix(client, "NominationAddWsMap.Command.Notification.Usage"));
             return;
         }
 
@@ -81,13 +81,13 @@ internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : 
         if (_workshopProvisioning is null || !_workshopProvisioning.IsAvailable)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetNextMap.WorkshopNotAvailable",
+                LocalizeWithNominationPrefix(client, "MapCycle.Command.Admin.SetNextMap.WorkshopNotAvailable",
                     workshopId, "no API key"));
             return;
         }
 
         PrintMessageToServerOrPlayerChat(client,
-            LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetNextMap.FetchingWorkshop", workshopId));
+            LocalizeWithNominationPrefix(client, "MapCycle.Command.Admin.SetNextMap.FetchingWorkshop", workshopId));
 
         _ = Task.Run(async () =>
         {
@@ -109,7 +109,7 @@ internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : 
                         if (client is null || client.IsValid)
                         {
                             PrintMessageToServerOrPlayerChat(client,
-                                LocalizeWithPluginPrefix(client, "MapCycle.Command.Admin.SetNextMap.WorkshopNotAvailable",
+                                LocalizeWithNominationPrefix(client, "MapCycle.Command.Admin.SetNextMap.WorkshopNotAvailable",
                                     workshopId, reason));
                         }
                         return;

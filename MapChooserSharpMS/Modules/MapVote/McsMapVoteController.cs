@@ -46,6 +46,7 @@ internal sealed class McsMapVoteController
     private MapVoteControllingService _controllingService = null!;
     private ClientVoteHandlingService _clientVoteService = null!;
 
+    public IMcsReadOnlyVoteState VoteState => (IMcsReadOnlyVoteState)_voteState;
     public IVoteControllingManager MapVoteManager => _voteManager;
     public IMapVoteControllingService MapVoteControllingService => _controllingService;
     public IClientVoteHandlingService ClientVoteHandlingService => _clientVoteService;
@@ -121,14 +122,15 @@ internal sealed class McsMapVoteController
         var mapExtendService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.Interfaces.IMcsInternalMapExtendService>();
         var cooldownLifecycleService = ServiceProvider.GetRequiredService<Modules.MapCycle.Services.McsMapCooldownLifecycleService>();
 
-        var randomMapPicker = new RandomMapPickingService(nominationValidateService, configProvider, mapConfigProvider);
+        var randomMapPicker = new RandomMapPickingService(
+            (Modules.Nomination.Services.NominationValidateService)nominationValidateService,
+            configProvider, mapConfigProvider);
 
-        McsMapVoteSoundPlayer? soundPlayer = null;
         var soundConfig = configProvider.PluginConfig.VoteConfig.VoteSoundConfig;
-        if (!string.IsNullOrEmpty(soundConfig.VSndEvtsSoundFilePath))
-            soundPlayer = new McsMapVoteSoundPlayer(Plugin, SharedSystem.GetSoundManager(), soundConfig);
+        var soundPlayer = new McsMapVoteSoundPlayer(Plugin, SharedSystem.GetSoundManager(), soundConfig);
 
         var countdownUi = ServiceProvider.GetRequiredService<Ui.Countdown.McsCountdownUiController>();
+        soundPlayer.VolumeProvider = client => countdownUi.PreferenceService.GetVolume(client.Slot);
 
         _controllingService = new MapVoteControllingService(
             Plugin, this, Logger,
@@ -144,6 +146,8 @@ internal sealed class McsMapVoteController
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         _eventManager.RegisterListener<IMapCycleEventListener>(this);
+
+        AddCommandsUnderNamespace("MapChooserSharpMS.Modules.MapVote.Commands");
     }
 
     protected override void OnUnloadModule()
@@ -170,8 +174,8 @@ internal sealed class McsMapVoteController
     /// </summary>
     public void OnNextMapRemoved(INextMapRemovedEventParams @params)
     {
-        if ((_voteState as IMcsReadOnlyVoteState)?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
-            _voteState.Reset();
+        _controllingService?.ForceResetVote();
+        _voteState.Reset();
     }
 
     public void OnRtvConfirmed(IRtvConfirmedParams @params)

@@ -34,12 +34,14 @@ internal interface IInternalEventManager
         where TListener : IEventListenerBase;
 
     /// <summary>
-    /// Fires a cancellable event to registered listeners (bool return type)
+    /// Fires a cancellable event to registered listeners.
     /// </summary>
-    /// <typeparam name="TListener">Event listener interface type</typeparam>
-    /// <param name="predicate">Predicate to execute on each listener. Returns true to cancel the event</param>
-    /// <returns>True if the event was cancelled by any listener, false otherwise</returns>
-    bool FireCancellable<TListener>(Func<TListener, bool> predicate)
+    /// <returns>
+    /// <see cref="McsCancellableEvent.Stop"/> if any listener cancelled the event,
+    /// <see cref="McsCancellableEvent.Handled"/> if a listener handled it without cancellation,
+    /// <see cref="McsCancellableEvent.Continue"/> otherwise.
+    /// </returns>
+    McsCancellableEvent FireCancellable<TListener>(Func<TListener, McsCancellableEvent> handler)
         where TListener : IEventListenerBase;
 
     /// <summary>

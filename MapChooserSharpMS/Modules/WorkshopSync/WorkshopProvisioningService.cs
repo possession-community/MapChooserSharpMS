@@ -9,13 +9,18 @@ using MapChooserSharpMS.Shared.WorkshopManagement;
 
 namespace MapChooserSharpMS.Modules.WorkshopSync;
 
-internal sealed class WorkshopProvisioningService
+internal sealed class WorkshopProvisioningService : IDisposable
 {
     private readonly SteamWorkshopApiService? _apiService;
 
     public WorkshopProvisioningService(SteamWorkshopApiService? apiService)
     {
         _apiService = apiService;
+    }
+
+    public void Dispose()
+    {
+        _apiService?.Dispose();
     }
 
     public bool IsAvailable => _apiService is not null && !string.IsNullOrEmpty(_apiService.ApiKey);
@@ -40,7 +45,7 @@ internal sealed class WorkshopProvisioningService
         }
 
         var config = BuildProvisionalMapConfig(item);
-        return new WorkshopProvisionResult(config, ExistenceStatus.FoundInWorkshop, config.MapNameAlias, workshopId);
+        return new WorkshopProvisionResult(config, ExistenceStatus.FoundInWorkshop, item.Title ?? config.MapName, workshopId);
     }
 
     internal static MapConfig.Models.MapConfig BuildProvisionalMapConfig(WorkshopItemInfo item)
@@ -71,7 +76,8 @@ internal sealed class WorkshopProvisioningService
                 DaysAllowed: [],
                 AllowedTimeRanges: []),
             CooldownConfig: new CooldownConfig(configCooldown: 0, timedCooldown: TimeSpan.Zero),
-            ExtraConfiguration: ExtraConfigAccessor.Empty);
+            ExtraConfiguration: ExtraConfigAccessor.Empty,
+            SearchTags: []);
     }
 }
 

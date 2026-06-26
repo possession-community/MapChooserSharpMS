@@ -9,4 +9,5 @@ internal sealed record NominationConfig(
     int MinPlayers,
     bool ProhibitAdminNomination,
     IReadOnlyList<DayOfWeek> DaysAllowed,
-    IReadOnlyList<ITimeRange> AllowedTimeRanges) : INominationConfig;
+    IReadOnlyList<ITimeRange> AllowedTimeRanges,
+    bool RestrictToAllowedUsersOnly = false) : INominationConfig;

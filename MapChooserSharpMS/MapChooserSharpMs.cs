@@ -1,14 +1,19 @@
 using System;
+using System.Collections.Generic;
 using MapChooserSharpMS.Modules.MapCycle;
 using MapChooserSharpMS.Modules.MapVote;
 using MapChooserSharpMS.Modules.MapVote.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.State;
+using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
+using MapChooserSharpMS.Modules.Services;
 using MapChooserSharpMS.Shared;
+
 using MapChooserSharpMS.Shared.Ui.Menu;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared;
+using Sharp.Shared.Listeners;
 using TnmsPluginFoundation;
 
 namespace MapChooserSharpMS;
@@ -20,8 +25,10 @@ public sealed class MapChooserSharpMs(
     Version? version,
     IConfiguration coreConfiguration,
     bool hotReload)
-    : TnmsPlugin(sharedSystem, dllPath, sharpPath, version, coreConfiguration, hotReload)
+    : TnmsPlugin(sharedSystem, dllPath, sharpPath, version, coreConfiguration, hotReload), IGameListener
 {
+    public int ListenerVersion => 1;
+    public int ListenerPriority => 0;
     public override string DisplayName => "MapChooserSharp - ModSharp";
     public override string DisplayAuthor => "faketuna A.K.A fltuna or tuna, Spitice, uru";
     public override string BaseCfgDirectoryPath => ModuleDirectory;
@@ -31,12 +38,17 @@ public sealed class MapChooserSharpMs(
 
     internal McsVoteStateManager VoteState { get; } = new();
 
-    internal IMcsMenuCompat? MenuCompat { get; set; }
+    internal IMcsNominationMenuCompat? NominationMenuCompat { get; set; }
+
+    private IMcsPluginConfigProvider? _pluginConfigProvider;
 
     protected override void RegisterRequiredPluginServices(IServiceCollection collection, IServiceProvider provider)
     {
         collection.AddSingleton<IMcsInternalMainVoteState>(VoteState);
         collection.AddSingleton<IMcsInternalExtendVoteState>(VoteState);
+
+        var bootTracker = new McsBootPhaseTracker(SharedSystem, Logger);
+        collection.AddSingleton<IMcsBootPhaseTracker>(bootTracker);
     }
 
     protected override void TnmsOnPluginLoad(bool hotReload)
@@ -61,8 +73,14 @@ public sealed class MapChooserSharpMs(
         Logger.LogInformation("Registering module: McsRtvController");
         RegisterModule<Modules.RockTheVote.McsRtvController>();
 
+        Logger.LogInformation("Registering module: McsStatisticsController");
+        RegisterModule<Modules.Statistics.McsStatisticsController>();
+
         Logger.LogInformation("Registering module: McsMapCycleController");
         RegisterModule<McsMapCycleController>();
+
+        Logger.LogInformation("Registering module: McsAuditController");
+        RegisterModule<Modules.Audit.McsAuditController>();
 
         Logger.LogInformation("Registering module: McsChatListenerController");
         RegisterModule<Modules.ChatListener.McsChatListenerController>();
@@ -70,11 +88,16 @@ public sealed class MapChooserSharpMs(
         Logger.LogInformation("Registering module: McsWorkshopSyncController");
         RegisterModule<Modules.WorkshopSync.McsWorkshopSyncController>();
 
+        SharedSystem.GetModSharp().InstallGameListener(this);
+
         Logger.LogInformation("All modules registered");
     }
 
     protected override void LateRegisterPluginServices(IServiceCollection collection, IServiceProvider provider)
     {
+        _pluginConfigProvider = provider.GetRequiredService<IMcsPluginConfigProvider>();
+
+        collection.AddSingleton(sp => new Modules.Services.McsStateResettingService(sp, Logger));
         var nominationController = provider.GetRequiredService<Modules.Nomination.Interfaces.IMcsInternalNominationController>();
         var mapVoteController = provider.GetRequiredService<IMcsInternalVoteController>();
         var rtvController = provider.GetRequiredService<Modules.RockTheVote.Interfaces.IMcsInternalRtvController>();
@@ -98,6 +121,20 @@ public sealed class MapChooserSharpMs(
 
     protected override void TnmsOnPluginUnload(bool hotReload)
     {
+        SharedSystem.GetModSharp().RemoveGameListener(this);
         Logger.LogInformation("MapChooserSharpMS unloading (hotReload={HotReload})", hotReload);
+    }
+
+    public void OnResourcePrecache()
+    {
+        if (_pluginConfigProvider is not { } configProvider)
+            return;
+
+        string snd = configProvider.PluginConfig.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath;
+        if (!string.IsNullOrEmpty(snd))
+        {
+            SharedSystem.GetModSharp().PrecacheResource(snd);
+            Logger.LogInformation("[MCS] Precached sound resource: {Path}", snd);
+        }
     }
 }

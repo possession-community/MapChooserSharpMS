@@ -1,0 +1,15 @@
+[MapChooserSharpSettings.Default]
+MapSelectionWeight = 1
+
+[MapChooserSharpSettings.Groups.WeightedGroup]
+MapSelectionWeight = 10
+
+[ze_default_weight]
+GroupSettings = ["WeightedGroup"]
+
+[ze_override_weight]
+GroupSettings = ["WeightedGroup"]
+MapSelectionWeight = 50
+
+[ze_no_weight]
+MapSelectionWeight = 0

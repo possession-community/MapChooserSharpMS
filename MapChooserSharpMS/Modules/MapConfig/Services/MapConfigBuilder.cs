@@ -36,6 +36,7 @@ internal static class MapConfigBuilder
             MaxPlayers = overrideProps.MaxPlayers ?? baseProps.MaxPlayers,
             MinPlayers = overrideProps.MinPlayers ?? baseProps.MinPlayers,
             ProhibitAdminNomination = overrideProps.ProhibitAdminNomination ?? baseProps.ProhibitAdminNomination,
+            RestrictToAllowedUsersOnly = overrideProps.RestrictToAllowedUsersOnly ?? baseProps.RestrictToAllowedUsersOnly,
             DaysAllowed = overrideProps.DaysAllowed ?? baseProps.DaysAllowed,
             AllowedTimeRanges = overrideProps.AllowedTimeRanges ?? baseProps.AllowedTimeRanges,
             Cooldown = overrideProps.Cooldown ?? baseProps.Cooldown,
@@ -47,6 +48,10 @@ internal static class MapConfigBuilder
             OverridePriority = overrideProps.OverridePriority ?? baseProps.OverridePriority,
             TargetDays = overrideProps.TargetDays ?? baseProps.TargetDays,
             TargetTimeRanges = overrideProps.TargetTimeRanges ?? baseProps.TargetTimeRanges,
+            MapSelectionWeight = overrideProps.MapSelectionWeight ?? baseProps.MapSelectionWeight,
+            ShortGroupName = overrideProps.ShortGroupName ?? baseProps.ShortGroupName,
+            NominationLimit = overrideProps.NominationLimit ?? baseProps.NominationLimit,
+            SearchTags = overrideProps.SearchTags ?? baseProps.SearchTags,
         };
     }
 
@@ -81,13 +86,15 @@ internal static class MapConfigBuilder
                 MinPlayers: props.MinPlayers ?? 0,
                 ProhibitAdminNomination: props.ProhibitAdminNomination ?? false,
                 DaysAllowed: props.DaysAllowed ?? [],
-                AllowedTimeRanges: props.AllowedTimeRanges ?? []),
+                AllowedTimeRanges: props.AllowedTimeRanges ?? [],
+                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
                 configNominationCooldown: props.NominationCooldown ?? 0,
                 nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
-            ExtraConfiguration: extraConfig);
+            ExtraConfiguration: extraConfig,
+            SearchTags: BuildSearchTags(props, groupConfigs));
     }
 
     /// <summary>
@@ -106,6 +113,7 @@ internal static class MapConfigBuilder
             GroupName: groupName,
             ShortGroupName: shortName,
             MapCooldownOverride: props.CooldownOverride ?? 0,
+            NominationLimit: props.NominationLimit ?? 0,
             IsDisabled: props.IsDisabled ?? false,
             MaxExtends: props.MaxExtends ?? 3,
             MaxExtCommandUses: props.MaxExtCommandUses ?? 1,
@@ -122,12 +130,35 @@ internal static class MapConfigBuilder
                 MinPlayers: props.MinPlayers ?? 0,
                 ProhibitAdminNomination: props.ProhibitAdminNomination ?? false,
                 DaysAllowed: props.DaysAllowed ?? [],
-                AllowedTimeRanges: props.AllowedTimeRanges ?? []),
+                AllowedTimeRanges: props.AllowedTimeRanges ?? [],
+                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
                 configNominationCooldown: props.NominationCooldown ?? 0,
                 nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
-            ExtraConfiguration: extraConfig);
+            ExtraConfiguration: extraConfig,
+            SearchTags: props.SearchTags ?? []);
+    }
+
+    private static IReadOnlyList<string> BuildSearchTags(
+        ParsedProperties props,
+        List<IMapGroupConfig> groupConfigs)
+    {
+        var tags = new List<string>();
+
+        if (props.SearchTags is not null)
+            tags.AddRange(props.SearchTags);
+
+        foreach (var group in groupConfigs)
+        {
+            foreach (var tag in group.SearchTags)
+            {
+                if (!tags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+                    tags.Add(tag);
+            }
+        }
+
+        return tags;
     }
 }

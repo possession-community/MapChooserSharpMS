@@ -18,5 +18,5 @@ internal interface IMcsMapCycleConfig
 
     internal string MapConfigDirectoryPath { get; }
 
-    internal string GroupConfigDirectoryPath { get; }
+    internal bool PauseMapCycleWhenServerEmpty { get; }
 }

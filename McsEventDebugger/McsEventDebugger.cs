@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MapChooserSharpMS.Shared;
+using MapChooserSharpMS.Shared.Events;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.Events.MapCycle.Params;
 using MapChooserSharpMS.Shared.Events.MapVote;
@@ -10,6 +11,7 @@ using MapChooserSharpMS.Shared.Events.Nomination.Params;
 using MapChooserSharpMS.Shared.Events.RockTheVote;
 using MapChooserSharpMS.Shared.Events.RockTheVote.Params;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.Ui.Menu;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared;
@@ -63,11 +65,11 @@ public class McsEventDebugger : IModSharpModule,
 
     // ── MapCycle ──
 
-    public bool OnExtCommandExecute(IExtCommandExecuteEventParams p)
+    public McsCancellableEvent OnExtCommandExecute(IExtCommandExecuteEventParams p)
     {
         _logger.LogInformation("[MapCycle] OnExtCommandExecute: Client={Client}, Required={Req}, Current={Cur}",
             p.Client?.Name, p.CurrentRequiredVotes, p.CurrentExtVotes);
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
     public void OnExtendVoteStarted(IExtendVoteStartedEventParams p)
@@ -109,18 +111,18 @@ public class McsEventDebugger : IModSharpModule,
 
     // ── MapVote ──
 
-    public bool OnMapVoteStart(IMapVoteStartParams p)
+    public McsCancellableEvent OnMapVoteStart(IMapVoteStartParams p)
     {
         _logger.LogInformation("[MapVote] OnMapVoteStart: Maps={Maps}, Participants={Parts}",
             p.MapsToVote?.Count, p.VoteParticipants?.Count);
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
-    public List<IMapConfig> OnRandomMapPick(IMapVoteRandomMapPickParams p)
+    public McsValueOverrideEvent<List<IMapConfig>> OnRandomMapPick(IMapVoteRandomMapPickParams p)
     {
         _logger.LogInformation("[MapVote] OnRandomMapPick: MinSlots={Min}, Available={Avail}",
             p.MinimumMapCounts, p.MapConfigs?.Count);
-        return [];
+        return McsValueOverrideEvent<List<IMapConfig>>.NoOverride;
     }
 
     public void OnMapVoteFinished(IMapVoteFinishedEventParams p)
@@ -143,22 +145,22 @@ public class McsEventDebugger : IModSharpModule,
 
     // ── RTV ──
 
-    public bool OnClientRtvCast(IClientRtvCastParams p)
+    public McsCancellableEvent OnClientRtvCast(IClientRtvCastParams p)
     {
         _logger.LogInformation("[RTV] OnClientRtvCast: Client={Client}", p.Client?.Name);
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
-    public bool OnClientRtvUnCast(IClientRtvUnCastParams p)
+    public McsCancellableEvent OnClientRtvUnCast(IClientRtvUnCastParams p)
     {
         _logger.LogInformation("[RTV] OnClientRtvUnCast: Client={Client}", p.Client?.Name);
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
-    public bool OnForceRtv(IForceRtvParam p)
+    public McsCancellableEvent OnForceRtv(IForceRtvParam p)
     {
         _logger.LogInformation("[RTV] OnForceRtv: Client={Client}", p.Client?.Name);
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
     public void OnRtvConfirmed(IRtvConfirmedParams p)
@@ -166,24 +168,24 @@ public class McsEventDebugger : IModSharpModule,
 
     // ── Nomination ──
 
-    public bool OnNominationCheckPassed(INominationCheckPassedEventParams p)
+    public McsCancellableEvent OnNominationCheckPassed(INominationCheckPassedEventParams p)
     {
         _logger.LogInformation("[Nomination] OnNominationCheckPassed");
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
-    public bool OnNomination(INominationParams p)
+    public McsCancellableEvent OnNomination(INominationParams p)
     {
         _logger.LogInformation("[Nomination] OnNomination: Map={Map}, Client={Client}",
             p.NominationData?.MapConfig?.MapName, p.Client?.Name);
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
-    public bool OnAdminNomination(IAdminNominationParams p)
+    public McsCancellableEvent OnAdminNomination(IAdminNominationParams p)
     {
         _logger.LogInformation("[Nomination] OnAdminNomination: Map={Map}, Client={Client}",
             p.NominationData?.MapConfig?.MapName, p.Client?.Name);
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
     public void OnNominationChanged(INominationChangeParams p)
@@ -197,4 +199,20 @@ public class McsEventDebugger : IModSharpModule,
     public void OnUnNominate(IUnNominateParams p)
         => _logger.LogInformation("[Nomination] OnUnNominate: Map={Map}, Slot={Slot}, Reason={Reason}",
             p.NominationData?.MapConfig?.MapName, p.Slot, p.Reason);
+
+    public void OnNominationMenuDetailsOpening(INominationMenuDetailsOpeningParams p)
+    {
+        _logger.LogInformation("[Nomination] OnNominationMenuDetailsOpening: Map={Map}, Client={Client}",
+            p.MapConfig.MapName, p.Client.Name);
+
+        p.ExtraItems.Add(new McsMenuItem
+        {
+            DisplayText = $"Debugger - {p.MapConfig.MapName}",
+            OnSelect = client =>
+            {
+                _logger.LogInformation("[Nomination] Debugger item clicked: Map={Map}, Client={Client}",
+                    p.MapConfig.MapName, client.Name);
+            },
+        });
+    }
 }

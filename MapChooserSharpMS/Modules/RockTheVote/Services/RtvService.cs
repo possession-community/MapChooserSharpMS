@@ -3,6 +3,7 @@ using System.Linq;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Modules.EventManager.Events.RockTheVote;
+using McsCancellableEvent = MapChooserSharpMS.Shared.Events.McsCancellableEvent;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
@@ -47,7 +48,8 @@ internal sealed class RtvService(
         if (rtvManager.RtvStatus == RtvStatus.Disabled)
             return RtvExecutionResult.CommandDisabled;
 
-        if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForMapTransition)
+        if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForMapTransition
+            && !(conVars.ImmediateChangeThreshold.GetFloat() > 0f && TransitionManager.IsNextMapConfirmed))
             return RtvExecutionResult.TriggeredWaitingForMapTransition;
         
         if (rtvManager.RtvStatus == RtvStatus.TriggeredWaitingForVote)
@@ -58,8 +60,7 @@ internal sealed class RtvService(
         
         
         IClientRtvCastParams @params = ActivatorUtilities.CreateInstance<ClientRtvCastParams>(ServiceProvider, plugin, controller, client, false);
-        bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params));
-        if (cancelled)
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params)) == McsCancellableEvent.Stop)
             return RtvExecutionResult.DisallowedByExternalConsumer;
 
         if (!rtvManager.AddParticipants(client))
@@ -89,7 +90,7 @@ internal sealed class RtvService(
 
     public RtvExecutionResult AddClientToRtv(int slot)
     {
-        var client = plugin.SharedSystem.GetClientManager().GetGameClient(new PlayerSlot(slot));
+        var client = plugin.SharedSystem.GetClientManager().GetGameClient(new PlayerSlot((byte)slot));
 
         if (client == null)
             return RtvExecutionResult.NotAllowed;
@@ -110,9 +111,7 @@ internal sealed class RtvService(
             @params = ActivatorUtilities.CreateInstance<ClientRtvUnCastParams>(ServiceProvider, plugin, controller, client, false);
         }
         
-        bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvUnCast(@params));
-
-        if (cancelled)
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvUnCast(@params)) == McsCancellableEvent.Stop)
             return false;
         
         return rtvManager.RemoveParticipants(client);
@@ -162,10 +161,15 @@ internal sealed class RtvService(
 
     public void InitiateForceRtvVote(IGameClient? client)
     {
-        var forceParams = new ForceRtvParams(plugin, (PluginModuleBase)controller, client);
-        bool cancelled = eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnForceRtv(forceParams));
+        if (rtvManager.RtvStatus is RtvStatus.TriggeredWaitingForVote
+            or RtvStatus.TriggeredWaitingForMapTransition)
+        {
+            controller.NotifyAdminCommandResult(client, "Rtv.Notification.Admin.ForceRtv.AlreadyTriggered");
+            return;
+        }
 
-        if (cancelled)
+        var forceParams = new ForceRtvParams(plugin, (PluginModuleBase)controller, client);
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnForceRtv(forceParams)) == McsCancellableEvent.Stop)
             return;
 
         if (TransitionManager.IsNextMapConfirmed)
@@ -197,7 +201,7 @@ internal sealed class RtvService(
 
         string mapDisplayName = ServiceProvider
             .GetRequiredService<IMapConfigToolingService>()
-            .ResolveMapDisplayName(nextMap);
+            .ResolveMapDisplayName(nextMap.MapConfig);
 
         BroadcastToAll("Rtv.Broadcast.ChangeOnRoundEnd", mapDisplayName);
     }
@@ -213,30 +217,29 @@ internal sealed class RtvService(
 
         string mapDisplayName = ServiceProvider
             .GetRequiredService<IMapConfigToolingService>()
-            .ResolveMapDisplayName(nextMap);
+            .ResolveMapDisplayName(nextMap.MapConfig);
 
         var behaviour = ServiceProvider
             .GetRequiredService<IMcsPluginConfigProvider>()
             .PluginConfig.GeneralConfig.RtvMapChangeBehaviour;
 
+        var internalTransitionManager = ServiceProvider
+            .GetRequiredService<MapCycle.Managers.MapTransition.Interfaces.IMcsInternalMapTransitionManager>();
+
         switch (behaviour)
         {
             case RtvMapChangeBehaviourType.Cs2EndMatchScreen:
                 BroadcastToAll("Rtv.Broadcast.ChangeToNextMapCs2EndMatchScreen", mapDisplayName);
-                transitionManager.ChangeMapOnNextRoundEnd = false;
-                transitionManager.ForceEndMatch();
+                internalTransitionManager.BeginMapTransition(
+                    MapCycle.Managers.MapTransition.MapTransitionTrigger.AdminForceEnd);
                 break;
 
             case RtvMapChangeBehaviourType.ImmediatelyWithTime:
             default:
                 float timing = conVars.MapChangeTimingAfterRtvSuccess.GetFloat();
                 BroadcastToAll("Rtv.Broadcast.ChangeToNextMapImmediately", mapDisplayName, timing);
-
-                var intermissionParams = new McsIntermissionParams(plugin, (PluginModuleBase)controller, nextMap);
-                eventManager.Fire<IMapCycleEventListener>(e => e.OnMcsIntermission(intermissionParams));
-
-                transitionManager.ChangeMapOnNextRoundEnd = false;
-                transitionManager.TransitionToNextMap(timing);
+                internalTransitionManager.BeginMapTransition(
+                    MapCycle.Managers.MapTransition.MapTransitionTrigger.RtvImmediate, timing);
                 break;
         }
     }

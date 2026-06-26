@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.Ui.Menu;
 using Sharp.Shared.Objects;
 
 namespace MapChooserSharpMS.Shared.Nomination.Services;
@@ -46,4 +47,9 @@ public interface INominationMenuManagementService
     void ShowRemoveNominationMenu(IGameClient client);
 
     void NominateOrConfirm(IGameClient client, IMapConfig config, bool isAdmin);
+
+    /// <summary>
+    /// Fires OnNominationMenuDetailsOpening and returns the collected extra items.
+    /// </summary>
+    List<McsMenuItem> CollectExtraMenuItems(IMapConfig mapConfig, IGameClient client);
 }

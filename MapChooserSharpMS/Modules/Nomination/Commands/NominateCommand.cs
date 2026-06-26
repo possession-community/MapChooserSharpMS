@@ -14,7 +14,7 @@ using TnmsPluginFoundation.Extensions.Client;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
+internal sealed class NominateCommand(IServiceProvider provider) : NominationCommandBase(provider)
 {
     public override string CommandName => "nominate";
     public override List<string> CommandAliases => ["nom"];
@@ -38,10 +38,10 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
         if (_voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
         {
             string nextMapDisplay = _transitionManager.NextMap is { } nextMap
-                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap)
+                ? _mapConfigProvider.ToolingService.ResolveMapDisplayName(nextMap.MapConfig)
                 : LocalizeString(client, "Word.VotePending");
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
+                LocalizeWithNominationPrefix(client, "MapCycle.Command.Notification.NextMap", nextMapDisplay));
             return;
         }
 
@@ -51,40 +51,42 @@ internal sealed class NominateCommand(IServiceProvider provider) : TnmsAbstractC
             return;
         }
 
-        string mapName = commandInfo[1];
+        string query = commandInfo[1];
 
-        // Search all maps by partial match (Contains), then prefer an exact
-        // match if one exists among the results. This matches the old MCS
-        // flow: full list search → exact/single hit = nominate, multiple =
-        // menu, none = message only.
         var allMaps = _mapConfigProvider.GetMapConfigs();
         var matched = allMaps
-            .Where(kv => kv.Key.Contains(mapName, StringComparison.OrdinalIgnoreCase))
+            .Where(kv => kv.Key.Contains(query, StringComparison.OrdinalIgnoreCase))
             .Select(kv => kv.Value.First().MapConfig)
             .Where(m => !m.IsDisabled)
             .ToList();
 
-        // If there are multiple partial matches but one is an exact match,
-        // treat it as a single hit (nominate directly).
         if (matched.Count > 1)
         {
             var exact = matched.FirstOrDefault(m =>
-                string.Equals(m.MapName, mapName, StringComparison.OrdinalIgnoreCase));
+                string.Equals(m.MapName, query, StringComparison.OrdinalIgnoreCase));
             if (exact is not null)
                 matched = [exact];
         }
 
         if (matched.Count == 0)
         {
+            var allMapConfigs = allMaps
+                .Select(kv => kv.Value.First().MapConfig)
+                .Where(m => !m.IsDisabled);
+            matched = _mapConfigProvider.ToolingService.FindMapsBySearchTag(query, allMapConfigs);
+        }
+
+        if (matched.Count == 0)
+        {
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.NotMapsFound", query));
             return;
         }
 
         if (matched.Count > 1)
         {
             client.GetPlayerController()?.PrintToChat(
-                LocalizeWithPluginPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, mapName));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, query));
             _controller.NominationMenuManagementService.ShowNominationMenu(client, matched);
             return;
         }

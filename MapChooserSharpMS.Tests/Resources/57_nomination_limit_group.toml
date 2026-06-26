@@ -1,0 +1,25 @@
+[MapChooserSharpSettings.Default]
+MaxExtends = 3
+
+[MapChooserSharpSettings.Groups.HardGroup]
+NominationLimit = 2
+ShortGroupName = "HD"
+
+[MapChooserSharpSettings.Groups.EasyGroup]
+NominationLimit = 5
+ShortGroupName = "EZ"
+
+[MapChooserSharpSettings.Groups.UnlimitedGroup]
+ShortGroupName = "UL"
+
+[ze_hard_map]
+GroupSettings = ["HardGroup"]
+
+[ze_easy_map]
+GroupSettings = ["EasyGroup"]
+
+[ze_unlimited_map]
+GroupSettings = ["UnlimitedGroup"]
+
+[ze_multi_group_map]
+GroupSettings = ["HardGroup", "EasyGroup"]

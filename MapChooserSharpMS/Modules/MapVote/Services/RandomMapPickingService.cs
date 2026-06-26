@@ -1,29 +1,32 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using MapChooserSharpMS.Modules.Nomination.Services;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
-using MapChooserSharpMS.Shared.Nomination.Services;
 
 namespace MapChooserSharpMS.Modules.MapVote.Services;
 
 internal sealed class RandomMapPickingService(
-    INominationValidateService nominationValidateService,
+    NominationValidateService nominationValidateService,
     IMcsPluginConfigProvider pluginConfigProvider,
     IMcsMapConfigProvider mapConfigProvider)
 {
-    public List<IMapConfig> PickRandomMaps(int amount = -1, ISet<string>? excludeMapNames = null)
+    public async Task<List<IMapConfig>> PickRandomMapsAsync(int amount = -1, ISet<string>? excludeMapNames = null)
     {
         if (amount == -1)
             amount = pluginConfigProvider.PluginConfig.VoteConfig.MaxMenuElements;
 
-        var candidates = mapConfigProvider.GetMapConfigs()
+        var allMaps = mapConfigProvider.GetMapConfigs()
             .Where(kv => excludeMapNames is null || !excludeMapNames.Contains(kv.Key))
             .Select(kv => kv.Value.First().MapConfig)
-            .Where(m => nominationValidateService.CanPickupMap(m).Count == 0)
             .ToList();
 
-        return WeightedShuffle(candidates, amount);
+        var candidates = await nominationValidateService.FilterPickableMapsAsync(allMaps);
+
+        int pickAmount = amount;
+        return await Task.Run(() => WeightedShuffle(candidates, pickAmount));
     }
 
     private static List<IMapConfig> WeightedShuffle(List<IMapConfig> candidates, int amount)

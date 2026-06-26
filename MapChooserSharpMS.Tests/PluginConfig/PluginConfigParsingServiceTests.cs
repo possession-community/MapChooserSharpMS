@@ -1,8 +1,6 @@
-using System.Collections.Generic;
 using MapChooserSharp.Modules.MapVote.Countdown;
 using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using MapChooserSharpMS.Modules.PluginConfig.Services;
-using MapChooserSharpMS.Modules.Ui.Menu;
 using MapChooserSharpMS.Tests.Helpers;
 using Xunit;
 
@@ -27,13 +25,6 @@ public class PluginConfigParsingServiceTests
         Assert.Equal(RtvMapChangeBehaviourType.Cs2EndMatchScreen, config.GeneralConfig.RtvMapChangeBehaviour);
         Assert.Equal(["3070257939", "1234567890"], config.GeneralConfig.WorkshopCollectionIds);
 
-        // SQL
-        Assert.Equal(McsSupportedSqlType.MySQL, config.GeneralConfig.SqlConfig.DataBaseType);
-        Assert.Equal("MapChooserSharpTest.db", config.GeneralConfig.SqlConfig.DatabaseName);
-        Assert.Equal("localhost", config.GeneralConfig.SqlConfig.Host);
-        Assert.Equal("3306", config.GeneralConfig.SqlConfig.Port);
-        Assert.Equal("root", config.GeneralConfig.SqlConfig.UserName);
-
         // MapCycle
         Assert.Equal(5, config.MapCycleConfig.FallbackDefaultMaxExtends);
         Assert.Equal(2, config.MapCycleConfig.FallbackMaxExtCommandUses);
@@ -42,14 +33,12 @@ public class PluginConfigParsingServiceTests
         Assert.True(config.MapCycleConfig.ShouldStopSourceTvRecording);
         Assert.Equal(McsMapConfigExecutionType.StartWithMatch, config.MapCycleConfig.MapConfigExecutionType);
         Assert.Equal("Custom/maps/", config.MapCycleConfig.MapConfigDirectoryPath);
-        Assert.Equal("Custom/groups/", config.MapCycleConfig.GroupConfigDirectoryPath);
 
         // MapVote
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
         Assert.Equal(8, config.VoteConfig.MaxMenuElements);
         Assert.False(config.VoteConfig.ShouldPrintVoteToChat);
         Assert.False(config.VoteConfig.ShouldPrintVoteRemainingTime);
-        Assert.Equal(McsCountdownUiType.CenterHud, config.VoteConfig.CurrentCountdownUiType);
+        Assert.Equal(McsCountdownUiType.Hint, config.VoteConfig.CurrentCountdownUiType);
 
         // VoteSound
         Assert.Equal("soundevents/soundevents_mapchooser.vsndevts", config.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath);
@@ -58,8 +47,6 @@ public class PluginConfigParsingServiceTests
         Assert.Equal("vote_finish", config.VoteConfig.VoteSoundConfig.InitialVoteSounds.VoteFinishSound);
         Assert.Equal("runoff_countdown_start", config.VoteConfig.VoteSoundConfig.RunoffVoteSounds.VoteCountdownStartSound);
 
-        // Nomination
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
     }
 
     #endregion
@@ -79,13 +66,6 @@ public class PluginConfigParsingServiceTests
         Assert.True(config.GeneralConfig.ShouldAutoFixMapName);
         Assert.Equal(RtvMapChangeBehaviourType.ImmediatelyWithTime, config.GeneralConfig.RtvMapChangeBehaviour);
 
-        // SQL defaults
-        Assert.Equal(McsSupportedSqlType.Sqlite, config.GeneralConfig.SqlConfig.DataBaseType);
-        Assert.Equal("MapChooserSharp.db", config.GeneralConfig.SqlConfig.DatabaseName);
-        Assert.Equal("", config.GeneralConfig.SqlConfig.Host);
-        Assert.Equal("", config.GeneralConfig.SqlConfig.Port);
-        Assert.Equal("", config.GeneralConfig.SqlConfig.UserName);
-
         // MapCycle defaults
         Assert.Equal(3, config.MapCycleConfig.FallbackDefaultMaxExtends);
         Assert.Equal(1, config.MapCycleConfig.FallbackMaxExtCommandUses);
@@ -94,22 +74,17 @@ public class PluginConfigParsingServiceTests
         Assert.False(config.MapCycleConfig.ShouldStopSourceTvRecording);
         Assert.Equal(McsMapConfigExecutionType.ExactMatch, config.MapCycleConfig.MapConfigExecutionType);
         Assert.Equal("maps/", config.MapCycleConfig.MapConfigDirectoryPath);
-        Assert.Equal("groups/", config.MapCycleConfig.GroupConfigDirectoryPath);
 
         // MapVote defaults
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
         Assert.Equal(5, config.VoteConfig.MaxMenuElements);
         Assert.True(config.VoteConfig.ShouldPrintVoteToChat);
         Assert.True(config.VoteConfig.ShouldPrintVoteRemainingTime);
-        Assert.Equal(McsCountdownUiType.CenterHtml, config.VoteConfig.CurrentCountdownUiType);
+        Assert.Equal(McsCountdownUiType.Center, config.VoteConfig.CurrentCountdownUiType);
 
         // VoteSound defaults
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.VSndEvtsSoundFilePath);
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.InitialVoteSounds.VoteCountdownStartSound);
         Assert.Equal("", config.VoteConfig.VoteSoundConfig.RunoffVoteSounds.VoteCountdownStartSound);
-
-        // Nomination defaults
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
     }
 
     #endregion
@@ -174,61 +149,14 @@ public class PluginConfigParsingServiceTests
         Assert.Equal(McsMapConfigExecutionType.ExactMatch, config.MapCycleConfig.MapConfigExecutionType);
     }
 
-    [Fact]
-    public void ParseConfigFromDocument_SqlType_ParsesCorrectly()
-    {
-        var cases = new (string Value, McsSupportedSqlType Expected)[]
-        {
-            ("Sqlite", McsSupportedSqlType.Sqlite),
-            ("sqlite", McsSupportedSqlType.Sqlite),
-            ("MySQL", McsSupportedSqlType.MySQL),
-            ("PostgreSQL", McsSupportedSqlType.PostgreSQL),
-        };
-
-        foreach (var (value, expected) in cases)
-        {
-            var toml = $"""
-                [General.Sql]
-                Type = "{value}"
-                """;
-            var config = _service.ParseConfigFromDocument(TomlTestHelper.ParseToml(toml));
-            Assert.Equal(expected, config.GeneralConfig.SqlConfig.DataBaseType);
-        }
-    }
-
-    [Fact]
-    public void ParseConfigFromDocument_InvalidSqlType_FallsBackToSqlite()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/04_invalid_sql_type.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsSupportedSqlType.Sqlite, config.GeneralConfig.SqlConfig.DataBaseType);
-    }
-
     #endregion
 
-    #region MenuType / CountdownUiType
-
-    [Fact]
-    public void ParseConfigFromDocument_MenuType_Default_Parsed()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/05_menu_type_default.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
-    }
-
-    [Fact]
-    public void ParseConfigFromDocument_InvalidMenuType_FallsBackToDefault()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/06_invalid_menu_type.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.CurrentMenuType);
-    }
+    #region CountdownUiType
 
     [Theory]
     [InlineData("None", McsCountdownUiType.None)]
-    [InlineData("CenterHud", McsCountdownUiType.CenterHud)]
-    [InlineData("CenterAlert", McsCountdownUiType.CenterAlert)]
-    [InlineData("CenterHtml", McsCountdownUiType.CenterHtml)]
+    [InlineData("Hint", McsCountdownUiType.Hint)]
+    [InlineData("Center", McsCountdownUiType.Center)]
     [InlineData("Chat", McsCountdownUiType.Chat)]
     public void ParseConfigFromDocument_CountdownUiType_ParsesCorrectly(string value, McsCountdownUiType expected)
     {
@@ -241,19 +169,11 @@ public class PluginConfigParsingServiceTests
     }
 
     [Fact]
-    public void ParseConfigFromDocument_InvalidCountdownUiType_FallsBackToCenterHtml()
+    public void ParseConfigFromDocument_InvalidCountdownUiType_FallsBackToCenter()
     {
         var doc = TomlTestHelper.LoadToml("PluginConfig/07_invalid_countdown_ui.toml");
         var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsCountdownUiType.CenterHtml, config.VoteConfig.CurrentCountdownUiType);
-    }
-
-    [Fact]
-    public void ParseConfigFromDocument_NominationMenuType_Default()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/08_nomination_menu_type.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
+        Assert.Equal(McsCountdownUiType.Center, config.VoteConfig.CurrentCountdownUiType);
     }
 
     #endregion
@@ -332,25 +252,6 @@ public class PluginConfigParsingServiceTests
 
     #endregion
 
-    #region SQL Config
-
-    [Fact]
-    public void ParseConfigFromDocument_SqlConfig_FullyParsed()
-    {
-        var doc = TomlTestHelper.LoadToml("PluginConfig/12_sql_full.toml");
-        var config = _service.ParseConfigFromDocument(doc);
-        var sql = config.GeneralConfig.SqlConfig;
-
-        Assert.Equal(McsSupportedSqlType.PostgreSQL, sql.DataBaseType);
-        Assert.Equal("my_db", sql.DatabaseName);
-        Assert.Equal("192.168.1.1", sql.Host);
-        Assert.Equal("5432", sql.Port);
-        Assert.Equal("admin", sql.UserName);
-        // Password is stored as SecureString, verify it's not null
-        Assert.NotNull(sql.Password);
-    }
-
-    #endregion
 
     #region VoteSoundConfig .vsndevts Validation
 
@@ -380,23 +281,6 @@ public class PluginConfigParsingServiceTests
 
     #endregion
 
-    #region AvailableMenuTypes
-
-    [Fact]
-    public void ParseConfigFromDocument_AvailableMenuTypes_ContainsDefault()
-    {
-        var doc = TomlTestHelper.ParseToml("");
-        var config = _service.ParseConfigFromDocument(doc);
-
-        Assert.Single(config.VoteConfig.AvailableMenuTypes);
-        Assert.Equal(McsSupportedMenuType.Default, config.VoteConfig.AvailableMenuTypes[0]);
-
-        Assert.Single(config.NominationConfig.AvailableMenuTypes);
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.AvailableMenuTypes[0]);
-    }
-
-    #endregion
-
     #region Partial Config
 
     [Fact]
@@ -410,7 +294,6 @@ public class PluginConfigParsingServiceTests
         // Other sections should still have defaults
         Assert.Equal(3, config.MapCycleConfig.FallbackDefaultMaxExtends);
         Assert.Equal(5, config.VoteConfig.MaxMenuElements);
-        Assert.Equal(McsSupportedMenuType.Default, config.NominationConfig.CurrentMenuType);
     }
 
     [Fact]

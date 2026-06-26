@@ -23,18 +23,15 @@ internal sealed class McsChatListenerController : PluginModuleBase, IClientListe
 
     private readonly Dictionary<string, string> _triggers = new(StringComparer.OrdinalIgnoreCase);
 
-    private IConVar _blockChatDuringVote = null!;
+    private readonly IConVar _blockChatDuringVote;
     private IMcsReadOnlyVoteState _voteState = null!;
 
     public McsChatListenerController(IServiceProvider serviceProvider, bool hotReload)
         : base(serviceProvider, hotReload)
     {
-    }
-
-    protected override void OnInitialize()
-    {
         _blockChatDuringVote = SharedSystem.GetConVarManager()
             .CreateConVar("mcs_block_chat_during_vote", 0, 0, 1, "Block player chat messages during map vote", ConVarFlags.None)!;
+        TrackConVar(_blockChatDuringVote);
     }
 
     protected override void OnAllModulesLoaded()
@@ -59,8 +56,6 @@ internal sealed class McsChatListenerController : PluginModuleBase, IClientListe
         _triggers[commandName] = CommandPrefix + commandName;
     }
 
-    // TODO: FakeCommand does not dispatch to ModSharp's StringCommand callbacks.
-    //       Investigate MS-side routing and fix the dispatch method.
     public ECommandAction OnClientSayCommand(
         IGameClient client, bool teamOnly, bool isCommand, string commandName, string message)
     {
@@ -70,7 +65,7 @@ internal sealed class McsChatListenerController : PluginModuleBase, IClientListe
         string trimmed = message.Trim();
         if (_triggers.TryGetValue(trimmed, out var fullCommand))
         {
-            client.FakeCommand(fullCommand);
+            client.ExecuteStringCommand(fullCommand);
             return ECommandAction.Handled;
         }
 

@@ -116,8 +116,9 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         # Relative path from the module directory (e.g. if map configs are located in modules/MapChooserSharpMS/maps/, then put maps/)
         MapConfigDirectoryPath = "maps/"
 
-        # Relative path from the module directory (e.g. if group configs are located in modules/MapChooserSharpMS/groups/, then put groups/)
-        GroupConfigDirectoryPath = "groups/"
+        # Pause map cycle when the server is empty (no real players).
+        # When enabled, map transitions and cooldown consumption are skipped while the server is empty.
+        PauseMapCycleWhenServerEmpty = false
 
 
         [MapVote]
@@ -134,13 +135,12 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         #
         # Currently supports:
         # - None
-        # - CenterHud
-        # - CenterAlert
-        # - CenterHtml
+        # - Hint
+        # - Center
         # - Chat
         #
         # See GitHub readme for more information.
-        CountdownUiType = "CenterHtml"
+        CountdownUiType = "Center"
 
 
         [MapVote.Sound]

@@ -11,15 +11,18 @@ using MapChooserSharpMS.Shared.Events.RockTheVote;
 using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapCycle.Services;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
 using MapChooserSharpMS.Shared.Nomination.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Sharp.Shared.Enums;
 using Sharp.Shared.Listeners;
 using Sharp.Shared.Objects;
 using TnmsPluginFoundation.Extensions.Client;
 using TnmsPluginFoundation.Models.Plugin;
+using Wuling.Abstract;
 
 namespace MapChooserSharpMS.Modules.Nomination;
 
@@ -28,7 +31,8 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
       IMcsInternalNominationController,
       IRockTheVoteEventListener,
       IMapVoteEventListener,
-      IClientListener
+      IClientListener,
+      Sharp.Shared.Listeners.IGameListener
 {
     public override string PluginModuleName => "McsMapNominationController";
     public override string ModuleChatPrefix => "Prefix.Nomination";
@@ -57,6 +61,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     private IMcsMapConfigProvider _mapConfigProvider = null!;
     private IMapConfigToolingService _mapConfigToolingService = null!;
     private NominationConVars _conVars = null!;
+    private PlayerNominationCooldownService _playerCooldownService = null!;
 
     public IReadOnlyDictionary<string, IMcsNominationData> GetNominatedMaps() => _internalNominationManager.NominatedMaps;
 
@@ -73,6 +78,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         services.AddSingleton<IMcsInternalNominationManager>(_ => _internalNominationManager);
         services.AddSingleton<INominationManager>(_ => _internalNominationManager);
         services.AddSingleton<INominationValidateService>(_ => NominationValidateService);
+        services.AddSingleton<IMapNominationService>(_ => NominationService);
     }
 
     protected override void OnInitialize()
@@ -87,21 +93,29 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         _mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _mapConfigToolingService = ServiceProvider.GetRequiredService<IMapConfigToolingService>();
 
-        NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this);
-        NominationService          = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService);
+        InitializePlayerCooldownService();
 
+        NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this, _playerCooldownService);
+        NominationService = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService, _conVars, _playerCooldownService);
+
+        var cooldownQueryService = ServiceProvider.GetRequiredService<IMapCooldownQueryService>();
         NominationMenuManagementService = new NominationMenuManagementService(
-            () => ((MapChooserSharpMs)Plugin).MenuCompat,
+            () => ((MapChooserSharpMs)Plugin).NominationMenuCompat,
             _mapConfigProvider,
             _internalNominationManager,
             NominationService,
             _mapConfigToolingService,
+            cooldownQueryService,
             NotifyNominationFailure,
-            _conVars);
+            _conVars,
+            Plugin,
+            this,
+            _eventManager);
 
         _eventManager.RegisterListener<IRockTheVoteEventListener>(this);
         _eventManager.RegisterListener<IMapVoteEventListener>(this);
         SharedSystem.GetClientManager().InstallClientListener(this);
+        SharedSystem.GetModSharp().InstallGameListener(this);
 
         AddCommandsUnderNamespace("MapChooserSharpMS.Modules.Nomination.Commands");
     }
@@ -111,6 +125,28 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
         _eventManager.RemoveListener<IRockTheVoteEventListener>(this);
         _eventManager.RemoveListener<IMapVoteEventListener>(this);
         SharedSystem.GetClientManager().RemoveClientListener(this);
+        SharedSystem.GetModSharp().RemoveGameListener(this);
+    }
+
+    public void OnGameActivate()
+    {
+        NominationService.ClearNominations();
+        _playerCooldownService?.DecrementAll();
+    }
+
+    private void InitializePlayerCooldownService()
+    {
+        var surreal = SharedSystem.GetSharpModuleManager()
+            .GetRequiredSharpModuleInterface<IWuling>(IWuling.Identity)
+            .Instance!.Surreal;
+
+        _playerCooldownService = new PlayerNominationCooldownService(Logger, surreal.ServerId, surreal);
+
+        _ = System.Threading.Tasks.Task.Run(async () =>
+        {
+            try { await _playerCooldownService.LoadFromDbAsync(); }
+            catch (Exception ex) { Logger.LogWarning(ex, "[PlayerNomCD] Failed to load from DB"); }
+        });
     }
 
     public void OnMapVoteFinished(IMapVoteFinishedEventParams @params)
@@ -188,8 +224,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
                 break;
 
             case NominationCheckResult.GroupNominationLimitReached:
-                int limit = ((NominationValidateService)NominationValidateService).PerGroupNominationLimit.GetInt32();
-                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.GroupLimitReached", limit));
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.GroupLimitReached"));
                 break;
 
             case NominationCheckResult.CancelledByExternalPlugin:
@@ -198,6 +233,10 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
 
             case NominationCheckResult.ProhibitAdminNomination:
                 PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.ProhibitAdminNomination", mapDisplay));
+                break;
+
+            case NominationCheckResult.PlayerCooldownActive:
+                PrintMessageToServerOrPlayerChat(player, LocalizeWithModulePrefix(player, "Nomination.Notification.Failure.PlayerCooldownActive"));
                 break;
         }
     }
@@ -235,4 +274,5 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
             "Nomination.Broadcast.Admin.RemovedNomination",
             executor?.Name ?? "Console", mapDisplay);
     }
+
 }

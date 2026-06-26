@@ -14,6 +14,7 @@ using NativeVoteManagerMS.Shared;
 using NativeVoteManagerMS.Shared.Types;
 using Sharp.Shared.Objects;
 using TnmsPluginFoundation;
+using TnmsPluginFoundation.Extensions.Client;
 using TnmsPluginFoundation.Models.Plugin;
 
 namespace MapChooserSharpMS.Modules.MapCycle.Services;
@@ -160,12 +161,11 @@ internal sealed class McsExtendVoteService
         var overrideAmount = _pendingOverrideAmount;
         FinishVoteSession();
 
-        // !ve is admin-only — the pass goes through the admin path and does
-        // not consume any extend budget.
         var result = _extendService.TryExtend(McsExtendTrigger.AdminOrApi, overrideAmount);
         if (result != McsMapExtendResult.Extended)
             _logger.LogWarning("[MapCycle] Extend vote passed but extend failed: {Result}", result);
 
+        BroadcastToAll("MapCycle.ExtendVote.Broadcast.Passed");
         FireFinishedEvent(passed: true);
     }
 
@@ -176,7 +176,20 @@ internal sealed class McsExtendVoteService
 
         _logger.LogInformation("[MapCycle] Extend vote failed");
         FinishVoteSession();
+
+        BroadcastToAll("MapCycle.ExtendVote.Broadcast.Failed");
         FireFinishedEvent(passed: false);
+    }
+
+    private void BroadcastToAll(string key, params object[] args)
+    {
+        var clients = _plugin.SharedSystem.GetModSharp().GetIServer().GetGameClients(true);
+        foreach (var c in clients)
+        {
+            if (c.IsFakeClient || c.IsHltv) continue;
+            c.GetPlayerController()?.PrintToChat(
+                $" {_plugin.GetPluginPrefix(c)} {_plugin.LocalizeStringForPlayer(c, key, args)}");
+        }
     }
 
     internal void HandleVoteCancelled(int generation)

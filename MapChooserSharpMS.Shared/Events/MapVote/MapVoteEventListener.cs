@@ -7,24 +7,26 @@ namespace MapChooserSharpMS.Shared.Events.MapVote;
 public interface IMapVoteEventListener: IEventListenerBase
 {
     /// <summary>
-    /// You can cancel map vote when return true
+    /// Fired when a map vote is about to start.
+    /// Return <see cref="McsCancellableEvent.Stop"/> to cancel the vote.
     /// </summary>
-    bool OnMapVoteStart(IMapVoteStartParams @params) 
-        => false;
-    
+    McsCancellableEvent OnMapVoteStart(IMapVoteStartParams @params)
+        => McsCancellableEvent.Continue;
+
     /// <summary>
-    /// When you return non-empty list, then map vote will use listed maps to vote.
+    /// Fired during random map picking. Return a non-empty override to replace
+    /// the randomly-selected candidate list.
     /// </summary>
-    List<IMapConfig> OnRandomMapPick(IMapVoteRandomMapPickParams @params)
-        => [];
-    
+    McsValueOverrideEvent<List<IMapConfig>> OnRandomMapPick(IMapVoteRandomMapPickParams @params)
+        => McsValueOverrideEvent<List<IMapConfig>>.NoOverride;
+
     void OnMapVoteFinished(IMapVoteFinishedEventParams @params) {}
-    
+
     void OnMapVoteCancelled(IMapVoteCancelledParams @params) {}
-    
+
     void OnMapExtended(IMapVoteExtendParams @params) {}
-    
+
     void OnMapNotChanged(IMapVoteNotChangedParams @params) {}
-    
+
     void OnMapConfirmed(IMapVoteMapConfirmedEventParams @params) {}
 }

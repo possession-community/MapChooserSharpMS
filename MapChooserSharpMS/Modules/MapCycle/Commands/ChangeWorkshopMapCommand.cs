@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.Commands;
+using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition;
+using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapCycle;
 using MapChooserSharpMS.Shared.WorkshopManagement;
@@ -49,15 +51,15 @@ internal sealed class ChangeWorkshopMapCommand(IServiceProvider provider) : McsC
             string executorName = client?.Name ?? "Console";
             string mapDisplay = _mapConfigProvider.ToolingService.ResolveMapDisplayName(mapConfig);
 
-            var transitionManager = _controller.MapTransitionManager;
-            transitionManager.TrySetNextMap(mapConfig);
+            var internalTransitionManager = ServiceProvider.GetRequiredService<IMcsInternalMapTransitionManager>();
+            internalTransitionManager.TrySetNextMap(mapConfig);
 
             PrintLocalizedChatToAll("MapCycle.Broadcast.Admin.ChangingMap", executorName, mapDisplay);
 
             Logger.LogInformation("Admin {Executor} changing to workshop map {Map} (ID: {Id})",
                 executorName, mapConfig.MapName, workshopId);
 
-            transitionManager.TransitionToNextMap(0f);
+            internalTransitionManager.BeginMapTransition(MapTransitionTrigger.AdminForceEnd);
             return;
         }
 
@@ -100,7 +102,8 @@ internal sealed class ChangeWorkshopMapCommand(IServiceProvider provider) : McsC
                     Logger.LogInformation("Admin {Executor} changing to workshop map {Map} (ID: {Id})",
                         executorName, mapDisplay, workshopId);
 
-                    transitionManager.TransitionToNextMap(0f);
+                    var internalTm = ServiceProvider.GetRequiredService<IMcsInternalMapTransitionManager>();
+                    internalTm.BeginMapTransition(MapTransitionTrigger.AdminForceEnd);
                 });
             }
             catch (Exception ex)

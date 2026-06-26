@@ -16,6 +16,7 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="CsToml" Version="1.5.1" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.*" />
     </ItemGroup>
 
     <ItemGroup>
