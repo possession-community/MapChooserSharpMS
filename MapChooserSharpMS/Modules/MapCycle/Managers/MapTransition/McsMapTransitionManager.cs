@@ -163,6 +163,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private void HandleDeferred()
     {
         float delay = _conVars.TransitionDelay.GetFloat();
+        ForceMatchLimitsForRoundEnd();
         ShowMapTransitionPanel(delay);
         TransitionToNextMap(delay);
     }
