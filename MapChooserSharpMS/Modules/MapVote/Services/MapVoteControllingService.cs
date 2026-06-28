@@ -385,13 +385,25 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             .Select(n => n.MapConfig)
             .ToList();
 
-        foreach (var map in forceNominated)
         {
-            if (candidates.Count - 1 >= slotsForMaps)
-                break;
+            var adminPickParams = new AdminNominatedMapPickParams(
+                _plugin, _moduleBase, forceNominated);
 
-            if (usedMapNames.Add(map.MapName))
-                candidates.Add(new MapVoteOption(map.MapName, map));
+            var adminOverride = _eventManager.FireWithResult<IMapVoteEventListener, McsValueOverrideEvent<List<IMapConfig>>>(
+                e => e.OnAdminNominatedMapPick(adminPickParams),
+                r => r.HasValue,
+                McsValueOverrideEvent<List<IMapConfig>>.NoOverride);
+
+            var adminMapsToAdd = adminOverride.HasValue ? (IEnumerable<IMapConfig>)adminOverride.Value : forceNominated;
+
+            foreach (var map in adminMapsToAdd)
+            {
+                if (candidates.Count - 1 >= slotsForMaps)
+                    break;
+
+                if (usedMapNames.Add(map.MapName))
+                    candidates.Add(new MapVoteOption(map.MapName, map));
+            }
         }
 
         // Community nominations sorted by participant count
@@ -401,13 +413,25 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             .Select(n => n.MapConfig)
             .ToList();
 
-        foreach (var map in communityNominated)
         {
-            if (candidates.Count - 1 >= slotsForMaps)
-                break;
+            var nomPickParams = new NominatedMapPickParams(
+                _plugin, _moduleBase, communityNominated);
 
-            if (usedMapNames.Add(map.MapName))
-                candidates.Add(new MapVoteOption(map.MapName, map));
+            var nomOverride = _eventManager.FireWithResult<IMapVoteEventListener, McsValueOverrideEvent<List<IMapConfig>>>(
+                e => e.OnNominatedMapPick(nomPickParams),
+                r => r.HasValue,
+                McsValueOverrideEvent<List<IMapConfig>>.NoOverride);
+
+            var nomMapsToAdd = nomOverride.HasValue ? (IEnumerable<IMapConfig>)nomOverride.Value : communityNominated;
+
+            foreach (var map in nomMapsToAdd)
+            {
+                if (candidates.Count - 1 >= slotsForMaps)
+                    break;
+
+                if (usedMapNames.Add(map.MapName))
+                    candidates.Add(new MapVoteOption(map.MapName, map));
+            }
         }
 
         // Fire OnRandomMapPick — listeners may supply a custom candidate list

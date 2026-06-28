@@ -14,6 +14,20 @@ public interface IMapVoteEventListener: IEventListenerBase
         => McsCancellableEvent.Continue;
 
     /// <summary>
+    /// Fired when admin-nominated maps are picked for the vote.
+    /// Return a non-empty override to replace the admin-nominated candidate list.
+    /// </summary>
+    McsValueOverrideEvent<List<IMapConfig>> OnAdminNominatedMapPick(IAdminNominatedMapPickParams @params)
+        => McsValueOverrideEvent<List<IMapConfig>>.NoOverride;
+
+    /// <summary>
+    /// Fired when community-nominated maps are picked for the vote.
+    /// Return a non-empty override to replace the nominated candidate list.
+    /// </summary>
+    McsValueOverrideEvent<List<IMapConfig>> OnNominatedMapPick(INominatedMapPickParams @params)
+        => McsValueOverrideEvent<List<IMapConfig>>.NoOverride;
+
+    /// <summary>
     /// Fired during random map picking. Return a non-empty override to replace
     /// the randomly-selected candidate list.
     /// </summary>

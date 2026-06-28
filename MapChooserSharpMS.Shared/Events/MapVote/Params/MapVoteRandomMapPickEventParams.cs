@@ -15,7 +15,7 @@ public interface IMapVoteRandomMapPickParams: IEventBaseParams
     /// </summary>
     /// <returns></returns>
     int MinimumMapCounts { get; }
-    
+
     /// <summary>
     /// Full map configs list for manipulating vote list.
     /// </summary>
