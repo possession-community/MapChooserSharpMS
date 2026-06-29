@@ -132,6 +132,9 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
             }
         }
 
+        if (mapConfig.CooldownConfig.UnplayedCount > 0)
+            Print(client, "MapCycle.Command.Notification.MapInfo.UnplayedCount", mapConfig.CooldownConfig.UnplayedCount);
+
         var playerCdState = _nominationValidateService.GetPlayerCooldownState(client.SteamId);
 
         if (playerCdState is not null)

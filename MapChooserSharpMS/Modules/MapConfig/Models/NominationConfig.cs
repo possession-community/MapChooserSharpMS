@@ -10,4 +10,5 @@ internal sealed record NominationConfig(
     bool ProhibitAdminNomination,
     IReadOnlyList<DayOfWeek> DaysAllowed,
     IReadOnlyList<ITimeRange> AllowedTimeRanges,
-    bool RestrictToAllowedUsersOnly = false) : INominationConfig;
+    bool RestrictToAllowedUsersOnly = false,
+    int MinNominationCountForVote = 1) : INominationConfig;

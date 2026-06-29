@@ -118,6 +118,20 @@ public class McsEventDebugger : IModSharpModule,
         return McsCancellableEvent.Continue;
     }
 
+    public McsValueOverrideEvent<List<IMapConfig>> OnAdminNominatedMapPick(IAdminNominatedMapPickParams p)
+    {
+        _logger.LogInformation("[MapVote] OnAdminNominatedMapPick: Count={Count}",
+            p.SelectedMaps?.Count);
+        return McsValueOverrideEvent<List<IMapConfig>>.NoOverride;
+    }
+
+    public McsValueOverrideEvent<List<IMapConfig>> OnNominatedMapPick(INominatedMapPickParams p)
+    {
+        _logger.LogInformation("[MapVote] OnNominatedMapPick: Count={Count}",
+            p.SelectedMaps?.Count);
+        return McsValueOverrideEvent<List<IMapConfig>>.NoOverride;
+    }
+
     public McsValueOverrideEvent<List<IMapConfig>> OnRandomMapPick(IMapVoteRandomMapPickParams p)
     {
         _logger.LogInformation("[MapVote] OnRandomMapPick: MinSlots={Min}, Available={Avail}",

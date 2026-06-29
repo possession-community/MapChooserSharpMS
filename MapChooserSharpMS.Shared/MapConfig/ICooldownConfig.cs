@@ -37,4 +37,10 @@ public interface ICooldownConfig
     /// Time-based nomination cooldown duration specified in map config.
     /// </summary>
     TimeSpan NominationTimedCooldown { get; }
+
+    /// <summary>
+    /// Number of maps played since this map's cooldown fully expired
+    /// (both count and timed). Reset to 0 when cooldown is applied.
+    /// </summary>
+    int UnplayedCount { get; }
 }

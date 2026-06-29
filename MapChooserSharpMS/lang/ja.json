@@ -150,6 +150,7 @@
     "MapCycle.Command.Notification.MapInfo.NomCooldown": "ノミネーションCD: {lime}{0} マップ{default}",
     "MapCycle.Command.Notification.MapInfo.NomTimedCooldown": "ノミネーションCD: {lime}{0} まで制限中{default}",
     "MapCycle.Command.Notification.MapInfo.NomCooldownWithTimed": "ノミネーションCD: {lime}{0} マップ{default} かつ {lime}{1}{default} まで制限中",
+    "MapCycle.Command.Notification.MapInfo.UnplayedCount": "未プレイカウント: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.YouCanNominate": "ノミネート可能か: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.NotAvailable": "このマップのマップ情報は存在しません",
 

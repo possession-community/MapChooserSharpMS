@@ -16,6 +16,14 @@ internal sealed class CooldownConfig : ICooldownConfig
     internal int CurrentNominationCooldown { get; set; }
     internal DateTime NominationTimedCooldownEndUtc { get; set; } = DateTime.MinValue;
 
+    public int UnplayedCount { get; internal set; }
+
+    internal bool CooldownAuditRecorded { get; set; } = true;
+
+    internal bool HasAnyCooldownConfigured => ConfigCooldown > 0 || TimedCooldown > TimeSpan.Zero;
+
+    internal bool IsFullyAvailable => CurrentCooldown == 0 && TimedCooldownEndUtc <= DateTime.UtcNow;
+
     public CooldownConfig(
         int configCooldown,
         TimeSpan timedCooldown,

@@ -150,6 +150,7 @@
     "MapCycle.Command.Notification.MapInfo.NomCooldown": "Nomination Cooldown: {lime}{0} maps{default}",
     "MapCycle.Command.Notification.MapInfo.NomTimedCooldown": "Nomination Cooldown: {lime}Restricted until {0}{default}",
     "MapCycle.Command.Notification.MapInfo.NomCooldownWithTimed": "Nomination Cooldown: {lime}{0} maps{default} and Restricted until {lime}{1}{default}",
+    "MapCycle.Command.Notification.MapInfo.UnplayedCount": "Unplayed count: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.YouCanNominate": "You can nominate: {lime}{0}{default}",
     "MapCycle.Command.Notification.MapInfo.NotAvailable": "No map info available for this map",
 

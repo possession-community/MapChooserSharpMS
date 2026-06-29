@@ -204,6 +204,22 @@ internal sealed class SurrealAuditRepository : IAuditPersistence
         }, "ext");
     }
 
+    public void InsertCooldownExpiredFireAndForget(AuditCooldownExpired r)
+    {
+        FireAndForget(async () =>
+        {
+            var surql = "CREATE mcs_audit_cooldown_expired SET name = $name, cooldown_type = $cooldown_type, became_available_at = $became_available_at, server_id = $server_id;";
+            var vars = new Dictionary<string, object?>
+            {
+                ["name"] = r.Name,
+                ["cooldown_type"] = r.CooldownType,
+                ["became_available_at"] = r.BecameAvailableAt,
+                ["server_id"] = r.ServerId,
+            };
+            await _surreal.WriteAsync(surql, vars);
+        }, "cooldown_expired");
+    }
+
     private void FireAndForget(Func<Task> action, string label)
     {
         _ = Task.Run(async () =>

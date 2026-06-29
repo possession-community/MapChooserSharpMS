@@ -7,6 +7,7 @@ using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.Services;
 using McsCancellableEvent = MapChooserSharpMS.Shared.Events.McsCancellableEvent;
 using MapChooserSharpMS.Modules.MapCycle.Managers.MapTransition.Interfaces;
+using MapChooserSharpMS.Modules.MapCycle.Services;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Modules.MapVote.Models;
 using MapChooserSharpMS.Modules.Statistics;
@@ -106,6 +107,10 @@ internal sealed class McsAuditController
             {
                 await persistence.EnsureSchemasAsync();
                 _persistence = persistence;
+
+                var cooldownLifecycle = ServiceProvider.GetService<McsMapCooldownLifecycleService>();
+                cooldownLifecycle?.SetAuditPersistence(persistence, _serverId);
+
                 Logger.LogInformation("[Audit] Audit persistence initialized via Wuling SurrealDB (server_id={ServerId})", _serverId);
             }
             catch (Exception ex)

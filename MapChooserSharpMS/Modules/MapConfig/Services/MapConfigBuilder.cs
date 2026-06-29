@@ -87,7 +87,8 @@ internal static class MapConfigBuilder
                 ProhibitAdminNomination: props.ProhibitAdminNomination ?? false,
                 DaysAllowed: props.DaysAllowed ?? [],
                 AllowedTimeRanges: props.AllowedTimeRanges ?? [],
-                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false),
+                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false,
+                MinNominationCountForVote: Math.Max(props.MinNominationCountForVote ?? 1, 1)),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
@@ -131,7 +132,8 @@ internal static class MapConfigBuilder
                 ProhibitAdminNomination: props.ProhibitAdminNomination ?? false,
                 DaysAllowed: props.DaysAllowed ?? [],
                 AllowedTimeRanges: props.AllowedTimeRanges ?? [],
-                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false),
+                RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false,
+                MinNominationCountForVote: Math.Max(props.MinNominationCountForVote ?? 1, 1)),
             CooldownConfig: new CooldownConfig(
                 configCooldown: props.Cooldown ?? 0,
                 timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),

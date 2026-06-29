@@ -37,4 +37,10 @@ public interface INominationConfig
     /// When true, only players with allow permission nodes can nominate this map.
     /// </summary>
     public bool RestrictToAllowedUsersOnly { get; }
+
+    /// <summary>
+    /// Minimum number of nomination participants required for this map
+    /// to appear in the vote candidate list. Default is 1 (current behavior).
+    /// </summary>
+    public int MinNominationCountForVote { get; }
 }

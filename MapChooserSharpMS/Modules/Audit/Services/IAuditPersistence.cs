@@ -20,6 +20,8 @@ internal interface IAuditPersistence
     void InsertRtvFireAndForget(AuditRtv rtv, IReadOnlyList<AuditRtvVote> votes);
 
     void InsertExtFireAndForget(AuditExt ext, IReadOnlyList<AuditExtVote> votes);
+
+    void InsertCooldownExpiredFireAndForget(AuditCooldownExpired record);
 }
 
 internal sealed record AuditMapPlay(
@@ -109,3 +111,9 @@ internal sealed record AuditExtVote(
     string ExtId,
     ulong SteamId,
     DateTime VotedAt);
+
+internal sealed record AuditCooldownExpired(
+    string Name,
+    string CooldownType,
+    DateTime BecameAvailableAt,
+    string ServerId);

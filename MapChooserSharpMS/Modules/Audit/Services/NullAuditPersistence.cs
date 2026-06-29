@@ -21,4 +21,6 @@ internal sealed class NullAuditPersistence : IAuditPersistence
     public void InsertRtvFireAndForget(AuditRtv rtv, IReadOnlyList<AuditRtvVote> votes) { }
 
     public void InsertExtFireAndForget(AuditExt ext, IReadOnlyList<AuditExtVote> votes) { }
+
+    public void InsertCooldownExpiredFireAndForget(AuditCooldownExpired record) { }
 }

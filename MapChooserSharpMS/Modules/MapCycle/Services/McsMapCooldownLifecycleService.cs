@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MapChooserSharpMS.Modules.Audit.Services;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Modules.MapConfig.Models;
@@ -15,12 +16,17 @@ namespace MapChooserSharpMS.Modules.MapCycle.Services;
 
 internal sealed class McsMapCooldownLifecycleService
 {
+    private const string CooldownTypeMap = "map";
+    private const string CooldownTypeGroup = "group";
+
     private readonly ILogger _logger;
     private readonly TnmsPlugin _plugin;
     private readonly PluginModuleBase _moduleBase;
     private readonly IMcsMapConfigProvider _mapConfigProvider;
     private readonly IInternalEventManager _eventManager;
     private ICooldownPersistence _persistence = NullCooldownPersistence.Instance;
+    private volatile IAuditPersistence _auditPersistence = NullAuditPersistence.Instance;
+    private volatile string _serverId = "";
     private bool _dbLoadedSuccessfully;
 
     internal McsMapCooldownLifecycleService(
@@ -42,8 +48,16 @@ internal sealed class McsMapCooldownLifecycleService
         _persistence = persistence;
     }
 
+    internal void SetAuditPersistence(IAuditPersistence auditPersistence, string serverId)
+    {
+        _serverId = serverId;
+        _auditPersistence = auditPersistence;
+    }
+
     internal void ApplyPlayedMapCooldown(IMapConfig playedMap)
     {
+        var now = DateTime.UtcNow;
+
         if (playedMap.CooldownConfig is CooldownConfig mapCc)
         {
             var eventParams = new MapCooldownApplyEventParams(
@@ -60,10 +74,14 @@ internal sealed class McsMapCooldownLifecycleService
             }
 
             mapCc.CurrentCooldown = eventParams.Cooldown;
-            mapCc.LastPlayedAt = DateTime.UtcNow;
+            mapCc.LastPlayedAt = now;
+            mapCc.UnplayedCount = 0;
+
+            if (mapCc.HasAnyCooldownConfigured)
+                mapCc.CooldownAuditRecorded = false;
 
             if (eventParams.TimedCooldownDuration > TimeSpan.Zero)
-                mapCc.TimedCooldownEndUtc = DateTime.UtcNow + eventParams.TimedCooldownDuration;
+                mapCc.TimedCooldownEndUtc = now + eventParams.TimedCooldownDuration;
 
             if (!IsProvisionalMap(playedMap))
                 _persistence.SaveMapCooldownFireAndForget(playedMap.MapName, BuildMapRecord(mapCc));
@@ -76,10 +94,14 @@ internal sealed class McsMapCooldownLifecycleService
                 continue;
 
             groupCc.CurrentCooldown = groupCc.ConfigCooldown;
-            groupCc.LastPlayedAt = DateTime.UtcNow;
+            groupCc.LastPlayedAt = now;
+            groupCc.UnplayedCount = 0;
+
+            if (groupCc.HasAnyCooldownConfigured)
+                groupCc.CooldownAuditRecorded = false;
 
             if (groupCc.TimedCooldown > TimeSpan.Zero)
-                groupCc.TimedCooldownEndUtc = DateTime.UtcNow + groupCc.TimedCooldown;
+                groupCc.TimedCooldownEndUtc = now + groupCc.TimedCooldown;
 
             if (savedGroups.Add(group.GroupName))
                 _persistence.SaveGroupCooldownFireAndForget(group.GroupName, BuildGroupRecord(groupCc));
@@ -103,10 +125,12 @@ internal sealed class McsMapCooldownLifecycleService
                 {
                     DecrementCooldownConfig(mapEntry.MapConfig.CooldownConfig);
 
-                    if (!IsProvisionalMap(mapEntry.MapConfig)
-                        && mapEntry.MapConfig.CooldownConfig is CooldownConfig mapCc)
+                    if (mapEntry.MapConfig.CooldownConfig is CooldownConfig mapCc)
                     {
-                        mapRecords.Add((mapEntry.MapConfig.MapName, BuildMapRecord(mapCc)));
+                        TrackCooldownExpiry(mapCc, mapEntry.MapConfig.MapName, CooldownTypeMap);
+
+                        if (!IsProvisionalMap(mapEntry.MapConfig))
+                            mapRecords.Add((mapEntry.MapConfig.MapName, BuildMapRecord(mapCc)));
                     }
                 }
 
@@ -116,10 +140,12 @@ internal sealed class McsMapCooldownLifecycleService
                     {
                         DecrementCooldownConfig(group.CooldownConfig);
 
-                        if (savedGroups.Add(group.GroupName)
-                            && group.CooldownConfig is CooldownConfig groupCc)
+                        if (group.CooldownConfig is CooldownConfig groupCc)
                         {
-                            groupRecords.Add((group.GroupName, BuildGroupRecord(groupCc)));
+                            TrackCooldownExpiry(groupCc, group.GroupName, CooldownTypeGroup);
+
+                            if (savedGroups.Add(group.GroupName))
+                                groupRecords.Add((group.GroupName, BuildGroupRecord(groupCc)));
                         }
                     }
                 }
@@ -128,6 +154,21 @@ internal sealed class McsMapCooldownLifecycleService
 
         if (_dbLoadedSuccessfully && (mapRecords.Count > 0 || groupRecords.Count > 0))
             _persistence.SaveAllCooldownsFireAndForget(mapRecords, groupRecords);
+    }
+
+    private void TrackCooldownExpiry(CooldownConfig cc, string name, string cooldownType)
+    {
+        if (!cc.HasAnyCooldownConfigured || !cc.IsFullyAvailable || cc.LastPlayedAt == DateTime.MinValue)
+            return;
+
+        cc.UnplayedCount++;
+
+        if (cc.CooldownAuditRecorded)
+            return;
+
+        cc.CooldownAuditRecorded = true;
+        _auditPersistence.InsertCooldownExpiredFireAndForget(
+            new AuditCooldownExpired(name, cooldownType, DateTime.UtcNow, _serverId));
     }
 
     internal void ApplyNominationCooldown(IMapConfig map)
@@ -185,6 +226,9 @@ internal sealed class McsMapCooldownLifecycleService
             cc.LastPlayedAt = named.Record.LastPlayedAt;
             cc.CurrentNominationCooldown = named.Record.NomCooldown;
             cc.NominationTimedCooldownEndUtc = named.Record.NomTimedCooldownEnd;
+
+            if (cc.IsFullyAvailable)
+                cc.CooldownAuditRecorded = true;
         }
     }
 
@@ -211,6 +255,9 @@ internal sealed class McsMapCooldownLifecycleService
                 cc.LastPlayedAt = named.Record.LastPlayedAt;
                 cc.CurrentNominationCooldown = named.Record.NomCooldown;
                 cc.NominationTimedCooldownEndUtc = named.Record.NomTimedCooldownEnd;
+
+                if (cc.IsFullyAvailable)
+                    cc.CooldownAuditRecorded = true;
             }
         }
     }
