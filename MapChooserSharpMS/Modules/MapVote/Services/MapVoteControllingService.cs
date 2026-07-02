@@ -831,8 +831,9 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
                 return;
             }
 
+            // Countdown sound is reserved for the pre-vote countdown; during
+            // the vote itself only the visual countdown is shown.
             _countdownUi.ShowCountdownToAll(remaining, Ui.Countdown.McsCountdownType.Voting);
-            _soundPlayer.PlayVoteCountdownSoundToAll(remaining);
         }, 1.0, Sharp.Shared.Enums.GameTimerFlags.Repeatable | Sharp.Shared.Enums.GameTimerFlags.StopOnMapEnd);
     }
 
