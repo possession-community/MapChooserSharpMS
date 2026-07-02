@@ -43,6 +43,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private Guid _retryTimerId;
     private Guid _transitionTimerId;
     private int _changeAttemptsUsed;
+    private bool _matchLimitsForced;
 
     public McsMapTransitionManager(
         ISharedSystem sharedSystem,
@@ -181,6 +182,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         var cvm = _sharedSystem.GetConVarManager();
         cvm.FindConVar("mp_timelimit")?.Set(0.01f);
         cvm.FindConVar("mp_maxrounds")?.Set(1);
+        _matchLimitsForced = true;
         _logger.LogInformation("[MapTransition] Set mp_timelimit=0.01, mp_maxrounds=1");
 
         _logger.LogInformation("[MapTransition] TerminateRound in {Delay}s", terminateDelay);
@@ -192,7 +194,20 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         var cvm = _sharedSystem.GetConVarManager();
         cvm.FindConVar("mp_timelimit")?.Set(0.01f);
         cvm.FindConVar("mp_maxrounds")?.Set(1);
+        _matchLimitsForced = true;
         _logger.LogInformation("[MapTransition] Set mp_timelimit=0.01, mp_maxrounds=1 (deferred)");
+    }
+
+    public void RestoreMatchLimits()
+    {
+        if (!_matchLimitsForced)
+            return;
+
+        var cvm = _sharedSystem.GetConVarManager();
+        cvm.FindConVar("mp_timelimit")?.Set(99999999.0f);
+        cvm.FindConVar("mp_maxrounds")?.Set(99999999);
+        _matchLimitsForced = false;
+        _logger.LogInformation("[MapTransition] Restored mp_timelimit=99999999, mp_maxrounds=99999999");
     }
 
     private void FireIntermissionEvent()
@@ -432,6 +447,7 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         _isNextMapConfirmed = false;
         _intermissionFired = false;
         ChangeMapOnNextRoundEnd = false;
+        _matchLimitsForced = false;
         StopTransitionTimer();
         StopRetryWatchdog(resetAttempts: true);
     }

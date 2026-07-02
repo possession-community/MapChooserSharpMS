@@ -10,7 +10,9 @@ internal sealed class ExtendVoteFinishedParams(
     TnmsPlugin plugin,
     PluginModuleBase moduleBase,
     IMapConfig? currentMap,
-    bool passed
+    bool passed,
+    int yesCount,
+    int noCount
 ) : IExtendVoteFinishedEventParams
 {
     public string ModulePrefix(CultureInfo? culture = null)
@@ -19,4 +21,8 @@ internal sealed class ExtendVoteFinishedParams(
     public IMapConfig? CurrentMap { get; } = currentMap;
 
     public bool Passed { get; } = passed;
+
+    public int YesCount { get; } = yesCount;
+
+    public int NoCount { get; } = noCount;
 }

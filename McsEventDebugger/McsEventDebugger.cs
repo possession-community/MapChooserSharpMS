@@ -81,8 +81,8 @@ public class McsEventDebugger : IModSharpModule,
             p.CurrentMap?.MapName, p.CancelledBy?.Name);
 
     public void OnExtendVoteFinished(IExtendVoteFinishedEventParams p)
-        => _logger.LogInformation("[MapCycle] OnExtendVoteFinished: Map={Map}, Passed={Passed}",
-            p.CurrentMap?.MapName, p.Passed);
+        => _logger.LogInformation("[MapCycle] OnExtendVoteFinished: Map={Map}, Passed={Passed}, Yes={Yes}, No={No}",
+            p.CurrentMap?.MapName, p.Passed, p.YesCount, p.NoCount);
 
     public void OnNextMapConfirmed(INextMapConfirmedEventParams p)
         => _logger.LogInformation("[MapCycle] OnNextMapConfirmed: Next={Next}, Old={Old}",

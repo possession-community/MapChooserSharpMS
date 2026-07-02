@@ -14,4 +14,6 @@ internal interface IMcsInternalMapTransitionManager : IMapTransitionManager
     bool IsIntermissionFired { get; }
 
     void BeginMapTransition(MapTransitionTrigger trigger, float? delayOverride = null);
+
+    void RestoreMatchLimits();
 }

@@ -13,10 +13,10 @@ internal sealed class ExtendVoteNativeHandler(McsExtendVoteService service, int 
     : IYesNoVoteHandler
 {
     public void OnVotePassed(VoteResult result)
-        => service.HandleVotePassed(generation);
+        => service.HandleVotePassed(generation, result);
 
     public void OnVoteFailed(VoteResult result)
-        => service.HandleVoteFailed(generation);
+        => service.HandleVoteFailed(generation, result);
 
     public void OnVoteCancelled()
         => service.HandleVoteCancelled(generation);

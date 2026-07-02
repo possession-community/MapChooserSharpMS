@@ -153,7 +153,7 @@ internal sealed class McsExtendVoteService
         FireCancelledEvent(null);
     }
 
-    internal void HandleVotePassed(int generation)
+    internal void HandleVotePassed(int generation, VoteResult result)
     {
         if (IsStale(generation))
             return;
@@ -161,15 +161,15 @@ internal sealed class McsExtendVoteService
         var overrideAmount = _pendingOverrideAmount;
         FinishVoteSession();
 
-        var result = _extendService.TryExtend(McsExtendTrigger.AdminOrApi, overrideAmount);
-        if (result != McsMapExtendResult.Extended)
-            _logger.LogWarning("[MapCycle] Extend vote passed but extend failed: {Result}", result);
+        var extendResult = _extendService.TryExtend(McsExtendTrigger.AdminOrApi, overrideAmount);
+        if (extendResult != McsMapExtendResult.Extended)
+            _logger.LogWarning("[MapCycle] Extend vote passed but extend failed: {Result}", extendResult);
 
         BroadcastToAll("MapCycle.ExtendVote.Broadcast.Passed");
-        FireFinishedEvent(passed: true);
+        FireFinishedEvent(passed: true, result);
     }
 
-    internal void HandleVoteFailed(int generation)
+    internal void HandleVoteFailed(int generation, VoteResult result)
     {
         if (IsStale(generation))
             return;
@@ -178,7 +178,7 @@ internal sealed class McsExtendVoteService
         FinishVoteSession();
 
         BroadcastToAll("MapCycle.ExtendVote.Broadcast.Failed");
-        FireFinishedEvent(passed: false);
+        FireFinishedEvent(passed: false, result);
     }
 
     private void BroadcastToAll(string key, params object[] args)
@@ -220,11 +220,28 @@ internal sealed class McsExtendVoteService
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnExtendVoteCancelled(cancelledParams));
     }
 
-    private void FireFinishedEvent(bool passed)
+    private void FireFinishedEvent(bool passed, VoteResult result)
     {
+        var (yesCount, noCount) = CountVotes(result);
         var finishedParams = new ExtendVoteFinishedParams(
-            _plugin, _moduleBase, _currentMapProvider(), passed);
+            _plugin, _moduleBase, _currentMapProvider(), passed, yesCount, noCount);
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnExtendVoteFinished(finishedParams));
+    }
+
+    private static (int YesCount, int NoCount) CountVotes(VoteResult result)
+    {
+        int yesCount = 0;
+        int noCount = 0;
+
+        foreach (var choice in result.Choices)
+        {
+            if (string.Equals(choice.Content.InternalName, "yes", System.StringComparison.OrdinalIgnoreCase))
+                yesCount = choice.Voters.Count;
+            else if (string.Equals(choice.Content.InternalName, "no", System.StringComparison.OrdinalIgnoreCase))
+                noCount = choice.Voters.Count;
+        }
+
+        return (yesCount, noCount);
     }
 
     private List<IGameClient> GetParticipants()

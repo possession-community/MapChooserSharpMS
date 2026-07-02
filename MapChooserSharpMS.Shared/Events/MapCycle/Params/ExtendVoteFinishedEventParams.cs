@@ -18,4 +18,14 @@ public interface IExtendVoteFinishedEventParams: IEventBaseParams
     /// True when the vote passed (the map got extended).
     /// </summary>
     bool Passed { get; }
+
+    /// <summary>
+    /// Number of "yes" votes cast in the extend vote.
+    /// </summary>
+    int YesCount { get; }
+
+    /// <summary>
+    /// Number of "no" votes cast in the extend vote.
+    /// </summary>
+    int NoCount { get; }
 }

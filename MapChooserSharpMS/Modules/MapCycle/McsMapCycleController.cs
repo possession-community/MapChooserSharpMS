@@ -552,7 +552,10 @@ internal sealed class McsMapCycleController
         // otherwise the pending round-end transition would fire anyway and
         // the extend would be silently ineffective.
         if (_internalTimeLimitManager is { IsLimitReached: false })
+        {
             _mapTransitionManager.ChangeMapOnNextRoundEnd = false;
+            _mapTransitionManager.RestoreMatchLimits();
+        }
     }
 
     private WorkshopProvisioningService? CreateWorkshopProvisioningService()

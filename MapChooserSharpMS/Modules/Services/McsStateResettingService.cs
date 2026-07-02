@@ -70,6 +70,7 @@ internal sealed class McsStateResettingService
             transitionManager.TryRemoveNextMap();
 
         transitionManager.ChangeMapOnNextRoundEnd = false;
+        transitionManager.RestoreMatchLimits();
     }
 
     private void ResetExtCommand()

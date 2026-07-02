@@ -162,10 +162,16 @@ internal sealed class McsAuditController
                 TimeLimitType.Round => "round",
                 _ => "none"
             };
-            var cvm = SharedSystem.GetConVarManager();
-            configuredTimelimit = timelimitType == "time"
-                ? (cvm.FindConVar("mp_timelimit")?.GetFloat() ?? 0f)
-                : (cvm.FindConVar("mp_maxrounds")?.GetFloat() ?? 0f);
+
+            // MapCycle sets mp_timelimit/mp_maxrounds to 99999999 during the same
+            // activate phase, so reading the ConVars here is listener-order-dependent.
+            // Derive the configured limit from the map config instead.
+            configuredTimelimit = timelimitType switch
+            {
+                "time" => currentMap is null ? 0f : currentMap.MapTime,
+                "round" => currentMap is null ? 0f : currentMap.MapRounds,
+                _ => 0f
+            };
         }
         catch
         {
@@ -289,7 +295,7 @@ internal sealed class McsAuditController
         if (@params.Passed)
             _mapPlayCollector?.OnAdminExtend();
 
-        var record = _extendVoteCollector.BuildFinishedRecord(@params.Passed, 0, 0);
+        var record = _extendVoteCollector.BuildFinishedRecord(@params.Passed, @params.YesCount, @params.NoCount);
         _persistence.InsertExtendVoteFireAndForget(record);
     }
 

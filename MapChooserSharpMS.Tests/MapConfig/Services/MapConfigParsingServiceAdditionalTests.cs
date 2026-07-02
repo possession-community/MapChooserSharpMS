@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using MapChooserSharpMS.Modules.MapConfig.Models;
 using MapChooserSharpMS.Modules.MapConfig.Services;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Tests.Helpers;
@@ -197,6 +198,52 @@ public class MapConfigParsingServiceAdditionalTests
         var config = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
         // All groups have CooldownOverride=0, so map's own Cooldown=30 is used
         Assert.Equal(30, config.CooldownConfig.ConfigCooldown);
+    }
+
+    [Fact]
+    public void CooldownRuntimeState_SharedAcrossMapAndGroupDaySettingsVariants()
+    {
+        var doc = TomlTestHelper.LoadToml("61_cooldown_runtime_state_shared.toml");
+        var result = _service.ParseConfigsFromDocument(doc);
+
+        Assert.NotNull(result);
+
+        var mapOverrides = result!.MapConfigsNameMapping["ze_test"];
+        Assert.Equal(3, mapOverrides.Count); // base + Special (map) + Weekend (inherited from G1)
+
+        var mapBase = mapOverrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName);
+        var mapSpecial = mapOverrides.First(o => o.OverrideConfigName == "Special");
+        var mapWeekend = mapOverrides.First(o => o.OverrideConfigName == "Weekend");
+
+        var mapBaseCc = (CooldownConfig)mapBase.MapConfig.CooldownConfig;
+        var mapSpecialCc = (CooldownConfig)mapSpecial.MapConfig.CooldownConfig;
+        var mapWeekendCc = (CooldownConfig)mapWeekend.MapConfig.CooldownConfig;
+
+        Assert.Same(mapBaseCc.RuntimeState, mapSpecialCc.RuntimeState);
+        Assert.Same(mapBaseCc.RuntimeState, mapWeekendCc.RuntimeState);
+
+        mapBaseCc.CurrentCooldown = 7;
+        Assert.Equal(7, mapSpecialCc.CurrentCooldown);
+        Assert.Equal(7, mapWeekendCc.CurrentCooldown);
+
+        var groupOverrides = result.MapGroupSettings["G1"];
+        Assert.Equal(2, groupOverrides.Count); // base + Weekend
+
+        var groupBase = groupOverrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName);
+        var groupWeekend = groupOverrides.First(o => o.OverrideConfigName == "Weekend");
+
+        var groupBaseCc = (CooldownConfig)groupBase.GroupConfig.CooldownConfig;
+        var groupWeekendCc = (CooldownConfig)groupWeekend.GroupConfig.CooldownConfig;
+
+        Assert.Same(groupBaseCc.RuntimeState, groupWeekendCc.RuntimeState);
+
+        groupBaseCc.CurrentCooldown = 9;
+        Assert.Equal(9, groupWeekendCc.CurrentCooldown);
+
+        // The map's resolved GroupSettings reference the same underlying group
+        // config instance as the group settings mapping's base variant.
+        var mapGroupCc = (CooldownConfig)mapBase.MapConfig.GroupSettings.First(g => g.GroupName == "G1").CooldownConfig;
+        Assert.Same(groupBaseCc.RuntimeState, mapGroupCc.RuntimeState);
     }
 
     // ========================================================================

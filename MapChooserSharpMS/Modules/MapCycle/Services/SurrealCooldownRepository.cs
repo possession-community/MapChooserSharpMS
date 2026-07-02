@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -17,43 +18,106 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence
     private readonly IWulingSurreal _surreal;
     private readonly ILogger _logger;
     private readonly string _surqlDirectory;
+    private readonly Channel<Func<Task>> _queue;
 
     internal SurrealCooldownRepository(IWulingSurreal surreal, ILogger logger, string moduleDirectory)
     {
         _surreal = surreal;
         _logger = logger;
         _surqlDirectory = Path.Combine(moduleDirectory, "surql");
+
+        _queue = Channel.CreateUnbounded<Func<Task>>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+        });
+        _ = Task.Run(RunQueueAsync);
     }
 
-    public async Task EnsureSchemasAsync(CancellationToken ct = default)
+    // Single-writer FIFO worker: every read/write goes through this queue so
+    // operations complete in submission order (e.g. a map-end save can't be
+    // overtaken by the next map's load).
+    private async Task RunQueueAsync()
     {
-        await _surreal.EnsureSchemasAsync(_surqlDirectory, ct);
-        _logger.LogInformation("[CooldownPersistence] SurrealDB schemas ensured from {Path}", _surqlDirectory);
+        await foreach (var workItem in _queue.Reader.ReadAllAsync())
+        {
+            try
+            {
+                await workItem();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[CooldownPersistence] Queued operation failed");
+            }
+        }
     }
 
-    public async Task<IReadOnlyList<NamedCooldownRecord>> LoadAllMapCooldownsAsync(CancellationToken ct = default)
+    private Task Enqueue(Func<Task> workItem)
     {
-        return await LoadAllAsync(TableMapCooldown, ct);
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _queue.Writer.TryWrite(async () =>
+        {
+            try
+            {
+                await workItem();
+                tcs.SetResult();
+            }
+            catch (Exception ex)
+            {
+                tcs.SetException(ex);
+            }
+        });
+        return tcs.Task;
     }
 
-    public async Task<IReadOnlyList<NamedCooldownRecord>> LoadAllGroupCooldownsAsync(CancellationToken ct = default)
+    private Task<T> Enqueue<T>(Func<Task<T>> workItem)
     {
-        return await LoadAllAsync(TableGroupCooldown, ct);
+        var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _queue.Writer.TryWrite(async () =>
+        {
+            try
+            {
+                tcs.SetResult(await workItem());
+            }
+            catch (Exception ex)
+            {
+                tcs.SetException(ex);
+            }
+        });
+        return tcs.Task;
     }
 
-    public async Task SaveMapCooldownAsync(string mapName, CooldownRecord record, CancellationToken ct = default)
+    public Task EnsureSchemasAsync(CancellationToken ct = default)
     {
-        await UpsertAsync(TableMapCooldown, mapName, record, ct);
+        return Enqueue(async () =>
+        {
+            await _surreal.EnsureSchemasAsync(_surqlDirectory, ct);
+            _logger.LogInformation("[CooldownPersistence] SurrealDB schemas ensured from {Path}", _surqlDirectory);
+        });
     }
 
-    public async Task SaveGroupCooldownAsync(string groupName, CooldownRecord record, CancellationToken ct = default)
+    public Task<IReadOnlyList<NamedCooldownRecord>> LoadAllMapCooldownsAsync(CancellationToken ct = default)
     {
-        await UpsertAsync(TableGroupCooldown, groupName, record, ct);
+        return Enqueue(() => LoadAllAsync(TableMapCooldown, ct));
+    }
+
+    public Task<IReadOnlyList<NamedCooldownRecord>> LoadAllGroupCooldownsAsync(CancellationToken ct = default)
+    {
+        return Enqueue(() => LoadAllAsync(TableGroupCooldown, ct));
+    }
+
+    public Task SaveMapCooldownAsync(string mapName, CooldownRecord record, CancellationToken ct = default)
+    {
+        return Enqueue(() => UpsertAsync(TableMapCooldown, mapName, record, ct));
+    }
+
+    public Task SaveGroupCooldownAsync(string groupName, CooldownRecord record, CancellationToken ct = default)
+    {
+        return Enqueue(() => UpsertAsync(TableGroupCooldown, groupName, record, ct));
     }
 
     public void SaveMapCooldownFireAndForget(string mapName, CooldownRecord record)
     {
-        _ = Task.Run(async () =>
+        _queue.Writer.TryWrite(async () =>
         {
             try
             {
@@ -68,7 +132,7 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence
 
     public void SaveGroupCooldownFireAndForget(string groupName, CooldownRecord record)
     {
-        _ = Task.Run(async () =>
+        _queue.Writer.TryWrite(async () =>
         {
             try
             {
@@ -85,7 +149,7 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence
         IReadOnlyList<(string name, CooldownRecord record)> maps,
         IReadOnlyList<(string name, CooldownRecord record)> groups)
     {
-        _ = Task.Run(async () =>
+        _queue.Writer.TryWrite(async () =>
         {
             try
             {

@@ -70,18 +70,20 @@ internal sealed class McsMapCooldownLifecycleService
             if (eventParams.IsCancelled)
             {
                 _logger.LogInformation("[Cooldown] Cooldown apply cancelled by listener for: {Map}", playedMap.MapName);
-                return;
+            }
+            else
+            {
+                mapCc.CurrentCooldown = eventParams.Cooldown;
+
+                if (mapCc.HasAnyCooldownConfigured)
+                    mapCc.CooldownAuditRecorded = false;
+
+                if (eventParams.TimedCooldownDuration > TimeSpan.Zero)
+                    mapCc.TimedCooldownEndUtc = now + eventParams.TimedCooldownDuration;
             }
 
-            mapCc.CurrentCooldown = eventParams.Cooldown;
             mapCc.LastPlayedAt = now;
             mapCc.UnplayedCount = 0;
-
-            if (mapCc.HasAnyCooldownConfigured)
-                mapCc.CooldownAuditRecorded = false;
-
-            if (eventParams.TimedCooldownDuration > TimeSpan.Zero)
-                mapCc.TimedCooldownEndUtc = now + eventParams.TimedCooldownDuration;
 
             if (!IsProvisionalMap(playedMap))
                 _persistence.SaveMapCooldownFireAndForget(playedMap.MapName, BuildMapRecord(mapCc));
@@ -112,16 +114,17 @@ internal sealed class McsMapCooldownLifecycleService
 
     internal void DecrementAllCooldowns()
     {
-        var decremented = new HashSet<ICooldownConfig>(ReferenceEqualityComparer.Instance);
+        var decremented = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var mapRecords = new List<(string name, CooldownRecord record)>();
         var groupRecords = new List<(string name, CooldownRecord record)>();
+        var savedMaps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var savedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var entry in _mapConfigProvider.GetMapConfigs())
         {
             foreach (var mapEntry in entry.Value)
             {
-                if (decremented.Add(mapEntry.MapConfig.CooldownConfig))
+                if (decremented.Add(DedupKey(mapEntry.MapConfig.CooldownConfig)))
                 {
                     DecrementCooldownConfig(mapEntry.MapConfig.CooldownConfig);
 
@@ -129,14 +132,14 @@ internal sealed class McsMapCooldownLifecycleService
                     {
                         TrackCooldownExpiry(mapCc, mapEntry.MapConfig.MapName, CooldownTypeMap);
 
-                        if (!IsProvisionalMap(mapEntry.MapConfig))
+                        if (!IsProvisionalMap(mapEntry.MapConfig) && savedMaps.Add(mapEntry.MapConfig.MapName))
                             mapRecords.Add((mapEntry.MapConfig.MapName, BuildMapRecord(mapCc)));
                     }
                 }
 
                 foreach (var group in mapEntry.MapConfig.GroupSettings)
                 {
-                    if (decremented.Add(group.CooldownConfig))
+                    if (decremented.Add(DedupKey(group.CooldownConfig)))
                     {
                         DecrementCooldownConfig(group.CooldownConfig);
 
@@ -155,6 +158,9 @@ internal sealed class McsMapCooldownLifecycleService
         if (_dbLoadedSuccessfully && (mapRecords.Count > 0 || groupRecords.Count > 0))
             _persistence.SaveAllCooldownsFireAndForget(mapRecords, groupRecords);
     }
+
+    private static object DedupKey(ICooldownConfig config)
+        => config is CooldownConfig cc ? cc.RuntimeState : config;
 
     private void TrackCooldownExpiry(CooldownConfig cc, string name, string cooldownType)
     {
