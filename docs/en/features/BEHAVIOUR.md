@@ -46,6 +46,31 @@ MCS installs a **`GoToIntermission` detour** (hook on `server.dll`'s `GoToInterm
 
 An idempotency guard ensures that intermission is only fired once per map, even if multiple code paths attempt to trigger it.
 
+## Map Vote Candidate Selection (Pick Order)
+
+When a map vote starts, the candidate list is filled in the following order, up to `[Vote] MaxMenuElements` total entries. Duplicates are skipped by map name — the first occurrence wins its slot.
+
+1. **Special option (slot 0)**
+   - RTV vote: the *Don't Change* option
+   - Scheduled (time/round limit) vote: the *Extend* option — only shown while the map's vote-extend budget remains (`MaxExtends` not exhausted; `MaxExtends = 0` hides it entirely)
+2. **Admin nominations** (force-nominated via `!nominate_addmap` / `!nominate_addwsmap`)
+   - The `OnAdminNominatedMapPick` event fires first; a listener may replace this list entirely
+3. **Community nominations**, sorted by participant count (descending)
+   - The `OnNominatedMapPick` event fires first; a listener may replace this list entirely
+   - Without an override, nominations whose participant count is below the map's `MinNominationCountForVote` are excluded (and recorded in the audit as `not_picked`)
+4. **Random picks** to fill the remaining slots
+   - The `OnRandomMapPick` event fires first; a listener may replace this list entirely
+   - Without an override, the built-in random pick applies:
+     1. **Eligibility filter** — a map is excluded if any of the following holds: disabled, `OnlyNomination = true`, currently being played, already nominated, its group's `NominationLimit` is reached, map or group cooldown is active, player count is outside `MinPlayers`/`MaxPlayers`, or the current day/time is outside `DaysAllowed`/`AllowedTimeRanges`
+     2. **`OnNominationCheckPassed` event** — fired once per eligible map; an external plugin may veto individual maps
+     3. **Weighted shuffle** — maps are drawn by `MapSelectionWeight` (higher = more likely; `0` = never picked)
+
+Notes:
+
+- Override events always receive the **unfiltered** list (e.g. `OnNominatedMapPick` sees all community nominations before the `MinNominationCountForVote` filter). An override replaces the default filtering entirely — the returned list is used as-is with no further checks.
+- All pick events fire synchronously on the game thread. Only the eligibility filter of the built-in random pick runs on a worker thread.
+- Nominations that do not make it into the final candidate list are recorded in the audit as `not_picked` (see [Audit System](AUDIT.md)).
+
 ## Map Config Execution (cfg files)
 
 On every map start, MCS executes `.cfg` files from `csgo/cfg/mcsms/maps/` and `csgo/cfg/mcsms/groups/` via the `exec` command. See [Plugin Config](../configuration/PLUGIN_CONFIG.md#map-config-execution-cfg-files) for details on matching modes and directory layout.
