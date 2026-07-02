@@ -16,7 +16,6 @@ using MapChooserSharpMS.Shared.Nomination.Managers;
 using MapChooserSharpMS.Shared.Nomination.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Sharp.Shared.Objects;
-using System.Threading.Tasks;
 using TnmsPluginFoundation;
 using TnmsPluginFoundation.Models.Plugin;
 
@@ -197,19 +196,51 @@ internal sealed class NominationValidateService
         return result;
     }
 
-    public async Task<List<IMapConfig>> FilterPickableMapsAsync(List<IMapConfig> maps)
+    /// <summary>
+    /// Phase 2/game-thread step of the deferred random-pick pipeline: captures
+    /// everything <see cref="CanPickupPure"/> needs from live, non-thread-safe
+    /// state (current map, player count, nomination manager) into an immutable
+    /// snapshot so the pure filter can safely run on the thread pool afterwards.
+    /// </summary>
+    public PickupSnapshot CreatePickupSnapshot()
     {
-        var snapshot = new PickupSnapshot(
-            CurrentMapName: _mapTransitionManager.CurrentMap?.MapConfig.MapName ?? SharedSystem.GetModSharp().GetMapName(),
-            RealPlayerCount: SharedSystem.GetModSharp().GetIServer().GetGameClients(true).Count(u => !u.IsFakeClient && !u.IsHltv)
-        );
+        var nominatedMapNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var groupNominatedCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        var filtered = await Task.Run(() =>
+        foreach (var data in _nominationManager.NominatedMaps)
         {
-            return maps.Where(m => CanPickupPure(m, snapshot)).ToList();
-        });
+            nominatedMapNames.Add(data.Key);
 
-        return filtered.Where(m =>
+            foreach (IMapGroupConfig groupSetting in data.Value.MapConfig.GroupSettings)
+            {
+                groupNominatedCounts.TryGetValue(groupSetting.GroupName, out int count);
+                groupNominatedCounts[groupSetting.GroupName] = count + 1;
+            }
+        }
+
+        return new PickupSnapshot(
+            CurrentMapName: _mapTransitionManager.CurrentMap?.MapConfig.MapName ?? SharedSystem.GetModSharp().GetMapName(),
+            RealPlayerCount: SharedSystem.GetModSharp().GetIServer().GetGameClients(true).Count(u => !u.IsFakeClient && !u.IsHltv),
+            NominatedMapNames: nominatedMapNames,
+            GroupNominatedCounts: groupNominatedCounts
+        );
+    }
+
+    /// <summary>
+    /// Phase 3/thread-pool step: pure filter over <paramref name="maps"/> using
+    /// only <paramref name="snapshot"/> data — no event firing, no game API access,
+    /// safe to call off the game thread.
+    /// </summary>
+    public List<IMapConfig> FilterPickableMapsPure(List<IMapConfig> maps, PickupSnapshot snapshot)
+        => maps.Where(m => CanPickupPure(m, snapshot)).ToList();
+
+    /// <summary>
+    /// Phase 4/game-thread step: fires <see cref="INominationEventListener.OnNominationCheckPassed"/>
+    /// per map. Must be called on the game thread.
+    /// </summary>
+    public List<IMapConfig> FilterByNominationCheckEvent(List<IMapConfig> maps)
+    {
+        return maps.Where(m =>
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, m);
             return _eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Stop;
@@ -225,11 +256,16 @@ internal sealed class NominationValidateService
             && mapConfig.MapName.Equals(snapshot.CurrentMapName, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        if (GetNominationState(mapConfig).Count > 0)
+        if (snapshot.NominatedMapNames.Contains(mapConfig.MapName))
             return false;
 
-        if (HasReachedGroupNominationLimit(mapConfig))
-            return false;
+        foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
+        {
+            if (groupSetting.NominationLimit > 0
+                && snapshot.GroupNominatedCounts.TryGetValue(groupSetting.GroupName, out int nominatedCount)
+                && nominatedCount >= groupSetting.NominationLimit)
+                return false;
+        }
 
         if (IsMapInCooldown(mapConfig))
             return false;
@@ -251,7 +287,15 @@ internal sealed class NominationValidateService
         return true;
     }
 
-    private sealed record PickupSnapshot(string? CurrentMapName, int RealPlayerCount);
+    /// <summary>
+    /// Point-in-time copy of the live state <see cref="CanPickupPure"/> needs,
+    /// taken on the game thread so the pure filter is safe to run off it.
+    /// </summary>
+    internal sealed record PickupSnapshot(
+        string? CurrentMapName,
+        int RealPlayerCount,
+        IReadOnlySet<string> NominatedMapNames,
+        IReadOnlyDictionary<string, int> GroupNominatedCounts);
 
     public bool IsDuringVotingPeriod()
     {

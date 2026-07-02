@@ -364,7 +364,12 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _voteManager.ClearSession();
     }
 
-    private async Task<List<IMapVoteOption>> BuildCandidateListAsync(bool isRtvVote, int maxElements)
+    /// <summary>
+    /// Phase 1 (game thread): placeholder option + admin/community nomination
+    /// candidates. Synchronous, unchanged from the pre-deferred implementation.
+    /// </summary>
+    private (List<IMapVoteOption> Candidates, HashSet<string> UsedMapNames, int SlotsForMaps) BuildNominatedCandidates(
+        bool isRtvVote, int maxElements)
     {
         var candidates = new List<IMapVoteOption>();
         var usedMapNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -429,32 +434,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             AddCandidates(candidates, usedMapNames, slotsForMaps, nomMapsToAdd);
         }
 
-        // Fire OnRandomMapPick — listeners may supply a custom candidate list
-        int remaining = slotsForMaps - (candidates.Count - 1);
-        if (remaining > 0)
-        {
-            var allConfigs = _mapConfigProvider.GetMapConfigs()
-                .ToDictionary(
-                    kv => kv.Key,
-                    kv => kv.Value.First().MapConfig,
-                    StringComparer.OrdinalIgnoreCase);
-
-            var pickParams = new MapVoteRandomMapPickParams(
-                _plugin, _moduleBase, remaining, allConfigs);
-
-            var overrideResult = _eventManager.FireWithResult<IMapVoteEventListener, McsValueOverrideEvent<List<IMapConfig>>>(
-                e => e.OnRandomMapPick(pickParams),
-                r => r.HasValue,
-                McsValueOverrideEvent<List<IMapConfig>>.NoOverride);
-
-            IEnumerable<IMapConfig> mapsToAdd = overrideResult.HasValue
-                ? overrideResult.Value
-                : await _randomMapPicker.PickRandomMapsAsync(remaining, usedMapNames);
-
-            AddCandidates(candidates, usedMapNames, slotsForMaps, mapsToAdd);
-        }
-
-        return candidates;
+        return (candidates, usedMapNames, slotsForMaps);
     }
 
     private static void AddCandidates(
@@ -667,27 +647,111 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private void OnCountdownFinished(MapVoteInformation session)
     {
         int maxElements = _configProvider.PluginConfig.VoteConfig.MaxMenuElements;
+
         List<IMapVoteOption> candidates;
+        HashSet<string> usedMapNames;
+        int slotsForMaps;
         try
         {
-            candidates = BuildCandidateListAsync(session.IsRtvVote, maxElements).GetAwaiter().GetResult();
+            (candidates, usedMapNames, slotsForMaps) = BuildNominatedCandidates(session.IsRtvVote, maxElements);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to build candidate list after countdown");
-            session.CurrentState = McsMapVoteState.NoActiveVote;
-            _voteState.Reset();
-            _voteManager.ClearSession();
+            ResetToNoActiveVote(session);
             return;
         }
 
+        // Phase 2 (game thread): OnRandomMapPick may supply a full override —
+        // in that case finish synchronously, no thread hop needed.
+        int remaining = slotsForMaps - (candidates.Count - 1);
+        if (remaining <= 0)
+        {
+            StartVoteWithCandidates(session, candidates);
+            return;
+        }
+
+        var allConfigs = _mapConfigProvider.GetMapConfigs()
+            .ToDictionary(
+                kv => kv.Key,
+                kv => kv.Value.First().MapConfig,
+                StringComparer.OrdinalIgnoreCase);
+
+        var pickParams = new MapVoteRandomMapPickParams(_plugin, _moduleBase, remaining, allConfigs);
+
+        var overrideResult = _eventManager.FireWithResult<IMapVoteEventListener, McsValueOverrideEvent<List<IMapConfig>>>(
+            e => e.OnRandomMapPick(pickParams),
+            r => r.HasValue,
+            McsValueOverrideEvent<List<IMapConfig>>.NoOverride);
+
+        if (overrideResult.HasValue)
+        {
+            AddCandidates(candidates, usedMapNames, slotsForMaps, overrideResult.Value);
+            StartVoteWithCandidates(session, candidates);
+            return;
+        }
+
+        // No override — snapshot on the game thread, then hop to the thread
+        // pool for the pure filter ONLY. Event firing and the shuffle resume
+        // on the game thread via InvokeFrameAction (events must stay synchronous
+        // and fire on the game thread).
+        var plan = _randomMapPicker.PreparePick(remaining, usedMapNames);
+
+        _ = Task.Run(() =>
+        {
+            List<IMapConfig> filtered = [];
+            Exception? failure = null;
+            try
+            {
+                filtered = _randomMapPicker.FilterPickable(plan);
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+
+            _plugin.SharedSystem.GetModSharp().InvokeFrameAction(() =>
+            {
+                if (!ReferenceEquals(_voteManager.CurrentSession, session))
+                {
+                    _logger.LogDebug("Vote session changed while picking random maps; discarding stale continuation");
+                    return;
+                }
+
+                var readOnlyState = _voteState as IMcsReadOnlyVoteState;
+                if (readOnlyState?.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
+                {
+                    var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
+                    _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
+
+                    session.CurrentState = McsMapVoteState.NoActiveVote;
+                    _voteState.Reset();
+                    _voteManager.ClearSession();
+                    return;
+                }
+
+                if (failure is not null)
+                {
+                    _logger.LogError(failure, "Failed to build candidate list after countdown");
+                    ResetToNoActiveVote(session);
+                    return;
+                }
+
+                var picked = _randomMapPicker.FinishPick(filtered, plan.Amount);
+                AddCandidates(candidates, usedMapNames, slotsForMaps, picked);
+
+                StartVoteWithCandidates(session, candidates);
+            });
+        });
+    }
+
+    private void StartVoteWithCandidates(MapVoteInformation session, List<IMapVoteOption> candidates)
+    {
         if (candidates.Count < 2)
         {
             _logger.LogWarning("Not enough maps to start vote after countdown ({Count} candidates)", candidates.Count);
             BroadcastToAll("MapVote.Broadcast.NotEnoughMapsToStartVote");
-            session.CurrentState = McsMapVoteState.NoActiveVote;
-            _voteState.Reset();
-            _voteManager.ClearSession();
+            ResetToNoActiveVote(session);
             return;
         }
 
@@ -708,18 +772,21 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             _logger.LogInformation("Vote start cancelled by event listener");
             var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());
             _eventManager.Fire<IMapVoteEventListener>(e => e.OnMapVoteCancelled(cancelledParams));
-            session.CurrentState = McsMapVoteState.NoActiveVote;
-            _voteState.Reset();
-            _voteManager.ClearSession();
+            ResetToNoActiveVote(session);
             return;
         }
 
         if (!StartNativeVote(session, candidates, participants, false))
         {
-            session.CurrentState = McsMapVoteState.NoActiveVote;
-            _voteState.Reset();
-            _voteManager.ClearSession();
+            ResetToNoActiveVote(session);
         }
+    }
+
+    private void ResetToNoActiveVote(MapVoteInformation session)
+    {
+        session.CurrentState = McsMapVoteState.NoActiveVote;
+        _voteState.Reset();
+        _voteManager.ClearSession();
     }
 
     private void StopCountdownTimer()
