@@ -252,6 +252,9 @@ internal sealed class NominationValidateService
         if (mapConfig.IsDisabled)
             return false;
 
+        if (!mapConfig.RandomPickConfig.IsPickable)
+            return false;
+
         if (snapshot.CurrentMapName is not null
             && mapConfig.MapName.Equals(snapshot.CurrentMapName, StringComparison.OrdinalIgnoreCase))
             return false;

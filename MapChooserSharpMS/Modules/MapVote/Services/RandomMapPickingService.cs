@@ -56,7 +56,8 @@ internal sealed class RandomMapPickingService(
     private static List<IMapConfig> WeightedShuffle(List<IMapConfig> candidates, int amount)
     {
         var pool = candidates
-            .Select(m => (Config: m, Weight: Math.Max(m.RandomPickConfig.MapSelectionWeight, 1u)))
+            .Where(m => m.RandomPickConfig.MapSelectionWeight > 0)
+            .Select(m => (Config: m, Weight: m.RandomPickConfig.MapSelectionWeight))
             .ToList();
 
         var picked = new List<IMapConfig>();
