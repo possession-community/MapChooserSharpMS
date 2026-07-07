@@ -4,6 +4,7 @@ using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Modules.RockTheVote.Interfaces;
 using MapChooserSharpMS.Modules.RockTheVote.Managers;
 using MapChooserSharpMS.Modules.RockTheVote.Services;
+using MapChooserSharpMS.Shared.Events;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.Events.MapCycle.Params;
 using MapChooserSharpMS.Shared.Events.MapVote;
@@ -94,14 +95,14 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
         client.GetPlayerController()?.PrintToChat(LocalizeWithModulePrefix(client, translationKey));
     }
 
-    public bool OnMapVoteStart(IMapVoteStartParams @params)
+    public McsCancellableEvent OnMapVoteStart(IMapVoteStartParams @params)
     {
         if (_rtvManager.RtvStatus != RtvStatus.TriggeredWaitingForVote
             && _rtvManager.RtvStatus != RtvStatus.TriggeredWaitingForMapTransition)
         {
             _rtvManager.ForceSetRtvStatus(RtvStatus.AnotherVoteOngoing);
         }
-        return false;
+        return McsCancellableEvent.Continue;
     }
 
     public void OnMapVoteFinished(IMapVoteFinishedEventParams @params)
