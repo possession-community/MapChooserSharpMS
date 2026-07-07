@@ -218,11 +218,23 @@ internal sealed class NominationValidateService
             }
         }
 
+        var mapsInCooldown = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var mapConfigProvider = _serviceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        foreach (var mapConfigs in mapConfigProvider.GetMapConfigs().Values)
+        {
+            foreach (var overrides in mapConfigs)
+            {
+                if (IsMapInCooldown(overrides.MapConfig))
+                    mapsInCooldown.Add(overrides.MapConfig.MapName);
+            }
+        }
+
         return new PickupSnapshot(
             CurrentMapName: _mapTransitionManager.CurrentMap?.MapConfig.MapName ?? SharedSystem.GetModSharp().GetMapName(),
             RealPlayerCount: SharedSystem.GetModSharp().GetIServer().GetGameClients(true).Count(u => !u.IsFakeClient && !u.IsHltv),
             NominatedMapNames: nominatedMapNames,
-            GroupNominatedCounts: groupNominatedCounts
+            GroupNominatedCounts: groupNominatedCounts,
+            MapsInCooldown: mapsInCooldown
         );
     }
 
@@ -270,7 +282,7 @@ internal sealed class NominationValidateService
                 return false;
         }
 
-        if (IsMapInCooldown(mapConfig))
+        if (snapshot.MapsInCooldown.Contains(mapConfig.MapName))
             return false;
 
         if (mapConfig.NominationConfig.MaxPlayers > 0
@@ -298,7 +310,8 @@ internal sealed class NominationValidateService
         string? CurrentMapName,
         int RealPlayerCount,
         IReadOnlySet<string> NominatedMapNames,
-        IReadOnlyDictionary<string, int> GroupNominatedCounts);
+        IReadOnlyDictionary<string, int> GroupNominatedCounts,
+        IReadOnlySet<string> MapsInCooldown);
 
     public bool IsDuringVotingPeriod()
     {
