@@ -13,6 +13,8 @@ internal sealed class TimeLimitTransitionTracker
     private bool _voteThresholdFired;
     private bool _limitReachedFired;
 
+    internal bool IsLimitReachedFired => _limitReachedFired;
+
     public TimeLimitTransitionTracker(
         Func<bool> isVoteThresholdReached,
         Func<bool> isLimitReached)

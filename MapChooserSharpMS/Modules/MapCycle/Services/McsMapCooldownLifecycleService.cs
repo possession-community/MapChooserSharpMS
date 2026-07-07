@@ -195,26 +195,31 @@ internal sealed class McsMapCooldownLifecycleService
             _persistence.SaveMapCooldownFireAndForget(map.MapName, BuildMapRecord(cc));
     }
 
-    internal async Task LoadFromDatabaseAsync()
+    internal async Task<(IReadOnlyList<NamedCooldownRecord> Maps, IReadOnlyList<NamedCooldownRecord> Groups)?> FetchCooldownsFromDatabaseAsync()
     {
         try
         {
             var mapRecords = await _persistence.LoadAllMapCooldownsAsync();
             var groupRecords = await _persistence.LoadAllGroupCooldownsAsync();
 
-            ApplyLoadedMapCooldowns(mapRecords);
-            ApplyLoadedGroupCooldowns(groupRecords);
-
-            _dbLoadedSuccessfully = mapRecords.Count > 0 || groupRecords.Count > 0;
-
             _logger.LogInformation(
-                "[Cooldown] Loaded {MapCount} map and {GroupCount} group cooldowns from database",
+                "[Cooldown] Fetched {MapCount} map and {GroupCount} group cooldowns from database",
                 mapRecords.Count, groupRecords.Count);
+
+            return (mapRecords, groupRecords);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "[Cooldown] Failed to load cooldowns from database; continuing with defaults");
+            return null;
         }
+    }
+
+    internal void ApplyLoadedCooldowns(IReadOnlyList<NamedCooldownRecord> mapRecords, IReadOnlyList<NamedCooldownRecord> groupRecords)
+    {
+        ApplyLoadedMapCooldowns(mapRecords);
+        ApplyLoadedGroupCooldowns(groupRecords);
+        _dbLoadedSuccessfully = mapRecords.Count > 0 || groupRecords.Count > 0;
     }
 
     private void ApplyLoadedMapCooldowns(IReadOnlyList<NamedCooldownRecord> records)
