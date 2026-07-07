@@ -45,7 +45,7 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
         }
         else
         {
-            _mapConfigProvider.TryGetMapConfig(commandInfo[1], out mapConfig!);
+            _mapConfigProvider.TryGetMapConfig(commandInfo[1], out mapConfig);
         }
 
         if (mapConfig is null)

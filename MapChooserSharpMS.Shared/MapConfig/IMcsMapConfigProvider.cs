@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using MapChooserSharpMS.Shared.MapConfig.Services;
 
 namespace MapChooserSharpMS.Shared.MapConfig;
@@ -42,9 +43,9 @@ public interface IMcsMapConfigProvider
     /// <param name="mapName">Map name defined in config (e.g. ze_example_v1)</param>
     /// <param name="found">MapConfig if found, otherwise null</param>
     /// <returns>true if found, otherwise false</returns>
-    bool TryGetMapConfig(string mapName, out IMapConfig found);
-    
-    
+    bool TryGetMapConfig(string mapName, [NotNullWhen(true)] out IMapConfig? found);
+
+
     /// <summary>
     /// Search map config by workshop ID <br/>
     /// This method will returns correspond map configs if override config exists
@@ -52,5 +53,5 @@ public interface IMcsMapConfigProvider
     /// <param name="workshopId">Map workshop ID defined in config</param>
     /// <param name="found">MapConfig if found, otherwise null</param>
     /// <returns>true if found, otherwise false</returns>
-    bool TryGetMapConfig(long workshopId, out IMapConfig found);
+    bool TryGetMapConfig(long workshopId, [NotNullWhen(true)] out IMapConfig? found);
 }

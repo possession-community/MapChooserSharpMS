@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using MapChooserSharpMS.Modules.MapConfig.Interfaces;
@@ -63,6 +64,8 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
         TryAutoFixMapName();
     }
 
+    internal event Action? ConfigsReloaded;
+
     public void ReloadConfigs()
     {
         var mapConfigParseService = new MapConfigParsingService();
@@ -102,6 +105,8 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
 
         Logger.LogInformation("Loaded {Maps} maps, {Groups} groups, {Overrides} day-setting overrides",
             mapCount, groupCount, overrideCount);
+
+        ConfigsReloaded?.Invoke();
     }
 
     // Map configs are scanned only under the configured map config directory
@@ -150,7 +155,7 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
         return _mapConfigsWorkshopIdMapping.TryGetValue(workshopId, out found);
     }
 
-    public bool TryGetMapConfig(string mapName, out IMapConfig found)
+    public bool TryGetMapConfig(string mapName, [NotNullWhen(true)] out IMapConfig? found)
     {
         if (_mapConfigsNameMapping.TryGetValue(mapName, out var overrides) && overrides.Count > 0)
         {
@@ -158,11 +163,11 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
             return true;
         }
 
-        found = null!;
+        found = null;
         return false;
     }
 
-    public bool TryGetMapConfig(long workshopId, out IMapConfig found)
+    public bool TryGetMapConfig(long workshopId, [NotNullWhen(true)] out IMapConfig? found)
     {
         if (_mapConfigsWorkshopIdMapping.TryGetValue(workshopId, out var overrides) && overrides.Count > 0)
         {
@@ -170,7 +175,7 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
             return true;
         }
 
-        found = null!;
+        found = null;
         return false;
     }
 
@@ -214,7 +219,7 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
                 Path.GetFileName(oldPath), Path.GetFileName(newPath), workshopId);
             ReloadConfigs();
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Logger.LogWarning(ex, "AutoFix: Failed to rename config file");
         }

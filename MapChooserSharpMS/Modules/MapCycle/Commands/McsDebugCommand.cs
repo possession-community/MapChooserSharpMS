@@ -62,7 +62,7 @@ internal sealed class McsDebugCommand(IServiceProvider provider) : McsCommandBas
         IMapConfig? mapConfig;
         if (commandInfo.ArgCount >= 2)
         {
-            _mapConfigProvider.TryGetMapConfig(commandInfo[2], out mapConfig!);
+            _mapConfigProvider.TryGetMapConfig(commandInfo[2], out mapConfig);
         }
         else
         {
