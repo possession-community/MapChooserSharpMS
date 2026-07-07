@@ -17,7 +17,7 @@ using TnmsPluginFoundation.Models.Command.Validators;
 
 namespace MapChooserSharpMS.Modules.Nomination.Commands;
 
-internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : NominationCommandBase(provider)
+internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : NominationCommandBase(provider), IDisposable
 {
     public override string CommandName => "nominate_addwsmap";
     public override string CommandDescription => "Admin: force-add a workshop map to nomination";
@@ -128,6 +128,12 @@ internal sealed class AdminNominateWorkshopCommand(IServiceProvider provider) : 
                 Logger.LogWarning(ex, "Workshop fetch failed for nomination {Id}", workshopId);
             }
         });
+    }
+
+    public void Dispose()
+    {
+        _workshopProvisioning?.Dispose();
+        _workshopProvisioning = null;
     }
 
     private WorkshopProvisioningService? ResolveWorkshopProvisioning()
