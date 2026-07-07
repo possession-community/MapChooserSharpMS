@@ -271,14 +271,27 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     {
         if (_mapConfigProvider.TryGetMapConfig(workshopId, out var found))
         {
-            TrySetNextMap(found);
-            IWorkshopFetchResult hit = new WorkshopFetchResult
+            var cachedConfig = found;
+            var tcs = new TaskCompletionSource<(bool, IWorkshopFetchResult)>();
+            _sharedSystem.GetModSharp().InvokeFrameAction(() =>
             {
-                ExistenceStatus = ExistenceStatus.FoundInMemoryConfig,
-                MapName = found.MapName,
-                WorkshopId = workshopId,
-            };
-            return (true, hit);
+                try
+                {
+                    TrySetNextMap(cachedConfig);
+                    IWorkshopFetchResult hit = new WorkshopFetchResult
+                    {
+                        ExistenceStatus = ExistenceStatus.FoundInMemoryConfig,
+                        MapName = cachedConfig.MapName,
+                        WorkshopId = workshopId,
+                    };
+                    tcs.SetResult((true, hit));
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            });
+            return await tcs.Task;
         }
 
         if (_workshopProvisioning is null || !_workshopProvisioning.IsAvailable)
