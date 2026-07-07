@@ -2,7 +2,7 @@
 
 namespace MapChooserSharpMS.Modules.Nomination.Interfaces;
 
-public interface IMcsInternalMapNominationService: IMapNominationService
+internal interface IMcsInternalMapNominationService: IMapNominationService
 {
     int NominationCountLimit { get; }
 }

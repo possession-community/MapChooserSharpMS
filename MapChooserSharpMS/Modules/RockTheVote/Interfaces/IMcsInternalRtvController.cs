@@ -3,7 +3,7 @@ using Sharp.Shared.Objects;
 
 namespace MapChooserSharpMS.Modules.RockTheVote.Interfaces;
 
-public interface IMcsInternalRtvController: IMcsRtvController
+internal interface IMcsInternalRtvController: IMcsRtvController
 {
     /// <summary>
     /// Internal helper for RtvService to surface admin-command outcomes to the
