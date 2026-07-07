@@ -10,7 +10,7 @@ using Wuling.Abstract.Tianshi.Surreal;
 
 namespace MapChooserSharpMS.Modules.MapCycle.Services;
 
-internal sealed class SurrealCooldownRepository : ICooldownPersistence
+internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposable
 {
     private const string TableMapCooldown = "mcs_map_cooldown";
     private const string TableGroupCooldown = "mcs_group_cooldown";
@@ -19,6 +19,7 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence
     private readonly ILogger _logger;
     private readonly string _surqlDirectory;
     private readonly Channel<Func<Task>> _queue;
+    private readonly CancellationTokenSource _cts = new();
 
     internal SurrealCooldownRepository(IWulingSurreal surreal, ILogger logger, string moduleDirectory)
     {
@@ -33,22 +34,30 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence
         _ = Task.Run(RunQueueAsync);
     }
 
-    // Single-writer FIFO worker: every read/write goes through this queue so
-    // operations complete in submission order (e.g. a map-end save can't be
-    // overtaken by the next map's load).
+    public void Dispose()
+    {
+        _queue.Writer.TryComplete();
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+
     private async Task RunQueueAsync()
     {
-        await foreach (var workItem in _queue.Reader.ReadAllAsync())
+        try
         {
-            try
+            await foreach (var workItem in _queue.Reader.ReadAllAsync(_cts.Token))
             {
-                await workItem();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "[CooldownPersistence] Queued operation failed");
+                try
+                {
+                    await workItem();
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogWarning(ex, "[CooldownPersistence] Queued operation failed");
+                }
             }
         }
+        catch (OperationCanceledException) { }
     }
 
     private Task Enqueue(Func<Task> workItem)
