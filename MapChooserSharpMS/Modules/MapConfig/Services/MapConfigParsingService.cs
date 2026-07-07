@@ -794,8 +794,15 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
         if (File.Exists(mapsTomlPath))
         {
             // Pattern 1: Single file
-            var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(mapsTomlPath);
-            documents.Add(doc);
+            try
+            {
+                var doc = CsTomlFileSerializer.Deserialize<TomlDocument>(mapsTomlPath);
+                documents.Add(doc);
+            }
+            catch (Exception ex)
+            {
+                warnings.Add($"Failed to parse TOML file '{mapsTomlPath}': {ex.Message}");
+            }
         }
         else if (Directory.Exists(configPath))
         {

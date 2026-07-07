@@ -243,7 +243,7 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
             File.WriteAllText(filePath, defaultContent.ReplaceLineEndings("\n"), Encoding.UTF8);
             Logger.LogInformation("Created default webhook template: {File}", fileName);
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Logger.LogWarning(ex, "Failed to create webhook template: {File}", fileName);
         }
@@ -565,7 +565,7 @@ internal sealed class McsWorkshopSyncController(IServiceProvider serviceProvider
                 File.WriteAllText(filePath, updated, Encoding.UTF8);
                 return true;
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 Logger.LogWarning(ex, "Failed to modify {File}", filePath);
             }

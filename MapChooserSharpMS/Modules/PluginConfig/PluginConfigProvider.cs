@@ -40,7 +40,15 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         if (!File.Exists(configFilePath))
         {
             Logger.LogWarning("Config file not found at {Path}, generating default config", configFilePath);
-            File.WriteAllText(configFilePath, DefaultConfigTemplate);
+            try
+            {
+                File.WriteAllText(configFilePath, DefaultConfigTemplate);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to write default config to {Path}", configFilePath);
+                return;
+            }
         }
 
         try
