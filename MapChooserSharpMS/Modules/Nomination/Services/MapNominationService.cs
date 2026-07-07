@@ -81,6 +81,12 @@ internal sealed class MapNominationService(
 
         ((McsNominationData)nomination).Participants.Add(nominator.Slot);
 
+        if (previousNomination != null)
+        {
+            var changedParams = ActivatorUtilities.CreateInstance<NominationChangedParams>(provider, nominationController, nomination, nominator);
+            eventManager.Fire<INominationEventListener>(evt => evt.OnNominationChanged(changedParams));
+        }
+
         nominationController.BroadcastNomination(nominator, mapConfig, isNominationChanged: previousNomination != null);
 
         ApplyPlayerNominationCooldown(nominator.SteamId);
