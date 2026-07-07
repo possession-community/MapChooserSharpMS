@@ -23,8 +23,9 @@ namespace MapChooserSharpMS.Modules.MapCycle.Services;
 /// Admin-triggered extend vote (!ve / !voteextend) backed by NativeVoteManager's
 /// yes/no native vote. On pass, extends via <see cref="IMcsInternalMapExtendService"/>
 /// through the admin path — no extend budget is consumed.
-/// NVM is the single source of truth for "is a vote running" — this service
-/// deliberately holds no shared vote state (independent from the map vote).
+/// Writes to <see cref="IMcsInternalExtendVoteState"/> so that
+/// <c>IsVotingPeriod()</c> on the combined state manager returns true while
+/// an admin extend vote is active.
 /// </summary>
 internal sealed class McsExtendVoteService
 {
@@ -33,6 +34,7 @@ internal sealed class McsExtendVoteService
     private readonly ILogger _logger;
     private readonly IInternalEventManager _eventManager;
     private readonly IMcsInternalMapExtendService _extendService;
+    private readonly IMcsInternalExtendVoteState _extendVoteState;
     private readonly MapCycleConVars _conVars;
     private readonly System.Func<IMapConfig?> _currentMapProvider;
 
@@ -55,6 +57,7 @@ internal sealed class McsExtendVoteService
         ILogger logger,
         IInternalEventManager eventManager,
         IMcsInternalMapExtendService extendService,
+        IMcsInternalExtendVoteState extendVoteState,
         MapCycleConVars conVars,
         System.Func<IMapConfig?> currentMapProvider)
     {
@@ -63,6 +66,7 @@ internal sealed class McsExtendVoteService
         _logger = logger;
         _eventManager = eventManager;
         _extendService = extendService;
+        _extendVoteState = extendVoteState;
         _conVars = conVars;
         _currentMapProvider = currentMapProvider;
     }
@@ -115,6 +119,7 @@ internal sealed class McsExtendVoteService
 
         IsExtendVoteInProgress = true;
         _pendingOverrideAmount = overrideAmount;
+        _extendVoteState.SetState(McsMapVoteState.Voting);
 
         var startedParams = new ExtendVoteStartedParams(
             _plugin, _moduleBase, _currentMapProvider(), initiator, duration);
@@ -211,6 +216,7 @@ internal sealed class McsExtendVoteService
         IsExtendVoteInProgress = false;
         _pendingOverrideAmount = null;
         _generation++;
+        _extendVoteState.Reset();
     }
 
     private void FireCancelledEvent(IGameClient? cancelledBy)
