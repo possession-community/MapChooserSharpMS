@@ -28,6 +28,7 @@ using Microsoft.Extensions.Logging;
 using NativeVoteManagerMS.Shared;
 using Sharp.Shared.Enums;
 using Sharp.Shared.Listeners;
+using Sharp.Shared.Managers;
 using Sharp.Shared.Objects;
 using TnmsPluginFoundation.Models.Plugin;
 
@@ -70,6 +71,11 @@ internal sealed class McsMapCycleController
 
     private MapCycleMode _mode = MapCycleMode.None;
     private Guid _tickTimerId = Guid.Empty;
+
+    private IConVar? _mpTimelimit;
+    private IConVar? _mpMaxrounds;
+    private bool _conVarGuardActive;
+    private bool _conVarGuardSuppressed;
 
     public ITimeLimitManager CurrentMapTimeLimitManager =>
         _internalTimeLimitManager
@@ -145,7 +151,7 @@ internal sealed class McsMapCycleController
         _bootPhaseTracker = ServiceProvider.GetRequiredService<IMcsBootPhaseTracker>();
         var configProvider = _pluginConfigProvider;
 
-        _mapTransitionManager = new McsMapTransitionManager(
+        var transitionManager = new McsMapTransitionManager(
             SharedSystem,
             ServiceProvider.GetRequiredService<IMcsMapConfigProvider>(),
             Logger,
@@ -155,6 +161,8 @@ internal sealed class McsMapCycleController
             _conVars,
             () => configProvider.PluginConfig.MapCycleConfig.ShouldStopSourceTvRecording,
             workshopProvisioning);
+        transitionManager.SetConVarGuardCallbacks(SuppressConVarGuard, ResumeConVarGuard);
+        _mapTransitionManager = transitionManager;
         var readOnlyVoteState = ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
 
         _extendService = new McsMapExtendService(
@@ -475,6 +483,8 @@ internal sealed class McsMapCycleController
         cvm.FindConVar("mp_maxrounds")?.Set(99999999);
         cvm.FindConVar("mp_match_end_changelevel")?.Set(0);
 
+        InstallConVarGuard();
+
         _tickTimerId = SharedSystem.GetModSharp().PushTimer(
             OnTimerTick,
             1.0,
@@ -519,7 +529,70 @@ internal sealed class McsMapCycleController
         _extendService?.ClearState();
         _extCommandService?.ClearParticipants();
         _extendVoteService?.ResetOnMapEnd();
+        UninstallConVarGuard();
     }
+
+    #region ConVar Guard
+
+    internal void SuppressConVarGuard() => _conVarGuardSuppressed = true;
+    internal void ResumeConVarGuard() => _conVarGuardSuppressed = false;
+
+    private void InstallConVarGuard()
+    {
+        var cvm = SharedSystem.GetConVarManager();
+        _mpTimelimit = cvm.FindConVar("mp_timelimit");
+        _mpMaxrounds = cvm.FindConVar("mp_maxrounds");
+
+        if (_mpTimelimit is not null)
+            cvm.InstallChangeHook(_mpTimelimit, OnMatchConVarChanged);
+        if (_mpMaxrounds is not null)
+            cvm.InstallChangeHook(_mpMaxrounds, OnMatchConVarChanged);
+
+        _conVarGuardActive = true;
+    }
+
+    private void UninstallConVarGuard()
+    {
+        if (!_conVarGuardActive)
+            return;
+
+        var cvm = SharedSystem.GetConVarManager();
+        if (_mpTimelimit is not null)
+            cvm.RemoveChangeHook(_mpTimelimit, OnMatchConVarChanged);
+        if (_mpMaxrounds is not null)
+            cvm.RemoveChangeHook(_mpMaxrounds, OnMatchConVarChanged);
+
+        _conVarGuardActive = false;
+    }
+
+    private void OnMatchConVarChanged(IConVar conVar)
+    {
+        if (_conVarGuardSuppressed)
+            return;
+
+        Logger.LogWarning(
+            "[MapCycle] External change detected on {Name} — will restore to 99999999 next frame",
+            conVar.Name);
+
+        SharedSystem.GetModSharp().InvokeFrameAction(() =>
+        {
+            if (!_conVarGuardActive || _conVarGuardSuppressed)
+                return;
+
+            _conVarGuardSuppressed = true;
+            try
+            {
+                conVar.Set(99999999);
+                Logger.LogInformation("[MapCycle] Restored {Name} to 99999999", conVar.Name);
+            }
+            finally
+            {
+                _conVarGuardSuppressed = false;
+            }
+        });
+    }
+
+    #endregion
 
     #endregion
 

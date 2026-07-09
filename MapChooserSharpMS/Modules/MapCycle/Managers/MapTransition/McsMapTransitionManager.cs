@@ -31,6 +31,8 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
     private readonly MapCycleConVars _conVars;
     private readonly Func<bool> _shouldStopSourceTv;
     private readonly WorkshopProvisioningService? _workshopProvisioning;
+    private Action? _suppressConVarGuard;
+    private Action? _resumeConVarGuard;
     private readonly IDetourHook? _goToIntermissionHook;
 
     private static McsMapTransitionManager? _instance;
@@ -179,10 +181,12 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     private void ForceMatchEnd(float terminateDelay)
     {
+        _suppressConVarGuard?.Invoke();
         var cvm = _sharedSystem.GetConVarManager();
         cvm.FindConVar("mp_timelimit")?.Set(0.01f);
         cvm.FindConVar("mp_maxrounds")?.Set(1);
         _matchLimitsForced = true;
+        _resumeConVarGuard?.Invoke();
         _logger.LogInformation("[MapTransition] Set mp_timelimit=0.01, mp_maxrounds=1");
 
         _logger.LogInformation("[MapTransition] TerminateRound in {Delay}s", terminateDelay);
@@ -191,10 +195,12 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
 
     private void ForceMatchLimitsForRoundEnd()
     {
+        _suppressConVarGuard?.Invoke();
         var cvm = _sharedSystem.GetConVarManager();
         cvm.FindConVar("mp_timelimit")?.Set(0.01f);
         cvm.FindConVar("mp_maxrounds")?.Set(1);
         _matchLimitsForced = true;
+        _resumeConVarGuard?.Invoke();
         _logger.LogInformation("[MapTransition] Set mp_timelimit=0.01, mp_maxrounds=1 (deferred)");
     }
 
@@ -203,10 +209,12 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
         if (!_matchLimitsForced)
             return;
 
+        _suppressConVarGuard?.Invoke();
         var cvm = _sharedSystem.GetConVarManager();
         cvm.FindConVar("mp_timelimit")?.Set(99999999.0f);
         cvm.FindConVar("mp_maxrounds")?.Set(99999999);
         _matchLimitsForced = false;
+        _resumeConVarGuard?.Invoke();
         _logger.LogInformation("[MapTransition] Restored mp_timelimit=99999999, mp_maxrounds=99999999");
     }
 
@@ -448,6 +456,12 @@ internal sealed class McsMapTransitionManager : IMcsInternalMapTransitionManager
             "[MapTransition] No map config found for current map '{MapName}'; CurrentMap is null",
             mapName);
         _currentMap = null;
+    }
+
+    public void SetConVarGuardCallbacks(Action suppress, Action resume)
+    {
+        _suppressConVarGuard = suppress;
+        _resumeConVarGuard = resume;
     }
 
     public void ClearState()
