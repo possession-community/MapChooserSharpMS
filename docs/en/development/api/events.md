@@ -37,11 +37,72 @@ Methods returning `void` are notification-only. The action has already been comm
 
 ### Editable Events
 
-Some void events expose mutable parameters that listeners can modify before the action finalizes. The primary example is `OnMapCooldownApply`.
+Some void events expose mutable parameters that listeners can modify before the action finalizes. These events implement `IMcsEditableEvent` (which provides `IsCancelled`). The primary example is `OnMapCooldownApply`.
 
 ### Override Events
 
-Some events allow listeners to supply replacement data. The primary example is `OnRandomMapPick`, where returning a non-empty list overrides the vote candidate selection.
+Some events allow listeners to supply replacement data. Construct a `McsValueOverrideEvent<T>(value)` to override — the override applies when `value` is non-null (even an empty list counts as an override). Return `McsValueOverrideEvent<T>.NoOverride` for default behavior. Examples: `OnRandomMapPick`, `OnAdminNominatedMapPick`, `OnNominatedMapPick`.
+
+---
+
+## Event Flow Diagrams
+
+### Nomination Flow
+
+```mermaid
+flowchart TD
+    A["Player runs !nominate"] --> B["Internal validation<br/>(cooldown, day, time, etc.)"]
+    B -->|fail| X1["Nomination rejected"]
+    B -->|pass| C["🔴 OnNominationCheckPassed<br/>(cancellable)"]
+    C -->|Stop| X2["CancelledByExternalPlugin"]
+    C -->|Continue| D{First nomination<br/>for this map?}
+    D -->|yes: new entry| E["🔴 OnNomination<br/>(cancellable)"]
+    D -->|no: join existing| F["🔴 OnNomination<br/>(cancellable)"]
+    E -->|Stop| X3["CancelledByExternalPlugin"]
+    F -->|Stop| X3
+    E -->|Continue| G["AddNomination + add participant"]
+    F -->|Continue| H["Add participant to existing"]
+    G --> I{Player had a<br/>previous nomination?}
+    H --> I
+    I -->|yes| J["Remove from old nomination"]
+    J --> K["🔵 OnNominationChanged"]
+    K --> L["Broadcast + apply cooldown"]
+    I -->|no| L
+    J -->|old nomination now empty| M["🔵 OnNominationRemoved"]
+```
+
+### Map Vote Candidate Selection Flow
+
+```mermaid
+flowchart TD
+    A["Vote requested<br/>(timelimit / RTV)"] --> B["Build candidate list"]
+    B --> C["Collect admin-nominated maps"]
+    C --> D["🟡 OnAdminNominatedMapPick<br/>(override)"]
+    D --> E["Collect community-nominated maps"]
+    E --> F["🟡 OnNominatedMapPick<br/>(override)"]
+    F --> G["Fill remaining slots randomly"]
+    G --> H["🟡 OnRandomMapPick<br/>(override)"]
+    H --> I["🔴 OnMapVoteStart<br/>(cancellable)"]
+    I -->|Stop| J["🔵 OnMapVoteCancelled"]
+    I -->|Continue| K["Vote begins"]
+```
+
+### Map Vote Result Flow
+
+```mermaid
+flowchart TD
+    A["Vote timer expires"] --> B["Tally votes + determine winner"]
+    B --> C["🔵 OnMapVoteFinished<br/>(always fires first)"]
+    C --> D{Winner?}
+    D -->|no winner| E["🔵 OnMapNotChanged"]
+    D -->|Extend| F["Try extend"]
+    F -->|success| G["🔵 OnMapExtended"]
+    F -->|fail| E
+    D -->|Don't Change| E
+    D -->|map selected| H["🔵 OnMapConfirmed"]
+```
+
+Legend: 🔴 Cancellable &nbsp; 🟡 Override &nbsp; 🔵 Notification
 
 ---
 
@@ -70,7 +131,7 @@ Install via `IMcsNominationController.InstallEventListener`.
 | `OnNominationCheckPassed` | `McsCancellableEvent` | Cancellable | Fires after internal validation passes. Return `Stop` to add an external rejection (results in `CancelledByExternalPlugin`) |
 | `OnNomination` | `McsCancellableEvent` | Cancellable | Fires just before a normal nomination commits. Return `Stop` to cancel |
 | `OnAdminNomination` | `McsCancellableEvent` | Cancellable | Fires just before an admin nomination commits. Return `Stop` to cancel |
-| `OnNominationChanged` | `void` | Notification | Fires when nomination state changes (new nomination or participant change) |
+| `OnNominationChanged` | `void` | Notification | Fires when a player switches their nomination from one map to another (does NOT fire on initial nomination) |
 | `OnNominationRemoved` | `void` | Notification | Fires when a nomination entry is removed entirely |
 | `OnUnNominate` | `void` | Notification | Fires per client when a player's participation in a nomination is removed |
 | `OnNominationMenuDetailsOpening` | `void` | Notification | Fires when a nomination detail menu is about to open. Add extra items via `ExtraItems` |
@@ -82,11 +143,13 @@ Install via `IMcsMapVoteController.InstallEventListener`.
 | Method | Return | Type | Description |
 |---|---|---|---|
 | `OnMapVoteStart` | `McsCancellableEvent` | Cancellable | Fires before a vote starts. Return `Stop` to cancel |
-| `OnRandomMapPick` | `McsValueOverrideEvent<List<IMapConfig>>` | Override | Fires during candidate selection. Return a value to override candidates, or `NoOverride` for default |
+| `OnAdminNominatedMapPick` | `McsValueOverrideEvent<List<IMapConfig>>` | Override | Fires when admin-nominated maps are picked for the vote. Return a value to override the admin-nominated candidate list |
+| `OnNominatedMapPick` | `McsValueOverrideEvent<List<IMapConfig>>` | Override | Fires when community-nominated maps are picked for the vote. Return a value to override the nominated candidate list |
+| `OnRandomMapPick` | `McsValueOverrideEvent<List<IMapConfig>>` | Override | Fires during random candidate selection. Return a value to override candidates, or `NoOverride` for default |
 | `OnMapVoteFinished` | `void` | Notification | Fires when the vote completes (before individual result events) |
 | `OnMapVoteCancelled` | `void` | Notification | Fires when the vote is cancelled |
 | `OnMapExtended` | `void` | Notification | Fires when the vote result is map extension |
-| `OnMapNotChanged` | `void` | Notification | Fires when the vote result is "Don't Change" |
+| `OnMapNotChanged` | `void` | Notification | Fires when no map change occurs: no winner, "Don't Change" selected, or Extend won but extend failed |
 | `OnMapConfirmed` | `void` | Notification | Fires when the next map is confirmed by vote |
 
 ### IMapCycleEventListener
@@ -103,7 +166,7 @@ Install via `IMapCycleController.InstallEventListener`.
 | `OnNextMapConfirmed` | `void` | Notification | Fires when the next map is confirmed |
 | `OnNextMapRemoved` | `void` | Notification | Fires when the next map confirmation is removed |
 | `OnMcsIntermission` | `void` | Notification | Fires when entering intermission |
-| `OnMapCooldownApply` | `void` | Editable | Fires before cooldown application. Listeners can modify values or cancel |
+| `OnMapCooldownApply` | `void` | Editable | Fires before **map-level** cooldown application. Group cooldowns and nomination cooldowns are not affected. `IsCancelled` suppresses the map cooldown but LastPlayedAt/UnplayedCount still update |
 | `OnTimeLimitReached` | `void` | Notification | Fires when time or round limit is reached |
 | `OnVoteStartThresholdReached` | `void` | Notification | Fires when remaining time/rounds cross the vote-start threshold |
 
@@ -129,6 +192,7 @@ Install via `IMcsRtvController.InstallEventListener`.
 | `IEventBaseParams` | Base for all event params. Provides `ModulePrefix(CultureInfo?)` for the module's localized prefix |
 | `ICommandEventBaseParams` | Extends `IEventBaseParams`. Adds `Client` (nullable, null = console) and `Command` (ref `StringCommand`) |
 | `IEnforceableEvent` | Marks events that can be admin-enforced. Provides `EnforcedByAdmin` and `Enforcer` (null + `EnforcedByAdmin = true` means console) |
+| `IMcsEditableEvent` | Marks editable events. Provides `IsCancelled` (get/set) to suppress the action |
 
 ### Nomination Event Parameters
 
@@ -141,15 +205,18 @@ Install via `IMcsRtvController.InstallEventListener`.
 | `INominationChangeParams` | `IEventBaseParams`, `IMcsNominationEventBaseParams`, `IEnforceableEvent` | (see bases) |
 | `INominationRemovedParams` | `IEnforceableEvent`, `INominationParams` | (see bases) |
 | `IUnNominateParams` | `IEventBaseParams`, `IMcsNominationEventBaseParams` | `Slot` (`int`), `Reason` (`UnNominateReason`) |
+| `INominationMenuDetailsOpeningParams` | `IEventBaseParams` | `MapConfig` (`IMapConfig`), `Client` (`IGameClient`), `ExtraItems` (`List<McsMenuItem>`) |
 
 ### Map Vote Event Parameters
 
 | Interface | Inherits | Properties |
 |---|---|---|
 | `IMapVoteStartParams` | `IEventBaseParams` | `MapsToVote` (`IReadOnlyList<IMapConfig>`), `VoteParticipants` (`IReadOnlyList<PlayerSlot>`) |
+| `IAdminNominatedMapPickParams` | `IEventBaseParams` | `SelectedMaps` (`IReadOnlyList<IMapConfig>`) |
+| `INominatedMapPickParams` | `IEventBaseParams` | `SelectedMaps` (`IReadOnlyList<IMapConfig>`) |
 | `IMapVoteRandomMapPickParams` | `IEventBaseParams` | `MinimumMapCounts` (`int`), `MapConfigs` (`IReadOnlyDictionary<string, IMapConfig>`) |
 | `IMapVoteFinishedEventParams` | `IEventBaseParams` | `VoteInformation` (`IMapVoteInformation`), `IsRtvVote` (`bool`), `NominatedMaps` (`IReadOnlyDictionary<string, IMcsNominationData>`) |
-| `IMapVoteCancelledParams` | `IEventBaseParams` | `CancelledBy` (`IGameClient?`), `NominatedMaps` (`IReadOnlyDictionary<string, IMcsNominationData>`) |
+| `IMapVoteCancelledParams` | `IEventBaseParams` | `CancelledBy` (`IGameClient?` -- non-null only when cancelled via external `CancelVote(client)`; all internal cancellations pass `null`), `NominatedMaps` (`IReadOnlyDictionary<string, IMcsNominationData>`) |
 | `IMapVoteExtendParams` | `IEventBaseParams` | `ExtendTime` (`int` -- minutes or rounds), `TimeLimitType` (`TimeLimitType`) |
 | `IMapVoteNotChangedParams` | `IEventBaseParams` | (no additional properties) |
 | `IMapVoteMapConfirmedEventParams` | `IEventBaseParams` | `ConfirmedMap` (`IMapConfig`), `MapInformation` (`IMapInformation`), `IsRtvVote` (`bool`) |
@@ -163,10 +230,10 @@ Install via `IMcsRtvController.InstallEventListener`.
 | `INextMapConfirmedEventParams` | `IEventBaseParams` | `NextMap` (`IMapConfig`), `OldNextMap` (`IMapConfig?`) |
 | `INextMapRemovedEventParams` | `IEventBaseParams` | `PreviousNextMap` (`IMapConfig`) |
 | `IMcsIntermissionParams` | `IEventBaseParams` | `NextMap` (`IMapConfig`) |
-| `IMapCooldownApplyEventParams` | `IEventBaseParams` | `AppliesTo` (`IMapConfig`), `Cooldown` (`int`, get/set), `TimedCooldownDuration` (`TimeSpan`, get/set), `IsCancelled` (`bool`, get/set) |
+| `IMapCooldownApplyEventParams` | `IEventBaseParams`, `IMcsEditableEvent` | `AppliesTo` (`IMapConfig`), `Cooldown` (`int`, get/set), `TimedCooldownDuration` (`TimeSpan`, get/set), `IsCancelled` (`bool`, get/set -- from `IMcsEditableEvent`) |
 | `IExtendVoteStartedEventParams` | `IEventBaseParams` | `CurrentMap` (`IMapConfig?`), `Initiator` (`IGameClient?`), `VoteDuration` (`float` -- seconds) |
 | `IExtendVoteCancelledEventParams` | `IEventBaseParams` | `CurrentMap` (`IMapConfig?`), `CancelledBy` (`IGameClient?`) |
-| `IExtendVoteFinishedEventParams` | `IEventBaseParams` | `CurrentMap` (`IMapConfig?`), `Passed` (`bool`) |
+| `IExtendVoteFinishedEventParams` | `IEventBaseParams` | `CurrentMap` (`IMapConfig?`), `Passed` (`bool`), `YesCount` (`int`), `NoCount` (`int`) |
 | `ITimeLimitReachedEventParams` | `IEventBaseParams` | `LimitType` (`TimeLimitType`) |
 | `IVoteStartThresholdReachedEventParams` | `IEventBaseParams` | `LimitType` (`TimeLimitType`) |
 
@@ -174,7 +241,7 @@ Install via `IMcsRtvController.InstallEventListener`.
 
 | Interface | Inherits | Properties |
 |---|---|---|
-| `IClientRtvCastParams` | `IEventBaseParams` | `IsRtvTrigger` (`bool` -- will RTV threshold be reached after this cast), `Client` (`IGameClient`) |
+| `IClientRtvCastParams` | `IEventBaseParams` | `IsRtvTrigger` (`bool` -- **currently always `false`** due to a bug; intended to indicate whether RTV threshold will be reached after this cast), `Client` (`IGameClient`) |
 | `IClientRtvUnCastParams` | `IEventBaseParams`, `IEnforceableEvent` | `Client` (`IGameClient`) |
 | `IForceRtvParam` | `IEventBaseParams`, `IEnforceableEvent` | `Client` (`IGameClient?`), `IsSilent` (`bool`) |
 | `IRtvConfirmedParams` | `IEventBaseParams`, `IEnforceableEvent` | `Client` (`IGameClient?`), `IsForced` (`bool`) |
