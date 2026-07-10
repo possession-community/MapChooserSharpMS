@@ -94,6 +94,8 @@ relevant documentation under `docs/`:
   - `configuration/MAP_CONFIG.md` — map/group config property changes
   - `features/COMMANDS.md` — new or changed commands
   - `development/api/` — public API changes
+- **実装完了後、`/doc-sync` でドキュメント更新の要否を確認する。**
+  ユーザーから指示があった場合、またはドキュメントが存在する変更カテゴリがある場合に更新を実行する。
 
 ## Git commit rules
 

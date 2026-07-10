@@ -213,7 +213,7 @@ internal sealed class McsRtvController: PluginModuleBase, IMcsInternalRtvControl
 
     public void OnClientDisconnecting(IGameClient client, NetworkDisconnectionReason reason)
     {
-        _rtvService.RemoveClientFromRtv(client.Slot);
+        _rtvService.RemoveDisconnectingClientFromRtv(client);
     }
 
     private void ScheduleCooldown(float seconds)

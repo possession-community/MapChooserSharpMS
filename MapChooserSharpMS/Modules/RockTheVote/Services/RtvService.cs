@@ -59,7 +59,8 @@ internal sealed class RtvService(
             return RtvExecutionResult.CommandInCooldown;
         
         
-        IClientRtvCastParams @params = ActivatorUtilities.CreateInstance<ClientRtvCastParams>(ServiceProvider, plugin, controller, client, false);
+        bool willTrigger = rtvManager.RtvCounts + 1 >= rtvManager.RequiredCounts;
+        IClientRtvCastParams @params = ActivatorUtilities.CreateInstance<ClientRtvCastParams>(ServiceProvider, plugin, controller, client, willTrigger);
         if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params)) == McsCancellableEvent.Stop)
             return RtvExecutionResult.DisallowedByExternalConsumer;
 
@@ -69,10 +70,16 @@ internal sealed class RtvService(
         if (TransitionManager.IsNextMapConfirmed)
         {
             if (rtvManager.RtvCounts >= rtvManager.ImmediateRequiredCounts)
+            {
+                FireRtvConfirmed(null);
                 TransitionToNextMapImmediately();
+            }
             else if (rtvManager.RtvCounts >= rtvManager.RequiredCounts
                      && rtvManager.RtvStatus != RtvStatus.TriggeredWaitingForMapTransition)
+            {
+                FireRtvConfirmed(null);
                 SetChangeOnRoundEnd();
+            }
             else
                 BroadcastPostVoteProgress(client);
         }
@@ -120,6 +127,17 @@ internal sealed class RtvService(
     public bool RemoveClientFromRtv(int slot)
         => rtvManager.RemoveParticipants(slot);
 
+    public void RemoveDisconnectingClientFromRtv(IGameClient client)
+    {
+        if (!rtvManager.RtvParticipants.Contains(client.Slot))
+            return;
+
+        var @params = ActivatorUtilities.CreateInstance<ClientRtvUnCastParams>(ServiceProvider, plugin, controller, client, false);
+        eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvUnCast(@params));
+
+        rtvManager.RemoveParticipants(client);
+    }
+
     public void InitiateRtvVote()
     {
         if (rtvManager.RtvStatus != RtvStatus.Enabled)
@@ -129,7 +147,12 @@ internal sealed class RtvService(
 
         BroadcastToAll("Rtv.Broadcast.VoteTriggered");
 
-        IRtvConfirmedParams @params = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, null, false);
+        FireRtvConfirmed(null);
+    }
+
+    private void FireRtvConfirmed(IGameClient? client, bool isForced = false)
+    {
+        IRtvConfirmedParams @params = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, client, isForced);
         eventManager.Fire<IRockTheVoteEventListener>(e => e.OnRtvConfirmed(@params));
     }
 
@@ -174,6 +197,7 @@ internal sealed class RtvService(
 
         if (TransitionManager.IsNextMapConfirmed)
         {
+            FireRtvConfirmed(client, isForced: true);
             TransitionToNextMapImmediately();
             return;
         }
@@ -182,8 +206,7 @@ internal sealed class RtvService(
 
         BroadcastToAll("Rtv.Broadcast.Admin.ForceRtv", client?.Name ?? "Console");
 
-        IRtvConfirmedParams confirmedParams = new RtvConfirmedParams(plugin, (PluginModuleBase)controller, client, true);
-        eventManager.Fire<IRockTheVoteEventListener>(e => e.OnRtvConfirmed(confirmedParams));
+        FireRtvConfirmed(client, isForced: true);
     }
 
     private IMcsInternalMapTransitionManager TransitionManager =>

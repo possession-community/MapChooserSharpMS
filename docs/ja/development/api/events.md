@@ -64,14 +64,11 @@ flowchart TD
     B -->|通過| C["🔴 OnNominationCheckPassed<br/>(キャンセル可能)"]
     C -->|Stop| X2["CancelledByExternalPlugin"]
     C -->|Continue| D{このマップの<br/>初回ノミネーション?}
-    D -->|yes: 新規作成| E["🔴 OnNomination<br/>(キャンセル可能)"]
-    D -->|no: 既存に参加| F["🔴 OnNomination<br/>(キャンセル可能)"]
-    E -->|Stop| X3["CancelledByExternalPlugin"]
-    F -->|Stop| X3
-    E -->|Continue| G["AddNomination + 参加者追加"]
-    F -->|Continue| H["既存ノミネーションに参加者追加"]
-    G --> I{プレイヤーが<br/>別マップをノミネート済み?}
-    H --> I
+    D -->|yes: 新規作成| G["AddNomination + 参加者追加"]
+    D -->|no: 既存に参加| H["既存ノミネーションに参加者追加"]
+    G --> N["🔵 OnNomination<br/>(通知)"]
+    H --> N
+    N --> I{プレイヤーが<br/>別マップをノミネート済み?}
     I -->|yes| J["旧ノミネーションから離脱"]
     J --> K["🔵 OnNominationChanged"]
     K --> L["ブロードキャスト + クールダウン適用"]
@@ -527,9 +524,9 @@ public McsCancellableEvent OnNominationCheckPassed(INominationCheckPassedEventPa
 
 ### OnNomination
 
-プレイヤーによる通常のノミネーションが行われるときに発火します。
+プレイヤーによる通常のノミネーションが確定した後に発火します。キャンセルするには `OnNominationCheckPassed` を使用してください。
 
-- **戻り値**: `McsCancellableEvent` (キャンセル可能 -- `Stop` でノミネーションをキャンセル)
+- **戻り値**: `void` (通知イベント)
 - **パラメータ**: `INominationParams` (継承: `IEventBaseParams`, `IMcsNominationEventBaseParams`)
 
 | プロパティ | 型 | 説明 |
@@ -621,7 +618,7 @@ RTV (Rock The Vote) に関連するイベントのリスナーです。`IMapChoo
 
 | プロパティ | 型 | 説明 |
 |---|---|---|
-| `IsRtvTrigger` | `bool` | この投票で RTV 閾値に到達する場合 `true` (**現在バグにより常に `false`**) |
+| `IsRtvTrigger` | `bool` | この投票で RTV 閾値に到達または超過する場合 `true` |
 | `Client` | `IGameClient` | RTV を投じたクライアント |
 
 ### OnClientRtvUnCast

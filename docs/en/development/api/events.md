@@ -56,14 +56,11 @@ flowchart TD
     B -->|pass| C["🔴 OnNominationCheckPassed<br/>(cancellable)"]
     C -->|Stop| X2["CancelledByExternalPlugin"]
     C -->|Continue| D{First nomination<br/>for this map?}
-    D -->|yes: new entry| E["🔴 OnNomination<br/>(cancellable)"]
-    D -->|no: join existing| F["🔴 OnNomination<br/>(cancellable)"]
-    E -->|Stop| X3["CancelledByExternalPlugin"]
-    F -->|Stop| X3
-    E -->|Continue| G["AddNomination + add participant"]
-    F -->|Continue| H["Add participant to existing"]
-    G --> I{Player had a<br/>previous nomination?}
-    H --> I
+    D -->|yes: new entry| G["AddNomination + add participant"]
+    D -->|no: join existing| H["Add participant to existing"]
+    G --> N["🔵 OnNomination<br/>(notification)"]
+    H --> N
+    N --> I{Player had a<br/>previous nomination?}
     I -->|yes| J["Remove from old nomination"]
     J --> K["🔵 OnNominationChanged"]
     K --> L["Broadcast + apply cooldown"]
@@ -129,7 +126,7 @@ Install via `IMcsNominationController.InstallEventListener`.
 | Method | Return | Type | Description |
 |---|---|---|---|
 | `OnNominationCheckPassed` | `McsCancellableEvent` | Cancellable | Fires after internal validation passes. Return `Stop` to add an external rejection (results in `CancelledByExternalPlugin`) |
-| `OnNomination` | `McsCancellableEvent` | Cancellable | Fires just before a normal nomination commits. Return `Stop` to cancel |
+| `OnNomination` | `void` | Notification | Fires after a normal nomination is committed. Use `OnNominationCheckPassed` to cancel |
 | `OnAdminNomination` | `McsCancellableEvent` | Cancellable | Fires just before an admin nomination commits. Return `Stop` to cancel |
 | `OnNominationChanged` | `void` | Notification | Fires when a player switches their nomination from one map to another (does NOT fire on initial nomination) |
 | `OnNominationRemoved` | `void` | Notification | Fires when a nomination entry is removed entirely |
@@ -241,7 +238,7 @@ Install via `IMcsRtvController.InstallEventListener`.
 
 | Interface | Inherits | Properties |
 |---|---|---|
-| `IClientRtvCastParams` | `IEventBaseParams` | `IsRtvTrigger` (`bool` -- **currently always `false`** due to a bug; intended to indicate whether RTV threshold will be reached after this cast), `Client` (`IGameClient`) |
+| `IClientRtvCastParams` | `IEventBaseParams` | `IsRtvTrigger` (`bool` -- `true` when this cast will reach or exceed the RTV threshold), `Client` (`IGameClient`) |
 | `IClientRtvUnCastParams` | `IEventBaseParams`, `IEnforceableEvent` | `Client` (`IGameClient`) |
 | `IForceRtvParam` | `IEventBaseParams`, `IEnforceableEvent` | `Client` (`IGameClient?`), `IsSilent` (`bool`) |
 | `IRtvConfirmedParams` | `IEventBaseParams`, `IEnforceableEvent` | `Client` (`IGameClient?`), `IsForced` (`bool`) |

@@ -13,11 +13,9 @@ public interface INominationEventListener: IEventListenerBase
         => McsCancellableEvent.Continue;
 
     /// <summary>
-    /// Fired when a player nominates a map.
-    /// Return <see cref="McsCancellableEvent.Stop"/> to cancel the nomination.
+    /// Fired when a player nomination is committed (after validation + OnNominationCheckPassed).
     /// </summary>
-    McsCancellableEvent OnNomination(INominationParams @params)
-        => McsCancellableEvent.Continue;
+    void OnNomination(INominationParams @params) {}
 
     /// <summary>
     /// Fired when an admin nominates a map.

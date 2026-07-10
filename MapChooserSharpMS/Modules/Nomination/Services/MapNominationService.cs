@@ -43,23 +43,11 @@ internal sealed class MapNominationService(
         if (!nominationManager.NominatedMaps.TryGetValue(mapConfig.MapName, out var nomination))
         {
             var newNom = new McsNominationData(mapConfig);
-
             nomination = newNom;
-            var nominationParam = ActivatorUtilities.CreateInstance<NominationParams>(provider, nominationController, nomination, nominator);
-            if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNomination(nominationParam)) == McsCancellableEvent.Stop)
-                return [NominationCheckResult.CancelledByExternalPlugin];
 
             if (!nominationManager.AddNomination(newNom))
                 throw new InvalidOperationException("Failed to add nomination");
         }
-        else
-        {
-            var nominationParam = ActivatorUtilities.CreateInstance<NominationParams>(provider, nominationController, nomination, nominator);
-            if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNomination(nominationParam)) == McsCancellableEvent.Stop)
-                return [NominationCheckResult.CancelledByExternalPlugin];
-        }
-    
-
 
         IMcsNominationData? previousNomination = null;
         foreach (var nominatedMapsValue in nominationManager.NominatedMaps.Values)
@@ -80,6 +68,9 @@ internal sealed class MapNominationService(
         }
 
         ((McsNominationData)nomination).Participants.Add(nominator.Slot);
+
+        var nominationParam = ActivatorUtilities.CreateInstance<NominationParams>(provider, nominationController, nomination, nominator);
+        eventManager.Fire<INominationEventListener>(evt => evt.OnNomination(nominationParam));
 
         if (previousNomination != null)
         {

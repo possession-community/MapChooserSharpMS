@@ -20,6 +20,6 @@ internal sealed class RtvConfirmedParams(
 
     public IGameClient? Client { get; } = client;
     public bool IsForced { get; } = isForced;
-    public bool EnforcedByAdmin => IsForced && Client != null;
-    public IGameClient? Enforcer => EnforcedByAdmin ? Client : null;
+    public bool EnforcedByAdmin => IsForced;
+    public IGameClient? Enforcer => IsForced ? Client : null;
 }

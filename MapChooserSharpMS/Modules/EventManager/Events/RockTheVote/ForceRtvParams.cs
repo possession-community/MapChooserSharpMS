@@ -20,6 +20,6 @@ internal sealed class ForceRtvParams(
 
     public IGameClient? Client { get; } = client;
     public bool IsSilent { get; } = isSilent;
-    public bool EnforcedByAdmin => Client != null;
+    public bool EnforcedByAdmin => true;
     public IGameClient? Enforcer => Client;
 }
