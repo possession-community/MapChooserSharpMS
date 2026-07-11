@@ -61,7 +61,7 @@ internal sealed class RtvService(
         
         bool willTrigger = rtvManager.RtvCounts + 1 >= rtvManager.RequiredCounts;
         IClientRtvCastParams @params = ActivatorUtilities.CreateInstance<ClientRtvCastParams>(ServiceProvider, plugin, controller, client, willTrigger);
-        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params)) == McsCancellableEvent.Stop)
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvCast(@params)) != McsCancellableEvent.Continue)
             return RtvExecutionResult.DisallowedByExternalConsumer;
 
         if (!rtvManager.AddParticipants(client))
@@ -118,7 +118,7 @@ internal sealed class RtvService(
             @params = ActivatorUtilities.CreateInstance<ClientRtvUnCastParams>(ServiceProvider, plugin, controller, client, false);
         }
         
-        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvUnCast(@params)) == McsCancellableEvent.Stop)
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnClientRtvUnCast(@params)) != McsCancellableEvent.Continue)
             return false;
         
         return rtvManager.RemoveParticipants(client);
@@ -192,7 +192,7 @@ internal sealed class RtvService(
         }
 
         var forceParams = new ForceRtvParams(plugin, (PluginModuleBase)controller, client);
-        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnForceRtv(forceParams)) == McsCancellableEvent.Stop)
+        if (eventManager.FireCancellable<IRockTheVoteEventListener>(e => e.OnForceRtv(forceParams)) != McsCancellableEvent.Continue)
             return;
 
         if (TransitionManager.IsNextMapConfirmed)

@@ -106,7 +106,7 @@ internal sealed class MapNominationService(
             var adminNominationParam = new AdminNominationEventParams(
                 plugin, (PluginModuleBase)nominationController, newNom, nominator);
 
-            if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnAdminNomination(adminNominationParam)) == McsCancellableEvent.Stop)
+            if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnAdminNomination(adminNominationParam)) != McsCancellableEvent.Continue)
                 return [NominationCheckResult.CancelledByExternalPlugin];
 
             if (!nominationManager.AddNomination(newNom))
@@ -119,7 +119,7 @@ internal sealed class MapNominationService(
             var adminNominationParam = new AdminNominationEventParams(
                 plugin, (PluginModuleBase)nominationController, existing, nominator);
 
-            if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnAdminNomination(adminNominationParam)) == McsCancellableEvent.Stop)
+            if (eventManager.FireCancellable<INominationEventListener>(evt => evt.OnAdminNomination(adminNominationParam)) != McsCancellableEvent.Continue)
                 return [NominationCheckResult.CancelledByExternalPlugin];
 
             ((McsNominationData)existing).IsForceNominated = true;

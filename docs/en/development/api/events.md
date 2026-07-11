@@ -29,7 +29,7 @@ public McsCancellableEvent OnMapVoteStart(IMapVoteStartParams @params)
 }
 ```
 
-`McsCancellableEvent` is an enum with three values: `Continue` (allow), `Handled` (mark as handled but don't stop), `Stop` (cancel).
+`McsCancellableEvent` is an enum with three values: `Continue` (allow the action to proceed), `Handled` (mark as handled and cancel — remaining listeners are skipped), `Stop` (cancel). Both `Handled` and `Stop` cancel the action; `Handled` is intended for cases where the listener has already taken an alternative action.
 
 ### Void Events
 

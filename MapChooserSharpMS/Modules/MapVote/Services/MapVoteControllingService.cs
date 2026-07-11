@@ -767,7 +767,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
 
         var participantSlots = participants.Select(c => c.Slot).ToList();
         var startParams = new MapVoteStartParams(_plugin, _moduleBase, realMapConfigs, participantSlots);
-        if (_eventManager.FireCancellable<IMapVoteEventListener>(e => e.OnMapVoteStart(startParams)) == McsCancellableEvent.Stop)
+        if (_eventManager.FireCancellable<IMapVoteEventListener>(e => e.OnMapVoteStart(startParams)) != McsCancellableEvent.Continue)
         {
             _logger.LogInformation("Vote start cancelled by event listener");
             var cancelledParams = new MapVoteCancelledParams(_plugin, _moduleBase, null, SnapshotNominations());

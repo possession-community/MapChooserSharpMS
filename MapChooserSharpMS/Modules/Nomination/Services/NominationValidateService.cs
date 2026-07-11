@@ -108,7 +108,7 @@ internal sealed class NominationValidateService
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
-                    evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
+                    evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Continue)
             {
                 result.Add(NominationCheckResult.CancelledByExternalPlugin);
             }
@@ -143,7 +143,7 @@ internal sealed class NominationValidateService
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
-                    evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
+                    evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Continue)
             {
                 result.Add(NominationCheckResult.CancelledByExternalPlugin);
             }
@@ -187,7 +187,7 @@ internal sealed class NominationValidateService
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
-                    evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Stop)
+                    evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Continue)
             {
                 result.Add(NominationCheckResult.CancelledByExternalPlugin);
             }
@@ -255,7 +255,7 @@ internal sealed class NominationValidateService
         return maps.Where(m =>
         {
             var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, m);
-            return _eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Stop;
+            return _eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Continue;
         }).ToList();
     }
 

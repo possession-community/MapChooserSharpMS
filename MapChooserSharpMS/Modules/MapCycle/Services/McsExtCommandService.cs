@@ -135,7 +135,7 @@ internal sealed class McsExtCommandService
         var @params = new ExtCommandExecuteParams(
             _plugin, _moduleBase, client, command, RequiredExtVotes, CurrentExtVotes);
         if (_eventManager.FireCancellable<IMapCycleEventListener>(
-                e => e.OnExtCommandExecute(@params)) == McsCancellableEvent.Stop)
+                e => e.OnExtCommandExecute(@params)) != McsCancellableEvent.Continue)
             return McsExtCommandResult.CancelledByListener;
 
         _participants.Add(client.Slot);
