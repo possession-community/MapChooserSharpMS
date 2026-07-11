@@ -45,7 +45,7 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
         return true;
     }
 
-    internal async Task<bool> SetGroupCooldown(string groupName, int cooldown)
+    public async Task<bool> SetGroupCooldown(string groupName, int cooldown)
     {
         if (!_mapConfigProvider.GetGroupSettings().TryGetValue(groupName, out var groupVariants)
             || groupVariants.Count == 0)
@@ -103,7 +103,7 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
         return true;
     }
 
-    internal async Task<bool> SetGroupTimedCooldown(string groupName, TimeSpan cooldown)
+    public async Task<bool> SetGroupTimedCooldown(string groupName, TimeSpan cooldown)
     {
         if (!_mapConfigProvider.GetGroupSettings().TryGetValue(groupName, out var groupVariants)
             || groupVariants.Count == 0)
@@ -140,6 +140,16 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
         }
 
         return anySet;
+    }
+
+    public Task<bool> ClearGroupCooldown(string groupName)
+    {
+        return SetGroupCooldown(groupName, 0);
+    }
+
+    public Task<bool> ClearGroupTimedCooldown(string groupName)
+    {
+        return SetGroupTimedCooldown(groupName, TimeSpan.Zero);
     }
 
     public Task<bool> ExcludeFromNomination(IMapConfig mapConfig)

@@ -45,4 +45,34 @@ public interface IMapCooldownCommandService
     /// <param name="mapConfig"></param>
     /// <returns>True when successfully saved to database, otherwise false</returns>
     Task<bool> ClearTimedCooldown(IMapConfig mapConfig);
+
+    /// <summary>
+    /// Applies count-based cooldown to all variants of the specified group.
+    /// </summary>
+    /// <param name="groupName">Group name as defined in the map config</param>
+    /// <param name="cooldown">Cooldown count to set</param>
+    /// <returns>True when at least one variant was updated, otherwise false</returns>
+    Task<bool> SetGroupCooldown(string groupName, int cooldown);
+
+    /// <summary>
+    /// Applies timed cooldown to all variants of the specified group.
+    /// </summary>
+    /// <param name="groupName">Group name as defined in the map config</param>
+    /// <param name="cooldown">Duration of the timed cooldown</param>
+    /// <returns>True when at least one variant was updated, otherwise false</returns>
+    Task<bool> SetGroupTimedCooldown(string groupName, TimeSpan cooldown);
+
+    /// <summary>
+    /// Clears the count-based cooldown for the specified group (sets to 0).
+    /// </summary>
+    /// <param name="groupName">Group name as defined in the map config</param>
+    /// <returns>True when at least one variant was updated, otherwise false</returns>
+    Task<bool> ClearGroupCooldown(string groupName);
+
+    /// <summary>
+    /// Clears the timed cooldown for the specified group.
+    /// </summary>
+    /// <param name="groupName">Group name as defined in the map config</param>
+    /// <returns>True when at least one variant was updated, otherwise false</returns>
+    Task<bool> ClearGroupTimedCooldown(string groupName);
 }
