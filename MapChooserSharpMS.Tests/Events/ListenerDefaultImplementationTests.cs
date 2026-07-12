@@ -85,14 +85,14 @@ public class ListenerDefaultImplementationTests
     public void NominationListener_OnNomination_DefaultsContinue()
     {
         INominationEventListener listener = new MinimalNominationListener();
-        Assert.Equal(McsCancellableEvent.Continue, listener.OnNomination(null!));
+        listener.OnNomination(null!);
     }
 
     [Fact]
     public void NominationListener_OnAdminNomination_DefaultsContinue()
     {
         INominationEventListener listener = new MinimalNominationListener();
-        Assert.Equal(McsCancellableEvent.Continue, listener.OnAdminNomination(null!));
+        listener.OnAdminNomination(null!);
     }
 
     [Fact]

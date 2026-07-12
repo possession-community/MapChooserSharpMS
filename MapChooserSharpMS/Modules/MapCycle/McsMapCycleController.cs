@@ -68,6 +68,7 @@ internal sealed class McsMapCycleController
     private IMcsBootPhaseTracker _bootPhaseTracker = null!;
     private WorkshopProvisioningService? _workshopProvisioningService;
     private SurrealCooldownRepository? _cooldownRepository;
+    private readonly TaskCompletionSource _persistenceReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private MapCycleMode _mode = MapCycleMode.None;
     private Guid _tickTimerId = Guid.Empty;
@@ -228,6 +229,7 @@ internal sealed class McsMapCycleController
         if (wulingModule?.Instance is not { } wuling)
         {
             Logger.LogInformation("[MapCycle] Wuling not available — cooldown persistence disabled");
+            _persistenceReady.TrySetResult();
             return;
         }
 
@@ -248,6 +250,10 @@ internal sealed class McsMapCycleController
             {
                 Logger.LogWarning(ex, "[MapCycle] Failed to initialize cooldown persistence — falling back to in-memory only");
             }
+            finally
+            {
+                _persistenceReady.TrySetResult();
+            }
         });
     }
 
@@ -255,6 +261,7 @@ internal sealed class McsMapCycleController
     {
         _ = Task.Run(async () =>
         {
+            await _persistenceReady.Task;
             var loaded = await _cooldownLifecycleService.FetchCooldownsFromDatabaseAsync();
             if (loaded is var (maps, groups))
             {
@@ -386,6 +393,7 @@ internal sealed class McsMapCycleController
 
         _ = Task.Run(async () =>
         {
+            await _persistenceReady.Task;
             var loaded = await _cooldownLifecycleService.FetchCooldownsFromDatabaseAsync();
             SharedSystem.GetModSharp().InvokeFrameAction(() =>
             {

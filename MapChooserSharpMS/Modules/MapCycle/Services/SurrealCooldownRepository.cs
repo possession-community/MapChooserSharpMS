@@ -20,6 +20,7 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
     private readonly string _surqlDirectory;
     private readonly Channel<Func<Task>> _queue;
     private readonly CancellationTokenSource _cts = new();
+    private readonly Task _drainTask;
 
     internal SurrealCooldownRepository(IWulingSurreal surreal, ILogger logger, string moduleDirectory)
     {
@@ -31,12 +32,17 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
         {
             SingleReader = true,
         });
-        _ = Task.Run(RunQueueAsync);
+        _drainTask = Task.Run(RunQueueAsync);
     }
 
     public void Dispose()
     {
         _queue.Writer.TryComplete();
+        try
+        {
+            _drainTask.Wait(TimeSpan.FromSeconds(5));
+        }
+        catch (AggregateException) { }
         _cts.Cancel();
         _cts.Dispose();
     }

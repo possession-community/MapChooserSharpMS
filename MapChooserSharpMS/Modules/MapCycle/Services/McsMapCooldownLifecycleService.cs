@@ -27,7 +27,7 @@ internal sealed class McsMapCooldownLifecycleService
     private ICooldownPersistence _persistence = NullCooldownPersistence.Instance;
     private volatile IAuditPersistence _auditPersistence = NullAuditPersistence.Instance;
     private volatile string _serverId = "";
-    private bool _dbLoadedSuccessfully;
+    private bool _persistenceEnabled;
 
     internal McsMapCooldownLifecycleService(
         ILogger logger,
@@ -46,6 +46,7 @@ internal sealed class McsMapCooldownLifecycleService
     internal void SetPersistence(ICooldownPersistence persistence)
     {
         _persistence = persistence;
+        _persistenceEnabled = true;
     }
 
     internal void SetAuditPersistence(IAuditPersistence auditPersistence, string serverId)
@@ -155,7 +156,7 @@ internal sealed class McsMapCooldownLifecycleService
             }
         }
 
-        if (_dbLoadedSuccessfully && (mapRecords.Count > 0 || groupRecords.Count > 0))
+        if (_persistenceEnabled && (mapRecords.Count > 0 || groupRecords.Count > 0))
             _persistence.SaveAllCooldownsFireAndForget(mapRecords, groupRecords);
     }
 
@@ -219,7 +220,6 @@ internal sealed class McsMapCooldownLifecycleService
     {
         ApplyLoadedMapCooldowns(mapRecords);
         ApplyLoadedGroupCooldowns(groupRecords);
-        _dbLoadedSuccessfully = mapRecords.Count > 0 || groupRecords.Count > 0;
     }
 
     private void ApplyLoadedMapCooldowns(IReadOnlyList<NamedCooldownRecord> records)
@@ -309,6 +309,6 @@ internal sealed class McsMapCooldownLifecycleService
 
     private static bool IsProvisionalMap(IMapConfig map)
     {
-        return map.WorkshopId > 0 && map.GroupSettings.Count == 0;
+        return map is MapChooserSharpMS.Modules.MapConfig.Models.MapConfig { IsProvisional: true };
     }
 }

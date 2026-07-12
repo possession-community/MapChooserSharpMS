@@ -20,4 +20,5 @@ internal sealed record MapConfig(
     INominationConfig NominationConfig,
     ICooldownConfig CooldownConfig,
     IExtraConfigAccessor ExtraConfiguration,
-    IReadOnlyList<string> SearchTags) : IMapConfig;
+    IReadOnlyList<string> SearchTags,
+    bool IsProvisional = false) : IMapConfig;
