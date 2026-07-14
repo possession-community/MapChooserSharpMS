@@ -527,7 +527,7 @@ internal sealed class McsMapCycleController
         }
 
         if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap?.MapConfig is { } playedMap
-            && !IsServerEmptyAndPaused() && !_bootPhaseTracker.IsBootPhase)
+            && !_bootPhaseTracker.IsBootPhase)
             _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);
 
         _internalTimeLimitManager = null;
