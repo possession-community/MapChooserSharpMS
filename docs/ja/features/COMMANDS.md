@@ -3,6 +3,16 @@
 全コマンドは `ms_` プレフィックス付きで登録されます (例: `ms_nominate`)。
 チャットでは `!nominate` / `css_nominate` でも使用可能です。
 
+## マップ名検索
+
+`<map>` 引数を取るコマンド (`!nominate`, `!nominate_addmap`, `!nominate_removemap`, `!map`, `!setnextmap`, `!mapinfo`) は共通の検索動作を持ちます:
+
+1. マップ名の**部分一致** (大文字小文字区別なし)
+2. 複数ヒット時は**マップ名の完全一致**を優先
+3. 何もヒットしなかった場合は **SearchTag** として検索
+
+1 件ヒットなら即座に実行されます。複数ヒット時は選択メニューが開きます (サーバーコンソールの場合は候補一覧を表示)。`!nominate_removemap` は現在のノミネーションのみを検索するため、SearchTag フォールバックは適用されません。
+
 ## プレイヤーコマンド
 
 | コマンド | エイリアス | 説明 |
@@ -16,7 +26,7 @@
 | !timeleft | チャット "timeleft" | 残り時間/ラウンドを表示 |
 | !nextmap | チャット "nextmap" | 次のマップを表示 |
 | !currentmap | チャット "currentmap" | 現在のマップを表示 |
-| !mapinfo \<map\> | - | マップ情報を表示。引数なしで現在のマップ |
+| !mapinfo \<map\> | - | マップ情報を表示。引数なしで現在のマップ。部分一致検索対応 |
 | !extends | - | 残りの延長回数を表示 |
 | !thetime | チャット "thetime" | 現在のサーバー時刻を表示 |
 | !mcs_settings \<subcommand\> [value] | !mcss | 個人設定を変更。`volume` (`vol`) \<0-100\> で投票サウンド音量、`countdown` (`cd`) \<type\> でカウントダウン UI 変更。引数なしで現在設定表示 |
@@ -25,12 +35,12 @@
 
 | コマンド | エイリアス | 権限ノード | 説明 |
 |---|---|---|---|
-| !nominate_addmap \<map\> | - | mcs.admin.command.nomination.addmap | マップを管理者ノミネーションとして追加 |
+| !nominate_addmap \<map\> | - | mcs.admin.command.nomination.addmap | マップを管理者ノミネーションとして追加。部分一致 / SearchTag 検索対応 (無効マップも対象) |
 | !nominate_addwsmap \<workshopId\> | - | mcs.admin.command.nomination.addwsmap | Workshop ID でマップを管理者ノミネーション追加 (config 未登録でも API フェッチ) |
 | !nominate_removemap \<map\> | - | mcs.admin.command.nomination.removemap | ノミネーションからマップを削除 |
-| !map \<map\> | - | mcs.admin.command.mapcycle.map | マップへ即時変更 |
+| !map \<map\> | - | mcs.admin.command.mapcycle.map | マップへ即時変更。部分一致検索対応、複数ヒット時は選択メニュー |
 | !wsmap \<workshopId\> | - | mcs.admin.command.mapcycle.wsmap | Workshop ID でマップへ即時変更 (config 未登録でも API フェッチ) |
-| !setnextmap \<map\> | - | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定 |
+| !setnextmap \<map\> | - | mcs.admin.command.mapcycle.setnextmap | 次のマップを設定。部分一致検索対応、複数ヒット時は選択メニュー |
 | !setnextwsmap \<workshopId\> | - | mcs.admin.command.mapcycle.setnextwsmap | Workshop ID で次のマップを設定 (config 未登録でも API フェッチ) |
 | !removenextmap | - | mcs.admin.command.mapcycle.removenextmap | 次のマップ設定を解除 |
 | !extend \<amount\> | - | mcs.admin.command.mapcycle.extend | マップの時間/ラウンドを延長 (マイナスで短縮) |

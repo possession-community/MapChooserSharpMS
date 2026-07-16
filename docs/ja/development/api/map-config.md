@@ -15,6 +15,7 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 | メンバー | 型 | 説明 |
 |---|---|---|
 | `ToolingService` | `IMapConfigToolingService` | 表示名解決やクールダウン集約などのユーティリティ |
+| `MapSearchService` | `IMcsMapSearchService` | 共通マップ名検索 (部分一致 / 完全一致優先 / SearchTag フォールバック) |
 | `ReloadConfigs()` | `void` | ディスクから全マップ設定を再読み込みする |
 | `GetMapConfigs()` | `IReadOnlyDictionary<string, IReadOnlyCollection<IMapConfigOverrides>>` | 全マップ設定を取得する。DaySettings オーバーライドを含む |
 | `GetGroupSettings()` | `IReadOnlyDictionary<string, IReadOnlyCollection<IMapGroupConfigOverrides>>` | 全グループ設定を取得する。DaySettings オーバーライドを含む |
@@ -28,6 +29,15 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 | `ResolveMapDisplayName(IMapConfig)` | `MapNameAlias` が設定されていればそれを、なければ `MapName` を返す |
 | `GetHighestCooldown(IMapConfig)` | マップ本体とグループのクールダウンを比較して最も大きい値を返す |
 | `FindMapsBySearchTag(string, IEnumerable<IMapConfig>)` | `SearchTags` に指定タグを含むマップのリストを返す |
+
+### IMcsMapSearchService
+
+マップ名を引数に取る全コマンドで使われる共通マップ名検索です。マッチングフローは: マップ名の部分一致 (大文字小文字区別なし) → 複数ヒット時は完全一致を優先 → 何もヒットしなければ SearchTag フォールバック (オプション)。返される設定は DaySettings オーバーライド評価済みです。
+
+| メソッド | 戻り値 | 説明 |
+|---|---|---|
+| `SearchMaps(string query, bool includeDisabledMaps = false, bool useSearchTagFallback = true)` | `McsMapSearchResult` | 全マップ設定を検索する。結果は `Status` (`NotFound` / `Found` / `MultipleFound`) とマッチした `Maps` を持つ |
+| `SearchByName<T>(string query, IEnumerable<KeyValuePair<string, T>> source)` | `List<KeyValuePair<string, T>>` | 同じ部分一致 + 完全一致優先マッチングを任意の名前キーコレクションに適用する (例: 現在のノミネーション) |
 
 ---
 

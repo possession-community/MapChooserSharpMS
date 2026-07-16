@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapConfig.Services;
 using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : Nominati
 
     private IMcsInternalNominationController _controller = null!;
     private IMcsMapConfigProvider _mapConfigProvider = null!;
+    private IMcsMapSearchService _mapSearchService = null!;
     private IMcsReadOnlyVoteState _voteState = null!;
     private IMapTransitionManager _transitionManager = null!;
 
@@ -33,6 +35,7 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : Nominati
     {
         _controller ??= ServiceProvider.GetRequiredService<IMcsInternalNominationController>();
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        _mapSearchService ??= ServiceProvider.GetRequiredService<IMcsMapSearchService>();
         _voteState ??= ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
         _transitionManager ??= ServiceProvider.GetRequiredService<IMapTransitionManager>();
 
@@ -57,39 +60,28 @@ internal sealed class AdminNominateCommand(IServiceProvider provider) : Nominati
 
         string mapName = commandInfo[1];
 
-        var allMaps = _mapConfigProvider.GetMapConfigs();
-        var matched = allMaps
-            .Where(kv => kv.Key.Contains(mapName, StringComparison.OrdinalIgnoreCase))
-            .Select(kv => kv.Value.First().MapConfig)
-            .ToList();
+        // Admins may force-nominate disabled maps, so the disabled filter is off.
+        var searchResult = _mapSearchService.SearchMaps(mapName, includeDisabledMaps: true);
 
-        if (matched.Count > 1)
-        {
-            var exact = matched.FirstOrDefault(m =>
-                string.Equals(m.MapName, mapName, StringComparison.OrdinalIgnoreCase));
-            if (exact is not null)
-                matched = [exact];
-        }
-
-        if (matched.Count == 0)
+        if (searchResult.Status == McsMapSearchStatus.NotFound)
         {
             PrintMessageToServerOrPlayerChat(client,
                 LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.NotMapsFound", mapName));
             return;
         }
 
-        if (matched.Count > 1)
+        if (searchResult.Status == McsMapSearchStatus.MultipleFound)
         {
             PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.MultipleResult", matched.Count, mapName));
+                LocalizeWithNominationPrefix(client, "Nomination.Command.Notification.MultipleResult", searchResult.Maps.Count, mapName));
             if (client is not null)
-                _controller.NominationMenuManagementService.ShowAdminNominationMenu(client, matched);
+                _controller.NominationMenuManagementService.ShowAdminNominationMenu(client, searchResult.Maps.ToList());
             return;
         }
 
-        var nominateResult = _controller.NominationService.TryAdminNominateMap(client, matched[0]);
+        var nominateResult = _controller.NominationService.TryAdminNominateMap(client, searchResult.Maps[0]);
         if (nominateResult.Count > 0)
-            _controller.NotifyNominationFailure(client, matched[0], nominateResult);
+            _controller.NotifyNominationFailure(client, searchResult.Maps[0], nominateResult);
     }
 
 }

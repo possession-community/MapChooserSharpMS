@@ -18,6 +18,7 @@ using MapChooserSharpMS.Shared.Events.MapVote;
 using MapChooserSharpMS.Shared.Events.MapVote.Params;
 using MapChooserSharpMS.Modules.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapConfig.Services;
 using MapChooserSharpMS.Shared.MapCycle;
 using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
@@ -64,6 +65,7 @@ internal sealed class McsMapCycleController
     private McsMapCooldownCommandService _cooldownCommandService = null!;
     private McsMapCooldownLifecycleService _cooldownLifecycleService = null!;
     private MapConfigExecutionService _mapConfigExecutionService = null!;
+    private McsMapSelectMenuService _mapSelectMenuService = null!;
     private IMcsPluginConfigProvider _pluginConfigProvider = null!;
     private IMcsBootPhaseTracker _bootPhaseTracker = null!;
     private WorkshopProvisioningService? _workshopProvisioningService;
@@ -141,6 +143,7 @@ internal sealed class McsMapCycleController
         services.AddSingleton<McsMapCooldownLifecycleService>(_ => _cooldownLifecycleService);
         services.AddSingleton<McsMapCooldownCommandService>(_ => _cooldownCommandService);
         services.AddSingleton<IMapCooldownQueryService>(_ => _cooldownQueryService);
+        services.AddSingleton<McsMapSelectMenuService>(_ => _mapSelectMenuService);
     }
 
     protected override void OnInitialize()
@@ -210,6 +213,13 @@ internal sealed class McsMapCycleController
         _extendVoteService.NativeVoteManager = SharedSystem.GetSharpModuleManager()
             .GetRequiredSharpModuleInterface<INativeVoteManager>(INativeVoteManager.ModSharpModuleIdentity)
             .Instance;
+
+        var wuling = SharedSystem.GetSharpModuleManager()
+            .GetRequiredSharpModuleInterface<IWuling>(IWuling.Identity)
+            .Instance!;
+        _mapSelectMenuService = new McsMapSelectMenuService(
+            wuling.Menu, wuling.Registry,
+            ServiceProvider.GetRequiredService<IMapConfigToolingService>());
 
         InitializeCooldownPersistence();
 

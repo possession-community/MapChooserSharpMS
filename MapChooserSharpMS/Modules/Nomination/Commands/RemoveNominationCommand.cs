@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapConfig.Services;
 using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +25,7 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : Nomin
     private IMcsInternalNominationController _controller = null!;
     private IMcsReadOnlyVoteState _voteState = null!;
     private IMcsMapConfigProvider _mapConfigProvider = null!;
+    private IMcsMapSearchService _mapSearchService = null!;
     private IMapTransitionManager _transitionManager = null!;
 
     protected override ICommandValidator? GetValidator()
@@ -34,6 +36,7 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : Nomin
         _controller ??= ServiceProvider.GetRequiredService<IMcsInternalNominationController>();
         _voteState ??= ServiceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
+        _mapSearchService ??= ServiceProvider.GetRequiredService<IMcsMapSearchService>();
         _transitionManager ??= ServiceProvider.GetRequiredService<IMapTransitionManager>();
 
         if (_voteState.CurrentVoteState == McsMapVoteState.NextMapConfirmed)
@@ -57,17 +60,7 @@ internal sealed class RemoveNominationCommand(IServiceProvider provider) : Nomin
 
         string mapName = commandInfo[1];
         var nominations = _controller.NominationManager.NominatedMaps;
-        var matched = nominations
-            .Where(kv => kv.Key.Contains(mapName, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        if (matched.Count > 1)
-        {
-            var exact = matched.FirstOrDefault(kv =>
-                string.Equals(kv.Key, mapName, StringComparison.OrdinalIgnoreCase));
-            if (exact.Value is not null)
-                matched = [exact];
-        }
+        var matched = _mapSearchService.SearchByName(mapName, nominations);
 
         if (matched.Count == 0)
         {

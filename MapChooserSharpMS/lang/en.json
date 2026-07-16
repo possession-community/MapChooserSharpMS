@@ -10,6 +10,8 @@
     "Common.Validation.ValueOutOfRange": "Value out of range {0}",
 
     "General.Notification.MapNotFound": "Specified map {lime}{0}{default} is not found!",
+    "General.Notification.MultipleMapsFound": "{lime}{0}{default} maps found matching {lime}{1}{default}",
+    "General.Menu.SelectMap.Title": "Select Map",
     "General.Notification.GroupNotFound": "Specified group {lime}{0}{default} is not found!",
     "General.Command.Notification.TheTime": "Current time: {lime}{0}{default}",
     "General.Command.TheTime.Format": "yyyy/MM/dd HH:mm:ss",

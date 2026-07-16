@@ -32,12 +32,16 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
 
     public IMapConfigToolingService ToolingService { get; private set; } = null!;
 
+    private McsMapSearchService? _mapSearchService;
+    public IMcsMapSearchService MapSearchService => _mapSearchService ??= new McsMapSearchService(this);
+
     public override void RegisterServices(IServiceCollection services)
     {
         services.AddSingleton<IMcsMapConfigProvider>(this);
         services.AddTransient<IMapConfigGenerationService, MapConfigGenerationService>();
         services.AddTransient<IMapConfigParsingService, MapConfigParsingService>();
         services.AddSingleton<IMapConfigToolingService>(ToolingService);
+        services.AddSingleton<IMcsMapSearchService>(MapSearchService);
     }
 
 

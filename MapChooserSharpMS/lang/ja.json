@@ -10,6 +10,8 @@
     "Common.Validation.ValueOutOfRange": "値が範囲外です {0}",
 
     "General.Notification.MapNotFound": "指定されたマップ {lime}{0}{default} が見つかりませんでした!",
+    "General.Notification.MultipleMapsFound": "{lime}{1}{default} にマッチする {lime}{0}{default} 個のマップが見つかりました",
+    "General.Menu.SelectMap.Title": "マップを選択",
     "General.Notification.GroupNotFound": "指定されたグループ {lime}{0}{default} が見つかりませんでした!",
     "General.Command.Notification.TheTime": "現在時刻: {lime}{0}{default}",
     "General.Command.TheTime.Format": "yyyy/MM/dd HH:mm:ss",

@@ -15,6 +15,7 @@ Access via `IMapChooserSharpShared.McsMapConfigProvider`.
 | Member | Type | Description |
 |---|---|---|
 | `ToolingService` | `IMapConfigToolingService` | Utilities for display name resolution, cooldown aggregation, etc. |
+| `MapSearchService` | `IMcsMapSearchService` | Shared map-name search (substring / exact-priority / SearchTag fallback) |
 | `ReloadConfigs()` | `void` | Reload all map configurations from disk |
 | `GetMapConfigs()` | `IReadOnlyDictionary<string, IReadOnlyCollection<IMapConfigOverrides>>` | All map configurations including DaySettings overrides |
 | `GetGroupSettings()` | `IReadOnlyDictionary<string, IReadOnlyCollection<IMapGroupConfigOverrides>>` | All group configurations including DaySettings overrides |
@@ -28,6 +29,15 @@ Access via `IMapChooserSharpShared.McsMapConfigProvider`.
 | `ResolveMapDisplayName(IMapConfig)` | `string` | Returns `MapNameAlias` if set, otherwise `MapName` |
 | `GetHighestCooldown(IMapConfig)` | `int` | Returns the most restrictive cooldown across the map and all its groups |
 | `FindMapsBySearchTag(string, IEnumerable<IMapConfig>)` | `List<IMapConfig>` | Returns maps whose `SearchTags` contain the given tag |
+
+### IMcsMapSearchService
+
+Shared map-name search used by every command that takes a map name. The matching flow is: case-insensitive substring match on the map name → exact-name match collapses multiple hits → optional SearchTag fallback when nothing matched. Returned configs are resolved through DaySettings override evaluation.
+
+| Method | Return Type | Description |
+|---|---|---|
+| `SearchMaps(string query, bool includeDisabledMaps = false, bool useSearchTagFallback = true)` | `McsMapSearchResult` | Search all configured maps. The result carries a `Status` (`NotFound` / `Found` / `MultipleFound`) and the matched `Maps` |
+| `SearchByName<T>(string query, IEnumerable<KeyValuePair<string, T>> source)` | `List<KeyValuePair<string, T>>` | Applies the same substring + exact-collapse matching to an arbitrary name-keyed collection (e.g. current nominations) |
 
 ---
 

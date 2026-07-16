@@ -18,6 +18,13 @@ public interface IMcsMapConfigProvider
     IMapConfigToolingService ToolingService { get; }
 
     /// <summary>
+    /// Shared map-name search (substring match → exact-name collapse →
+    /// SearchTag fallback) used by every command that takes a map name.
+    /// Exposed here for the same reason as <see cref="ToolingService"/>.
+    /// </summary>
+    IMcsMapSearchService MapSearchService { get; }
+
+    /// <summary>
     /// Reloads the configs from disk.
     /// </summary>
     void ReloadConfigs();

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using MapChooserSharpMS.Modules.Commands;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
 using MapChooserSharpMS.Shared.Events.MapCycle;
@@ -15,7 +16,7 @@ using TnmsPluginFoundation.Models.Command;
 
 namespace MapChooserSharpMS.Modules.MapCycle.Commands;
 
-internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCommandBase(provider)
+internal sealed class MapInfoCommand(IServiceProvider provider) : McsCommandBase(provider)
 {
     public override string CommandName => "mapinfo";
     public override string CommandDescription => "Show map information";
@@ -38,22 +39,28 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : TnmsAbstractCo
         _eventManager ??= ServiceProvider.GetRequiredService<IInternalEventManager>();
         _cooldownQueryService ??= ServiceProvider.GetRequiredService<IMapCooldownQueryService>();
 
-        IMapConfig? mapConfig;
         if (commandInfo.ArgCount < 1)
         {
-            mapConfig = _controller.MapTransitionManager.CurrentMap?.MapConfig;
-        }
-        else
-        {
-            _mapConfigProvider.TryGetMapConfig(commandInfo[1], out mapConfig);
-        }
+            var currentMap = _controller.MapTransitionManager.CurrentMap?.MapConfig;
+            if (currentMap is null)
+            {
+                Print(client, "MapCycle.Command.Notification.MapInfo.NotAvailable");
+                return;
+            }
 
-        if (mapConfig is null)
-        {
-            Print(client, "MapCycle.Command.Notification.MapInfo.NotAvailable");
+            PrintMapInfo(client, currentMap, commandInfo);
             return;
         }
 
+        ResolveMapAndExecute(client, commandInfo[1], (c, map) =>
+        {
+            if (c is not null)
+                PrintMapInfo(c, map, commandInfo);
+        });
+    }
+
+    private void PrintMapInfo(IGameClient client, IMapConfig mapConfig, StringCommand commandInfo)
+    {
         Print(client, "MapCycle.Command.Notification.MapInfo", mapConfig.MapName);
 
         if (mapConfig.MapNameAlias != string.Empty)

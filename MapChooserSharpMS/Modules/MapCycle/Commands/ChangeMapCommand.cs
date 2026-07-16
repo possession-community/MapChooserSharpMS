@@ -35,15 +35,11 @@ internal sealed class ChangeMapCommand(IServiceProvider provider) : McsCommandBa
         _controller ??= ServiceProvider.GetRequiredService<IMapCycleController>();
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
 
-        string mapName = commandInfo[1];
+        ResolveMapAndExecute(client, commandInfo[1], ExecuteChangeMap);
+    }
 
-        if (!_mapConfigProvider.TryGetMapConfig(mapName, out var mapConfig))
-        {
-            PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "General.Notification.MapNotFound", mapName));
-            return;
-        }
-
+    private void ExecuteChangeMap(IGameClient? client, IMapConfig mapConfig)
+    {
         string executorName = client?.Name ?? "Console";
         string mapDisplay = _mapConfigProvider.ToolingService.ResolveMapDisplayName(mapConfig);
 

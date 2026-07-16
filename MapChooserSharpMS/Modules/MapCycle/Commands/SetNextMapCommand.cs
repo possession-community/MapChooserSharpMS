@@ -33,15 +33,11 @@ internal sealed class SetNextMapCommand(IServiceProvider provider) : McsCommandB
         _controller ??= ServiceProvider.GetRequiredService<IMapCycleController>();
         _mapConfigProvider ??= ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
 
-        string mapName = commandInfo[1];
+        ResolveMapAndExecute(client, commandInfo[1], ExecuteSetNextMap);
+    }
 
-        if (!_mapConfigProvider.TryGetMapConfig(mapName, out var mapConfig))
-        {
-            PrintMessageToServerOrPlayerChat(client,
-                LocalizeWithPluginPrefix(client, "General.Notification.MapNotFound", mapName));
-            return;
-        }
-
+    private void ExecuteSetNextMap(IGameClient? client, IMapConfig mapConfig)
+    {
         var transitionManager = _controller.MapTransitionManager;
         var previousNextMap = transitionManager.NextMap;
 
