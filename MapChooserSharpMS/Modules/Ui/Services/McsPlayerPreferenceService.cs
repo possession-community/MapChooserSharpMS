@@ -10,6 +10,8 @@ internal sealed class McsPlayerPreferenceService
     private const string CookieKeyCountdownUiType = "mcs.countdown_ui_type";
     private const string CookieKeyVoteSoundVolume = "mcs.vote_sound_volume";
 
+    private const float DefaultVoteSoundVolume = 0.2f;
+
     private readonly ICookie _cookie;
     private readonly McsCountdownUiType _defaultCountdownUiType;
 
@@ -32,7 +34,7 @@ internal sealed class McsPlayerPreferenceService
 
         _volumes[client.Slot] = _cookie.HasCookie(steamId, CookieKeyVoteSoundVolume)
             ? _cookie.GetCookie<float>(steamId, CookieKeyVoteSoundVolume)
-            : 1.0f;
+            : DefaultVoteSoundVolume;
     }
 
     internal void ClearPreferences(int slot)
@@ -51,7 +53,7 @@ internal sealed class McsPlayerPreferenceService
     }
 
     internal float GetVolume(int slot)
-        => _volumes.GetValueOrDefault(slot, 1.0f);
+        => _volumes.GetValueOrDefault(slot, DefaultVoteSoundVolume);
 
     internal void SetVolume(IGameClient client, float volume)
     {
