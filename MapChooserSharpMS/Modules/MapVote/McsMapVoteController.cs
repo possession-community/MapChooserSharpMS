@@ -115,6 +115,10 @@ internal sealed class McsMapVoteController
             .GetRequiredSharpModuleInterface<INativeVoteManager>(INativeVoteManager.ModSharpModuleIdentity)
             .Instance!;
 
+        var wuling = SharedSystem.GetSharpModuleManager()
+            .GetRequiredSharpModuleInterface<Wuling.Abstract.IWuling>(Wuling.Abstract.IWuling.Identity)
+            .Instance!;
+
         var configProvider = ServiceProvider.GetRequiredService<IMcsPluginConfigProvider>();
         var nominationValidateService = ServiceProvider.GetRequiredService<INominationValidateService>();
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
@@ -138,7 +142,8 @@ internal sealed class McsMapVoteController
             _nativeVoteManager, _conVars, configProvider,
             randomMapPicker, nominationManager, mapConfigProvider,
             mapExtendService, cooldownLifecycleService,
-            soundPlayer, countdownUi);
+            soundPlayer, countdownUi,
+            wuling.Menu, wuling.Registry);
 
         _controllingService.CustomWinnerThresholdProvider = _customWinnerThresholdProvider;
 

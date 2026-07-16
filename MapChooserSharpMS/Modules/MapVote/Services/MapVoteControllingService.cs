@@ -50,6 +50,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
     private readonly McsMapCooldownLifecycleService _cooldownLifecycleService;
     private readonly McsMapVoteSoundPlayer _soundPlayer;
     private readonly Ui.Countdown.McsCountdownUiController _countdownUi;
+    private readonly Wuling.Abstract.Tianshi.Menu.IMenu _wulingMenu;
+    private readonly Wuling.Abstract.Tianshi.Registry.IRegistry _wulingRegistry;
 
     private Guid _countdownTimerId = Guid.Empty;
     private Guid _voteEndTimerId = Guid.Empty;
@@ -74,7 +76,9 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         IMcsInternalMapExtendService mapExtendService,
         McsMapCooldownLifecycleService cooldownLifecycleService,
         McsMapVoteSoundPlayer soundPlayer,
-        Ui.Countdown.McsCountdownUiController countdownUi)
+        Ui.Countdown.McsCountdownUiController countdownUi,
+        Wuling.Abstract.Tianshi.Menu.IMenu wulingMenu,
+        Wuling.Abstract.Tianshi.Registry.IRegistry wulingRegistry)
     {
         _plugin = plugin;
         _moduleBase = moduleBase;
@@ -92,6 +96,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         _cooldownLifecycleService = cooldownLifecycleService;
         _soundPlayer = soundPlayer;
         _countdownUi = countdownUi;
+        _wulingMenu = wulingMenu;
+        _wulingRegistry = wulingRegistry;
     }
 
     public McsMapVoteState InitiateVote(bool isActivatedByRtv = false)
@@ -501,6 +507,15 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             });
         }
 
+        // Abstain option (page 1 of the menu). Deliberately has no matching
+        // session vote option — see MapVoteConstants.NoVoteInternalName.
+        voteContents.Add(new VoteContent
+        {
+            Index = voteContents.Count,
+            InternalName = MapVoteConstants.NoVoteInternalName,
+            VisibleName = LocalizedString.From(c => _plugin.Localizer.ForCulture("Vote.Option.NoVote", c ?? System.Globalization.CultureInfo.CurrentCulture)),
+        });
+
         IMultiChoiceVoteHandler handler = isRunoff
             ? new RunoffVoteNativeHandler(this, _voteManager, session, _logger)
             : new InitialVoteNativeHandler(this, _voteManager, session, _logger);
@@ -533,7 +548,8 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
             Participants = participants,
         };
 
-        var result = _nativeVoteManager.InitiateMultiChoiceVote(voteOptions);
+        var result = _nativeVoteManager.InitiateMultiChoiceVote(
+            voteOptions, new McsVoteMenuCompat(_wulingMenu, _wulingRegistry));
 
         if (result != VoteInitiateResult.Success)
         {

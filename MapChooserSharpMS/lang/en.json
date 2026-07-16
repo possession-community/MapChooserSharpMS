@@ -107,6 +107,7 @@
 
     "Vote.Option.ExtendMap": "Extend Current Map",
     "Vote.Option.DontChange": "Don't Change",
+    "Vote.Option.NoVote": "No Vote",
     "Vote.Title.Initial": "Map Vote",
     "Vote.Title.Runoff": "Runoff Vote",
     "Vote.Description": "Vote for the next map",

@@ -71,6 +71,15 @@ Notes:
 - All pick events fire synchronously on the game thread. Only the eligibility filter of the built-in random pick runs on a worker thread.
 - Nominations that do not make it into the final candidate list are recorded in the audit as `not_picked` (see [Audit System](AUDIT.md)).
 
+## Vote Menu Layout
+
+The vote menu (rendered via the Wuling world-HUD menu) is split into two pages:
+
+- **Page 1** — the vote description and a **No Vote** option. Choosing *No Vote* abstains: it never counts toward any candidate's tally, but it does count toward "all participants have voted", so an abstaining player does not delay the early vote finish.
+- **Page 2** — the *Extend* (scheduled vote) / *Don't Change* (RTV vote) option **pinned at the top**, followed by the map candidates. When menu shuffle is enabled, only the map candidates are shuffled (per player) — the pinned options always stay on top.
+
+Players flip pages with the menu's Next/Back keys (9/8 by default). `!revote` reopens the menu.
+
 ## Map Config Execution (cfg files)
 
 On every map start, MCS executes `.cfg` files from `csgo/cfg/mcsms/maps/` and `csgo/cfg/mcsms/groups/` via the `exec` command. See [Plugin Config](../configuration/PLUGIN_CONFIG.md#map-config-execution-cfg-files) for details on matching modes and directory layout.

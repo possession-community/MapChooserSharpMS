@@ -107,6 +107,7 @@
 
     "Vote.Option.ExtendMap": "現在のマップを延長",
     "Vote.Option.DontChange": "変更しない",
+    "Vote.Option.NoVote": "投票しない",
     "Vote.Title.Initial": "マップ投票",
     "Vote.Title.Runoff": "決選投票",
     "Vote.Description": "次のマップに投票してください",
