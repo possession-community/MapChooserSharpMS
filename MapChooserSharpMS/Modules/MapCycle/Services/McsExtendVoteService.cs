@@ -101,8 +101,8 @@ internal sealed class McsExtendVoteService
         var options = new YesNoVoteOptions
         {
             Title = "#SFUI_vote_passed_nextlevel_extend",
-            Description = LocalizedString.From(_ =>
-                _plugin.LocalizeString("MapCycle.ExtendVote.DetailsString", displayAmount)),
+            Description = LocalizedString.From(c =>
+                _plugin.Localizer.ForCulture("MapCycle.ExtendVote.DetailsString", c ?? System.Globalization.CultureInfo.CurrentCulture, displayAmount)),
             VoteDuration = duration,
             VoteHandler = handler,
             VoteInitiator = initiator?.Slot ?? 99,

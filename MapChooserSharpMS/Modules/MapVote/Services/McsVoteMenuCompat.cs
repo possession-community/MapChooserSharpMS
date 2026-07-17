@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NativeVoteManagerMS.Shared;
 using NativeVoteManagerMS.Shared.Types;
 using Sharp.Shared.Objects;
+using Wuling.Abstract.Tianshi.Localizer;
 using Wuling.Abstract.Tianshi.Menu;
 using Wuling.Abstract.Tianshi.Registry;
 
@@ -20,7 +21,7 @@ namespace MapChooserSharpMS.Modules.MapVote.Services;
 /// Wuling's renderer skips empty-content items visually, but they still
 /// occupy page slots.
 /// </summary>
-internal sealed class McsVoteMenuCompat(IMenu menu, IRegistry registry) : IMenuCompat
+internal sealed class McsVoteMenuCompat(IMenu menu, IRegistry registry, ILocalizer localizer) : IMenuCompat
 {
     private MultiChoiceVoteOptions _voteOptions = null!;
     private readonly Dictionary<int, IMenuInstance> _menuCaches = new();
@@ -49,8 +50,10 @@ internal sealed class McsVoteMenuCompat(IMenu menu, IRegistry registry) : IMenuC
 
     private IMenuInstance BuildMenu(IGameClient target)
     {
+        var culture = localizer.GetPlayerCulture(target.SteamId);
+
         var instance = menu.CreateMenu();
-        instance.Title = _voteOptions.Title.Resolve();
+        instance.Title = _voteOptions.Title.Resolve(culture);
 
         VoteContent? noVote = null;
         var pinned = new List<VoteContent>();
@@ -79,9 +82,9 @@ internal sealed class McsVoteMenuCompat(IMenu menu, IRegistry registry) : IMenuC
             ShuffleInPlace(maps);
 
         // Page 1: description + abstain.
-        instance.AddItem(MenuItemStyleFlags.Disabled, _voteOptions.Description.Resolve());
+        instance.AddItem(MenuItemStyleFlags.Disabled, _voteOptions.Description.Resolve(culture));
         if (noVote is not null)
-            AddVoteItem(instance, target, noVote);
+            AddVoteItem(instance, target, noVote, culture);
 
         int itemsPerPage = Math.Max(1, menu.MaxItemsPerPage);
         while (instance.ItemCount % itemsPerPage != 0)
@@ -89,16 +92,16 @@ internal sealed class McsVoteMenuCompat(IMenu menu, IRegistry registry) : IMenuC
 
         // Page 2+: pinned specials first, then the (possibly shuffled) maps.
         foreach (var content in pinned)
-            AddVoteItem(instance, target, content);
+            AddVoteItem(instance, target, content, culture);
         foreach (var content in maps)
-            AddVoteItem(instance, target, content);
+            AddVoteItem(instance, target, content, culture);
 
         return instance;
     }
 
-    private void AddVoteItem(IMenuInstance instance, IGameClient target, VoteContent content)
+    private void AddVoteItem(IMenuInstance instance, IGameClient target, VoteContent content, System.Globalization.CultureInfo culture)
     {
-        instance.AddItem(MenuItemStyleFlags.Active | MenuItemStyleFlags.HasNumber, content.VisibleName.Resolve(),
+        instance.AddItem(MenuItemStyleFlags.Active | MenuItemStyleFlags.HasNumber, content.VisibleName.Resolve(culture),
             (_, _, _, _) =>
             {
                 OnChoice(target, content);

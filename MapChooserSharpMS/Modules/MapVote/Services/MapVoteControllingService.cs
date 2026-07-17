@@ -549,7 +549,7 @@ internal sealed class MapVoteControllingService : IMapVoteControllingService
         };
 
         var result = _nativeVoteManager.InitiateMultiChoiceVote(
-            voteOptions, new McsVoteMenuCompat(_wulingMenu, _wulingRegistry));
+            voteOptions, new McsVoteMenuCompat(_wulingMenu, _wulingRegistry, _plugin.LocalizationPlatform));
 
         if (result != VoteInitiateResult.Success)
         {
