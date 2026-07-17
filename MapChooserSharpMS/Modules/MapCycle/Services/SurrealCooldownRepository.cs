@@ -183,13 +183,14 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
 
     private async Task UpsertAsync(string table, string name, CooldownRecord record, CancellationToken ct = default)
     {
-        var surql = $"UPSERT type::record('{table}', $name) SET name = $name, cooldown = $cooldown, timed_cooldown_end = $timed_cooldown_end, last_played_at = $last_played_at, nom_cooldown = $nom_cooldown, nom_timed_cooldown_end = $nom_timed_cooldown_end, last_nominated_at = $last_nominated_at;";
+        var surql = $"UPSERT type::record('{table}', $name) SET name = $name, cooldown = $cooldown, timed_cooldown_end = $timed_cooldown_end, last_played_at = $last_played_at, unplayed_count = $unplayed_count, nom_cooldown = $nom_cooldown, nom_timed_cooldown_end = $nom_timed_cooldown_end, last_nominated_at = $last_nominated_at;";
         var vars = new Dictionary<string, object?>
         {
             ["name"] = name,
             ["cooldown"] = record.Cooldown,
             ["timed_cooldown_end"] = record.TimedCooldownEnd,
             ["last_played_at"] = record.LastPlayedAt,
+            ["unplayed_count"] = record.UnplayedCount,
             ["nom_cooldown"] = record.NomCooldown,
             ["nom_timed_cooldown_end"] = record.NomTimedCooldownEnd,
             ["last_nominated_at"] = record.LastNominatedAt,
@@ -215,6 +216,7 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
                     Cooldown: dto.cooldown,
                     TimedCooldownEnd: dto.timed_cooldown_end,
                     LastPlayedAt: dto.last_played_at,
+                    UnplayedCount: dto.unplayed_count,
                     NomCooldown: dto.nom_cooldown,
                     NomTimedCooldownEnd: dto.nom_timed_cooldown_end,
                     LastNominatedAt: dto.last_nominated_at);
@@ -238,6 +240,7 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
         public int cooldown { get; set; }
         public DateTime timed_cooldown_end { get; set; }
         public DateTime last_played_at { get; set; }
+        public int unplayed_count { get; set; }
         public int nom_cooldown { get; set; }
         public DateTime nom_timed_cooldown_end { get; set; }
         public DateTime last_nominated_at { get; set; }

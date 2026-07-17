@@ -3,6 +3,7 @@ DEFINE FUNCTION OVERWRITE fn::mcs::upsert_map_cooldown(
     $cooldown: int,
     $timed_cooldown_end: datetime,
     $last_played_at: datetime,
+    $unplayed_count: int,
     $nom_cooldown: int,
     $nom_timed_cooldown_end: datetime,
     $last_nominated_at: datetime
@@ -11,6 +12,7 @@ DEFINE FUNCTION OVERWRITE fn::mcs::upsert_map_cooldown(
         cooldown = $cooldown,
         timed_cooldown_end = $timed_cooldown_end,
         last_played_at = $last_played_at,
+        unplayed_count = $unplayed_count,
         nom_cooldown = $nom_cooldown,
         nom_timed_cooldown_end = $nom_timed_cooldown_end,
         last_nominated_at = $last_nominated_at;

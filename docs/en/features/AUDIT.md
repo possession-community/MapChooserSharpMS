@@ -196,6 +196,7 @@ Current cooldown state for maps and groups. Upserted on each map change.
 | cooldown | int | Current count cooldown remaining |
 | timed_cooldown_end | datetime | Timed cooldown expiration |
 | last_played_at | datetime | Last time this map/group was played |
+| unplayed_count | int | Map changes passed while off cooldown without being played |
 | nom_cooldown | int | Current nomination cooldown remaining |
 | nom_timed_cooldown_end | datetime | Nomination timed cooldown expiration |
 | last_nominated_at | datetime | Last nomination time |

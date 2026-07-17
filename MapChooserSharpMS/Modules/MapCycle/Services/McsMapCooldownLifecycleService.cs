@@ -235,6 +235,7 @@ internal sealed class McsMapCooldownLifecycleService
             cc.CurrentCooldown = named.Record.Cooldown;
             cc.TimedCooldownEndUtc = named.Record.TimedCooldownEnd;
             cc.LastPlayedAt = named.Record.LastPlayedAt;
+            cc.UnplayedCount = named.Record.UnplayedCount;
             cc.CurrentNominationCooldown = named.Record.NomCooldown;
             cc.NominationTimedCooldownEndUtc = named.Record.NomTimedCooldownEnd;
 
@@ -264,6 +265,7 @@ internal sealed class McsMapCooldownLifecycleService
                 cc.CurrentCooldown = named.Record.Cooldown;
                 cc.TimedCooldownEndUtc = named.Record.TimedCooldownEnd;
                 cc.LastPlayedAt = named.Record.LastPlayedAt;
+                cc.UnplayedCount = named.Record.UnplayedCount;
                 cc.CurrentNominationCooldown = named.Record.NomCooldown;
                 cc.NominationTimedCooldownEndUtc = named.Record.NomTimedCooldownEnd;
 
@@ -291,6 +293,7 @@ internal sealed class McsMapCooldownLifecycleService
             Cooldown: cc.CurrentCooldown,
             TimedCooldownEnd: cc.TimedCooldownEndUtc,
             LastPlayedAt: cc.LastPlayedAt,
+            UnplayedCount: cc.UnplayedCount,
             NomCooldown: cc.CurrentNominationCooldown,
             NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
             LastNominatedAt: DateTime.MinValue);
@@ -302,6 +305,7 @@ internal sealed class McsMapCooldownLifecycleService
             Cooldown: cc.CurrentCooldown,
             TimedCooldownEnd: cc.TimedCooldownEndUtc,
             LastPlayedAt: cc.LastPlayedAt,
+            UnplayedCount: cc.UnplayedCount,
             NomCooldown: cc.CurrentNominationCooldown,
             NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
             LastNominatedAt: DateTime.MinValue);

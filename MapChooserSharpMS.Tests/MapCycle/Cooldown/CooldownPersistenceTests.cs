@@ -55,6 +55,7 @@ public class CooldownPersistenceTests
         cc.CurrentCooldown = 3;
         cc.LastPlayedAt = new DateTime(2026, 6, 15, 12, 0, 0, DateTimeKind.Utc);
         cc.TimedCooldownEndUtc = new DateTime(2026, 6, 16, 12, 0, 0, DateTimeKind.Utc);
+        cc.UnplayedCount = 7;
         cc.CurrentNominationCooldown = 2;
         cc.NominationTimedCooldownEndUtc = new DateTime(2026, 6, 15, 14, 0, 0, DateTimeKind.Utc);
 
@@ -62,6 +63,7 @@ public class CooldownPersistenceTests
             Cooldown: cc.CurrentCooldown,
             TimedCooldownEnd: cc.TimedCooldownEndUtc,
             LastPlayedAt: cc.LastPlayedAt,
+            UnplayedCount: cc.UnplayedCount,
             NomCooldown: cc.CurrentNominationCooldown,
             NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
             LastNominatedAt: DateTime.MinValue);
@@ -69,6 +71,7 @@ public class CooldownPersistenceTests
         Assert.Equal(3, record.Cooldown);
         Assert.Equal(new DateTime(2026, 6, 16, 12, 0, 0, DateTimeKind.Utc), record.TimedCooldownEnd);
         Assert.Equal(new DateTime(2026, 6, 15, 12, 0, 0, DateTimeKind.Utc), record.LastPlayedAt);
+        Assert.Equal(7, record.UnplayedCount);
         Assert.Equal(2, record.NomCooldown);
         Assert.Equal(new DateTime(2026, 6, 15, 14, 0, 0, DateTimeKind.Utc), record.NomTimedCooldownEnd);
     }
@@ -87,6 +90,7 @@ public class CooldownPersistenceTests
             Cooldown: 2,
             TimedCooldownEnd: new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
             LastPlayedAt: new DateTime(2026, 6, 14, 0, 0, 0, DateTimeKind.Utc),
+            UnplayedCount: 4,
             NomCooldown: 1,
             NomTimedCooldownEnd: new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc),
             LastNominatedAt: DateTime.MinValue);
@@ -99,12 +103,14 @@ public class CooldownPersistenceTests
         var cc = CooldownTestHelper.GetCooldownConfig(map);
 
         Assert.Equal(0, cc.CurrentCooldown);
+        Assert.Equal(0, cc.UnplayedCount);
 
         ApplyLoadedMapCooldown(cc, loadedRecord);
 
         Assert.Equal(2, cc.CurrentCooldown);
         Assert.Equal(new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc), cc.TimedCooldownEndUtc);
         Assert.Equal(new DateTime(2026, 6, 14, 0, 0, 0, DateTimeKind.Utc), cc.LastPlayedAt);
+        Assert.Equal(4, cc.UnplayedCount);
         Assert.Equal(1, cc.CurrentNominationCooldown);
         Assert.Equal(new DateTime(2026, 6, 15, 0, 0, 0, DateTimeKind.Utc), cc.NominationTimedCooldownEndUtc);
     }
@@ -118,6 +124,7 @@ public class CooldownPersistenceTests
             Cooldown: 5,
             TimedCooldownEnd: DateTime.MinValue,
             LastPlayedAt: DateTime.MinValue,
+            UnplayedCount: 0,
             NomCooldown: 0,
             NomTimedCooldownEnd: DateTime.MinValue,
             LastNominatedAt: DateTime.MinValue);
@@ -153,7 +160,7 @@ public class CooldownPersistenceTests
     public async Task NullPersistence_SaveDoesNotThrow()
     {
         var persistence = MapChooserSharpMS.Modules.MapCycle.Services.NullCooldownPersistence.Instance;
-        var record = new CooldownRecord(0, DateTime.MinValue, DateTime.MinValue, 0, DateTime.MinValue, DateTime.MinValue);
+        var record = new CooldownRecord(0, DateTime.MinValue, DateTime.MinValue, 0, 0, DateTime.MinValue, DateTime.MinValue);
 
         await persistence.SaveMapCooldownAsync("test", record);
         await persistence.SaveGroupCooldownAsync("test", record);
@@ -172,20 +179,21 @@ public class CooldownPersistenceTests
     public async Task FakePersistence_SaveMapAsync_TracksWriteThrough()
     {
         var fake = new FakeCooldownPersistence();
-        var record = new CooldownRecord(3, DateTime.UtcNow, DateTime.UtcNow, 0, DateTime.MinValue, DateTime.MinValue);
+        var record = new CooldownRecord(3, DateTime.UtcNow, DateTime.UtcNow, 6, 0, DateTime.MinValue, DateTime.MinValue);
 
         await fake.SaveMapCooldownAsync("de_test", record);
 
         Assert.Single(fake.SavedMaps);
         Assert.Equal("de_test", fake.SavedMaps[0].Name);
         Assert.Equal(3, fake.SavedMaps[0].Record.Cooldown);
+        Assert.Equal(6, fake.SavedMaps[0].Record.UnplayedCount);
     }
 
     [Fact]
     public void FakePersistence_FireAndForget_TracksWriteBehind()
     {
         var fake = new FakeCooldownPersistence();
-        var record = new CooldownRecord(2, DateTime.UtcNow, DateTime.UtcNow, 0, DateTime.MinValue, DateTime.MinValue);
+        var record = new CooldownRecord(2, DateTime.UtcNow, DateTime.UtcNow, 0, 0, DateTime.MinValue, DateTime.MinValue);
 
         fake.SaveMapCooldownFireAndForget("de_test", record);
         fake.SaveGroupCooldownFireAndForget("group_a", record);
@@ -200,7 +208,7 @@ public class CooldownPersistenceTests
     public void FakePersistence_BulkSave_TracksBulkWriteBehind()
     {
         var fake = new FakeCooldownPersistence();
-        var record = new CooldownRecord(1, DateTime.UtcNow, DateTime.UtcNow, 0, DateTime.MinValue, DateTime.MinValue);
+        var record = new CooldownRecord(1, DateTime.UtcNow, DateTime.UtcNow, 0, 0, DateTime.MinValue, DateTime.MinValue);
 
         var maps = new List<(string, CooldownRecord)> { ("de_a", record), ("de_b", record) };
         var groups = new List<(string, CooldownRecord)> { ("grp_x", record) };
@@ -219,7 +227,7 @@ public class CooldownPersistenceTests
     [Fact]
     public void NamedCooldownRecord_StoresNameAndRecord()
     {
-        var record = new CooldownRecord(5, DateTime.MinValue, DateTime.MinValue, 0, DateTime.MinValue, DateTime.MinValue);
+        var record = new CooldownRecord(5, DateTime.MinValue, DateTime.MinValue, 0, 0, DateTime.MinValue, DateTime.MinValue);
         var named = new NamedCooldownRecord("de_dust2", record);
 
         Assert.Equal("de_dust2", named.Name);
@@ -235,6 +243,7 @@ public class CooldownPersistenceTests
         cc.CurrentCooldown = record.Cooldown;
         cc.TimedCooldownEndUtc = record.TimedCooldownEnd;
         cc.LastPlayedAt = record.LastPlayedAt;
+        cc.UnplayedCount = record.UnplayedCount;
         cc.CurrentNominationCooldown = record.NomCooldown;
         cc.NominationTimedCooldownEndUtc = record.NomTimedCooldownEnd;
     }

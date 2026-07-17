@@ -30,6 +30,7 @@ internal sealed record CooldownRecord(
     int Cooldown,
     DateTime TimedCooldownEnd,
     DateTime LastPlayedAt,
+    int UnplayedCount,
     int NomCooldown,
     DateTime NomTimedCooldownEnd,
     DateTime LastNominatedAt);

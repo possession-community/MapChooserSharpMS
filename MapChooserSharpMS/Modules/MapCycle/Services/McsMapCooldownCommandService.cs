@@ -188,6 +188,7 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
             Cooldown: cc.CurrentCooldown,
             TimedCooldownEnd: cc.TimedCooldownEndUtc,
             LastPlayedAt: cc.LastPlayedAt,
+            UnplayedCount: cc.UnplayedCount,
             NomCooldown: cc.CurrentNominationCooldown,
             NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
             LastNominatedAt: DateTime.MinValue);
@@ -199,6 +200,7 @@ internal sealed class McsMapCooldownCommandService : IMapCooldownCommandService
             Cooldown: cc.CurrentCooldown,
             TimedCooldownEnd: cc.TimedCooldownEndUtc,
             LastPlayedAt: cc.LastPlayedAt,
+            UnplayedCount: cc.UnplayedCount,
             NomCooldown: cc.CurrentNominationCooldown,
             NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
             LastNominatedAt: DateTime.MinValue);

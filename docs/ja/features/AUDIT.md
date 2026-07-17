@@ -196,6 +196,7 @@ RTV がトリガーされた時に記録されます。レコード ID で `mcs_
 | cooldown | int | 残りカウントクールダウン |
 | timed_cooldown_end | datetime | 時限クールダウン期限 |
 | last_played_at | datetime | 最後にプレイされた時刻 |
+| unplayed_count | int | クールダウン明け後、プレイされずに経過したマップ変更回数 |
 | nom_cooldown | int | 残りノミネーションクールダウン |
 | nom_timed_cooldown_end | datetime | ノミネーション時限クールダウン期限 |
 | last_nominated_at | datetime | 最後にノミネートされた時刻 |
