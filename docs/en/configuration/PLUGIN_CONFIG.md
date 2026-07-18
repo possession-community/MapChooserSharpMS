@@ -48,26 +48,29 @@ PauseMapCycleWhenServerEmpty = false
 
 ### Map Config Execution (cfg files)
 
-On every map start, MCS automatically executes `.cfg` files matching the current map and its groups. The cfg files are loaded from fixed directories under the Sharp root:
+On every map start, MCS automatically executes `.cfg` files matching the current map and its groups. The cfg files are loaded from fixed directories under the game's `cfg` directory:
 
 ```
-sharp/configs/mcsms/cfgs/
+csgo/cfg/mcsms/
 ├── maps/       # Map-specific cfg files
 │   ├── de_dust2.cfg
-│   └── ze_example_v1.cfg
+│   └── ze/     # Subdirectories are allowed (names are ignored)
+│       └── ze_example_v1.cfg
 └── groups/     # Group-specific cfg files
     ├── ze_maps.cfg
     └── surf_maps.cfg
 ```
 
-**Execution order:** Group cfgs first (in config order), then map cfgs. Map settings override group settings.
+Both directories are scanned **recursively** — subdirectories are free for organization (e.g. `maps/ze/`, `maps/surf/`) and directory names are ignored; only the cfg **file name** is used for matching.
 
-**Matching modes** (`MapConfigExecutionType`):
+**Execution order:** Group cfgs first (in config order), then map cfgs. Map settings override group settings. Map cfgs run from generic to specific (shortest filename first), and an exact-match cfg always runs **last** so its values override every prefix/partial cfg. If the same file name exists in multiple subdirectories, all of them are executed.
+
+**Matching modes** (`MapConfigExecutionType`, map cfgs only — group cfgs always match the group name exactly):
 - `ExactMatch` — Only executes `<mapname>.cfg` (case-insensitive)
 - `StartWithMatch` — Executes all cfgs whose filename is a prefix of the map name (e.g. `de_.cfg` and `de_dust2.cfg` for `de_dust2`), shortest prefix first
 - `PartialMatch` — Executes all cfgs whose filename appears anywhere in the map name
 
-**exec expansion:** If a cfg file contains `exec <path>` lines, the referenced file is resolved relative to the same directory (not `csgo/cfg/`) and expanded inline. Recursive includes are supported up to 8 levels deep.
+**Nested exec:** The cfg files are executed via the engine's `exec` command, so `exec <path>` lines inside a cfg work as usual — the referenced path is resolved by the engine relative to `csgo/cfg/` (e.g. `exec mcsms/maps/shared_settings.cfg`).
 
 ## MapVote
 

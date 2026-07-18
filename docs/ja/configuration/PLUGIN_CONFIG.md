@@ -48,26 +48,29 @@ PauseMapCycleWhenServerEmpty = false
 
 ### マップ config 実行 (cfg ファイル)
 
-マップ開始時に、現在のマップおよび所属グループにマッチする `.cfg` ファイルを自動実行します。cfg ファイルは Sharp ルート配下の固定ディレクトリから読み込まれます。
+マップ開始時に、現在のマップおよび所属グループにマッチする `.cfg` ファイルを自動実行します。cfg ファイルはゲームの `cfg` ディレクトリ配下の固定ディレクトリから読み込まれます。
 
 ```
-sharp/configs/mcsms/cfgs/
+csgo/cfg/mcsms/
 ├── maps/       # マップ固有の cfg ファイル
 │   ├── de_dust2.cfg
-│   └── ze_example_v1.cfg
+│   └── ze/     # サブディレクトリ使用可 (名前は無視されます)
+│       └── ze_example_v1.cfg
 └── groups/     # グループ固有の cfg ファイル
     ├── ze_maps.cfg
     └── surf_maps.cfg
 ```
 
-**実行順:** グループ cfg → マップ cfg の順で実行。マップの設定がグループを上書きします。
+両ディレクトリは **再帰的** にスキャンされます — サブディレクトリは整理用に自由に使えて (例: `maps/ze/`, `maps/surf/`)、ディレクトリ名は無視され、cfg の **ファイル名** だけがマッチングに使われます。
 
-**マッチングモード** (`MapConfigExecutionType`):
+**実行順:** グループ cfg → マップ cfg の順で実行。マップの設定がグループを上書きします。マップ cfg は汎用 → 具体 (ファイル名が短い順) の順で実行され、exact match した cfg は常に **最後** に実行されるため、prefix/partial cfg の設定を上書きできます。同名ファイルが複数のサブディレクトリに存在する場合は全て実行されます。
+
+**マッチングモード** (`MapConfigExecutionType`、マップ cfg のみ — グループ cfg は常にグループ名と exact match):
 - `ExactMatch` — `<マップ名>.cfg` のみ実行 (大文字小文字区別なし)
 - `StartWithMatch` — マップ名がファイル名で始まる cfg を全て実行 (例: `de_dust2` に対して `de_.cfg` と `de_dust2.cfg`)、短いプレフィックス順
 - `PartialMatch` — マップ名にファイル名が含まれる cfg を全て実行
 
-**exec 展開:** cfg ファイル内に `exec <パス>` 行がある場合、参照先ファイルは同ディレクトリ基準で解決され (`csgo/cfg/` ではなく)、インラインで展開されます。再帰的な include は最大8段までサポート。
+**ネストした exec:** cfg ファイルの実行にはエンジンの `exec` コマンドを使用しているため、cfg 内の `exec <パス>` 行は通常どおり動作します — 参照先パスはエンジンによって `csgo/cfg/` 基準で解決されます (例: `exec mcsms/maps/shared_settings.cfg`)。
 
 ## MapVote
 

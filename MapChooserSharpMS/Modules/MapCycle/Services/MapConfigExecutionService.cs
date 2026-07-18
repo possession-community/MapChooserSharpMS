@@ -52,7 +52,7 @@ internal sealed class MapConfigExecutionService
         string[] cfgFiles;
         try
         {
-            cfgFiles = Directory.GetFiles(_groupCfgDirectory, "*.cfg");
+            cfgFiles = Directory.GetFiles(_groupCfgDirectory, "*.cfg", SearchOption.AllDirectories);
         }
         catch (Exception ex)
         {
@@ -67,8 +67,7 @@ internal sealed class MapConfigExecutionService
                 string fileName = Path.GetFileNameWithoutExtension(filePath);
                 if (string.Equals(fileName, group.GroupName, StringComparison.OrdinalIgnoreCase))
                 {
-                    Exec($"{CfgBasePath}/{GroupCfgSubDir}/{Path.GetFileName(filePath)}", $"group:{group.GroupName}");
-                    break;
+                    Exec(ToExecPath(_groupCfgDirectory, GroupCfgSubDir, filePath), $"group:{group.GroupName}");
                 }
             }
         }
@@ -82,7 +81,7 @@ internal sealed class MapConfigExecutionService
         string[] cfgFiles;
         try
         {
-            cfgFiles = Directory.GetFiles(_mapCfgDirectory, "*.cfg");
+            cfgFiles = Directory.GetFiles(_mapCfgDirectory, "*.cfg", SearchOption.AllDirectories);
         }
         catch (Exception ex)
         {
@@ -93,11 +92,17 @@ internal sealed class MapConfigExecutionService
         var matched = MatchCfgFiles(cfgFiles, mapName, executionType);
         foreach (string cfgPath in matched)
         {
-            Exec($"{CfgBasePath}/{MapCfgSubDir}/{Path.GetFileName(cfgPath)}", $"map:{mapName}");
+            Exec(ToExecPath(_mapCfgDirectory, MapCfgSubDir, cfgPath), $"map:{mapName}");
         }
     }
 
-    private static List<string> MatchCfgFiles(string[] cfgFiles, string mapName, McsMapConfigExecutionType executionType)
+    private static string ToExecPath(string baseDirectory, string subDir, string filePath)
+    {
+        string relativePath = Path.GetRelativePath(baseDirectory, filePath).Replace('\\', '/');
+        return $"{CfgBasePath}/{subDir}/{relativePath}";
+    }
+
+    internal static List<string> MatchCfgFiles(string[] cfgFiles, string mapName, McsMapConfigExecutionType executionType)
     {
         var results = new List<string>();
 
@@ -120,12 +125,20 @@ internal sealed class MapConfigExecutionService
                 results.Add(filePath);
         }
 
-        if (executionType == McsMapConfigExecutionType.StartWithMatch)
+        // Generic cfgs first (shorter name = broader match), exact-match cfg
+        // always last so its values override every partial/prefix cfg.
+        results.Sort((a, b) =>
         {
-            results.Sort((a, b) =>
-                Path.GetFileNameWithoutExtension(a).Length
-                    .CompareTo(Path.GetFileNameWithoutExtension(b).Length));
-        }
+            string nameA = Path.GetFileNameWithoutExtension(a);
+            string nameB = Path.GetFileNameWithoutExtension(b);
+
+            bool exactA = string.Equals(nameA, mapName, StringComparison.OrdinalIgnoreCase);
+            bool exactB = string.Equals(nameB, mapName, StringComparison.OrdinalIgnoreCase);
+            if (exactA != exactB)
+                return exactA ? 1 : -1;
+
+            return nameA.Length.CompareTo(nameB.Length);
+        });
 
         return results;
     }
