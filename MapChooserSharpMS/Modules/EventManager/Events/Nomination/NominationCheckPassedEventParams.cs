@@ -11,7 +11,8 @@ internal sealed class NominationCheckPassedEventParams(
     TnmsPlugin plugin,
     PluginModuleBase moduleBase,
     IMapConfig mapConfig,
-    IGameClient? nominator = null
+    IGameClient? nominator = null,
+    bool enforcedByAdmin = false
     ): INominationCheckPassedEventParams
 {
     public string ModulePrefix(CultureInfo? culture = null)
@@ -22,4 +23,6 @@ internal sealed class NominationCheckPassedEventParams(
 
     public IGameClient? Client { get; } = nominator;
     public IMapConfig MapConfig { get; } = mapConfig;
+    public bool EnforcedByAdmin { get; } = enforcedByAdmin;
+    public IGameClient? Enforcer => EnforcedByAdmin ? Client : null;
 }

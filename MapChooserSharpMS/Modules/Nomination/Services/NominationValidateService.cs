@@ -144,7 +144,7 @@ internal sealed class NominationValidateService
 
         if (result.Count == 0)
         {
-            var nominationEvent = CreateCheckPassedEvent(mapConfig, nominator);
+            var nominationEvent = CreateCheckPassedEvent(mapConfig, nominator, enforcedByAdmin: true);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Continue)
             {
@@ -259,9 +259,9 @@ internal sealed class NominationValidateService
         }).ToList();
     }
 
-    private NominationCheckPassedEventParams CreateCheckPassedEvent(IMapConfig mapConfig, IGameClient? client)
+    private NominationCheckPassedEventParams CreateCheckPassedEvent(IMapConfig mapConfig, IGameClient? client, bool enforcedByAdmin = false)
     {
-        return new NominationCheckPassedEventParams(Plugin, (PluginModuleBase)_nominationController, mapConfig, client);
+        return new NominationCheckPassedEventParams(Plugin, (PluginModuleBase)_nominationController, mapConfig, client, enforcedByAdmin);
     }
 
     private bool CanPickupPure(IMapConfig mapConfig, PickupSnapshot snapshot)

@@ -196,7 +196,7 @@ Install via `IMcsRtvController.InstallEventListener`.
 | Interface | Inherits | Properties |
 |---|---|---|
 | `IMcsNominationEventBaseParams` | -- | `Client` (`IGameClient?`), `NominationData` (`IMcsNominationData`) |
-| `INominationCheckPassedEventParams` | `IEventBaseParams` | `Client` (`IGameClient?`), `MapConfig` (`IMapConfig`) |
+| `INominationCheckPassedEventParams` | `IEventBaseParams`, `IEnforceableEvent` | `Client` (`IGameClient?`), `MapConfig` (`IMapConfig`). `EnforcedByAdmin = true` on the admin nomination path (player nomination: `Client` set + `false`; random pick: `Client = null` + `false`) |
 | `INominationParams` | `IEventBaseParams`, `IMcsNominationEventBaseParams` | (see base) |
 | `IAdminNominationParams` | `IEventBaseParams`, `IMcsNominationEventBaseParams` | (see base) |
 | `INominationChangeParams` | `IEventBaseParams`, `IMcsNominationEventBaseParams`, `IEnforceableEvent` | (see bases) |

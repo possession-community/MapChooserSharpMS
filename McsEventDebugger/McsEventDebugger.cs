@@ -184,7 +184,8 @@ public class McsEventDebugger : IModSharpModule,
 
     public McsCancellableEvent OnNominationCheckPassed(INominationCheckPassedEventParams p)
     {
-        _logger.LogInformation("[Nomination] OnNominationCheckPassed");
+        _logger.LogInformation("[Nomination] OnNominationCheckPassed: Map={Map}, Client={Client}, EnforcedByAdmin={EnforcedByAdmin}",
+            p.MapConfig.MapName, p.Client?.Name ?? "(null)", p.EnforcedByAdmin);
         return McsCancellableEvent.Continue;
     }
 

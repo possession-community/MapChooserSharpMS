@@ -500,12 +500,22 @@ public McsValueOverrideEvent<List<IMapConfig>> OnRandomMapPick(IMapVoteRandomMap
 外部モジュールが独自のバリデーションロジックを追加するためのゲートとして設計されています。
 
 - **戻り値**: `McsCancellableEvent` (`Stop` を返すとノミネーションチェックを失敗させる = ノミネーションを阻止する)
-- **パラメータ**: `INominationCheckPassedEventParams`
+- **パラメータ**: `INominationCheckPassedEventParams` (継承: `IEventBaseParams`, `IEnforceableEvent`)
 
 | プロパティ | 型 | 説明 |
 |---|---|---|
-| `Client` | `IGameClient?` | ノミネーションを試みたクライアント。コンソールの場合は `null` |
+| `Client` | `IGameClient?` | ノミネーションを試みたクライアント。コンソール・ランダムピックの場合は `null` |
 | `MapConfig` | `IMapConfig` | バリデーションを通過したマップの設定 |
+| `EnforcedByAdmin` | `bool` | 管理者ノミネーション経路なら `true` (プレイヤーノミネーション・ランダムピックは `false`) |
+| `Enforcer` | `IGameClient?` | 管理者ノミネーションの実行者。コンソール実行時は `null` (`EnforcedByAdmin` で判別) |
+
+発火元は 3 経路あり、以下のように判別できます:
+
+| 経路 | `Client` | `EnforcedByAdmin` |
+|---|---|---|
+| プレイヤーの `!nominate` | プレイヤー | `false` |
+| 管理者ノミネーション (ゲーム内 / コンソール) | 管理者 / `null` | `true` |
+| ランダムピック (投票候補補充) | `null` | `false` |
 
 使用例:
 
