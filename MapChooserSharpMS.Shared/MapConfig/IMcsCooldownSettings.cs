@@ -1,11 +1,13 @@
-﻿using System;
+using System;
 
 namespace MapChooserSharpMS.Shared.MapConfig;
 
 /// <summary>
-/// Map's cooldown
+/// Cooldown settings declared in map/group config.
+/// Contains configuration values only — runtime cooldown state lives in
+/// <see cref="MapChooserSharpMS.Shared.MapCycle.Cooldown.IMcsCooldownStore"/>.
 /// </summary>
-public interface ICooldownConfig
+public interface IMcsCooldownSettings
 {
     /// <summary>
     /// Play-based cooldown count specified in map config.
@@ -18,16 +20,6 @@ public interface ICooldownConfig
     TimeSpan TimedCooldown { get; }
 
     /// <summary>
-    /// Current play-based cooldown in memory.
-    /// </summary>
-    int CurrentCooldown { get; }
-
-    /// <summary>
-    /// When this map was last played (UTC).
-    /// </summary>
-    DateTime LastPlayedAt { get; }
-
-    /// <summary>
     /// Nomination cooldown count specified in map config.
     /// 0 = disabled (opt-in).
     /// </summary>
@@ -37,10 +29,4 @@ public interface ICooldownConfig
     /// Time-based nomination cooldown duration specified in map config.
     /// </summary>
     TimeSpan NominationTimedCooldown { get; }
-
-    /// <summary>
-    /// Number of maps played since this map's cooldown fully expired
-    /// (both count and timed). Reset to 0 when cooldown is applied.
-    /// </summary>
-    int UnplayedCount { get; }
 }

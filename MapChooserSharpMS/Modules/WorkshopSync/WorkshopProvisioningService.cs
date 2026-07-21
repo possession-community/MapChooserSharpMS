@@ -75,7 +75,7 @@ internal sealed class WorkshopProvisioningService : IDisposable
                 ProhibitAdminNomination: false,
                 DaysAllowed: [],
                 AllowedTimeRanges: []),
-            CooldownConfig: new CooldownConfig(configCooldown: 0, timedCooldown: TimeSpan.Zero),
+            CooldownSettings: CooldownSettings.None,
             ExtraConfiguration: ExtraConfigAccessor.Empty,
             SearchTags: [],
             IsProvisional: true);

@@ -67,7 +67,7 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 | `ExtendRoundsPerExtends` | `int` | 延長 1 回あたりに追加されるラウンド数 |
 | `RandomPickConfig` | `IRandomPickConfig` | ランダム選択時の重み付けや除外設定 |
 | `NominationConfig` | `INominationConfig` | ノミネーションの制限設定 |
-| `CooldownConfig` | `ICooldownConfig` | クールダウンの設定と現在の状態 |
+| `CooldownSettings` | `IMcsCooldownSettings` | クールダウンの設定値 (実行時状態は `IMcsCooldownStore` が保持) |
 | `ExtraConfiguration` | `IExtraConfigAccessor` | 外部プラグイン向けのカスタム設定セクション |
 
 ---
@@ -111,9 +111,12 @@ MCS のマップ設定は TOML ファイルから読み込まれ、Default → G
 
 ---
 
-## ICooldownConfig
+## IMcsCooldownSettings
 
-マップやグループのクールダウン設定と、現在の状態を保持します。
+> [!WARNING]
+> **破壊的変更 (クールダウン再設計):** `ICooldownConfig` と `IBaseMapConfig.CooldownConfig` は削除されました。設定値は `IMcsCooldownSettings` (`IBaseMapConfig.CooldownSettings`) に、実行時状態 (`CurrentCooldown`, `LastPlayedAt`, `UnplayedCount`, nomination クールダウン状態) は `IMcsCooldownStore` に移動しました — [map-cycle.md](map-cycle.md) を参照。互換シムはありません。
+
+マップ/グループの TOML で宣言されたクールダウンの **設定値** です。不変で、実行時状態は含みません。
 
 MCS のクールダウンには 2 つの軸があります:
 - **回数ベース**: マップがプレイされるたびに 1 ずつ減少するカウンタ
@@ -123,8 +126,6 @@ MCS のクールダウンには 2 つの軸があります:
 |---|---|---|
 | `ConfigCooldown` | `int` | TOML で設定された回数ベースのクールダウン値 |
 | `TimedCooldown` | `TimeSpan` | TOML で設定された時限クールダウンの長さ |
-| `CurrentCooldown` | `int` | 実行時のメモリ上にある現在の回数クールダウン。マップがプレイされると `ConfigCooldown` の値がセットされ、他のマップがプレイされるたびに減少する |
-| `LastPlayedAt` | `DateTime` | 最後にプレイされた UTC タイムスタンプ。時限クールダウンの終了判定に使用される |
 | `ConfigNominationCooldown` | `int` | TOML で設定されたノミネーション専用の回数クールダウン。投票候補として消費されたときに付与される。`0` = 無効 |
 | `NominationTimedCooldown` | `TimeSpan` | ノミネーション専用の時限クールダウンの長さ |
 

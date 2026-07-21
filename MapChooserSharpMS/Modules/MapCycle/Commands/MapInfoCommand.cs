@@ -117,30 +117,29 @@ internal sealed class MapInfoCommand(IServiceProvider provider) : McsCommandBase
             Print(client, "MapCycle.Command.Notification.MapInfo.TimedCooldown", timedStr);
         }
 
-        if (mapConfig.CooldownConfig is MapConfig.Models.CooldownConfig nomCc)
-        {
-            bool hasNomCount = nomCc.CurrentNominationCooldown > 0;
-            bool hasNomTimed = nomCc.NominationTimedCooldownEndUtc > DateTime.UtcNow;
+        var cooldownState = _controller.CooldownStore.GetEffectiveMapState(mapConfig.MapName);
 
-            if (hasNomCount && hasNomTimed)
-            {
-                string timedStr = nomCc.NominationTimedCooldownEndUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
-                Print(client, "MapCycle.Command.Notification.MapInfo.NomCooldownWithTimed",
-                    nomCc.CurrentNominationCooldown, timedStr);
-            }
-            else if (hasNomCount)
-            {
-                Print(client, "MapCycle.Command.Notification.MapInfo.NomCooldown", nomCc.CurrentNominationCooldown);
-            }
-            else if (hasNomTimed)
-            {
-                string timedStr = nomCc.NominationTimedCooldownEndUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
-                Print(client, "MapCycle.Command.Notification.MapInfo.NomTimedCooldown", timedStr);
-            }
+        bool hasNomCount = cooldownState.CurrentNominationCooldown > 0;
+        bool hasNomTimed = cooldownState.NominationTimedCooldownEndUtc > DateTime.UtcNow;
+
+        if (hasNomCount && hasNomTimed)
+        {
+            string nomTimedStr = cooldownState.NominationTimedCooldownEndUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
+            Print(client, "MapCycle.Command.Notification.MapInfo.NomCooldownWithTimed",
+                cooldownState.CurrentNominationCooldown, nomTimedStr);
+        }
+        else if (hasNomCount)
+        {
+            Print(client, "MapCycle.Command.Notification.MapInfo.NomCooldown", cooldownState.CurrentNominationCooldown);
+        }
+        else if (hasNomTimed)
+        {
+            string nomTimedStr = cooldownState.NominationTimedCooldownEndUtc.ToLocalTime().ToString("yyyy/MM/dd HH:mm");
+            Print(client, "MapCycle.Command.Notification.MapInfo.NomTimedCooldown", nomTimedStr);
         }
 
-        if (mapConfig.CooldownConfig.UnplayedCount > 0)
-            Print(client, "MapCycle.Command.Notification.MapInfo.UnplayedCount", mapConfig.CooldownConfig.UnplayedCount);
+        if (cooldownState.UnplayedCount > 0)
+            Print(client, "MapCycle.Command.Notification.MapInfo.UnplayedCount", cooldownState.UnplayedCount);
 
         var playerCdState = _nominationValidateService.GetPlayerCooldownState(client.SteamId);
 

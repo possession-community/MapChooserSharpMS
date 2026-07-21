@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.Audit.Services;
 using MapChooserSharpMS.Modules.EventManager;
 using MapChooserSharpMS.Modules.EventManager.Events.MapCycle;
-using MapChooserSharpMS.Modules.MapConfig.Models;
+using MapChooserSharpMS.Modules.MapCycle.Cooldown;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
 using MapChooserSharpMS.Shared.Events.MapCycle;
 using MapChooserSharpMS.Shared.MapConfig;
@@ -24,6 +24,7 @@ internal sealed class McsMapCooldownLifecycleService
     private readonly PluginModuleBase _moduleBase;
     private readonly IMcsMapConfigProvider _mapConfigProvider;
     private readonly IInternalEventManager _eventManager;
+    private readonly IMcsInternalCooldownStore _store;
     private ICooldownPersistence _persistence = NullCooldownPersistence.Instance;
     private volatile IAuditPersistence _auditPersistence = NullAuditPersistence.Instance;
     private volatile string _serverId = "";
@@ -34,13 +35,15 @@ internal sealed class McsMapCooldownLifecycleService
         TnmsPlugin plugin,
         PluginModuleBase moduleBase,
         IMcsMapConfigProvider mapConfigProvider,
-        IInternalEventManager eventManager)
+        IInternalEventManager eventManager,
+        IMcsInternalCooldownStore store)
     {
         _logger = logger;
         _plugin = plugin;
         _moduleBase = moduleBase;
         _mapConfigProvider = mapConfigProvider;
         _eventManager = eventManager;
+        _store = store;
     }
 
     internal void SetPersistence(ICooldownPersistence persistence)
@@ -58,56 +61,58 @@ internal sealed class McsMapCooldownLifecycleService
     internal void ApplyPlayedMapCooldown(IMapConfig playedMap)
     {
         var now = DateTime.UtcNow;
+        var settings = playedMap.CooldownSettings;
 
-        if (playedMap.CooldownConfig is CooldownConfig mapCc)
+        var eventParams = new MapCooldownApplyEventParams(
+            _plugin, _moduleBase, playedMap,
+            settings.ConfigCooldown,
+            settings.TimedCooldown);
+
+        _eventManager.Fire<IMapCycleEventListener>(e => e.OnMapCooldownApply(eventParams));
+
+        var entry = _store.GetOrCreateRawMapEntry(playedMap.MapName);
+
+        if (eventParams.IsCancelled)
         {
-            var eventParams = new MapCooldownApplyEventParams(
-                _plugin, _moduleBase, playedMap,
-                mapCc.ConfigCooldown,
-                mapCc.TimedCooldown);
+            _logger.LogInformation("[Cooldown] Cooldown apply cancelled by listener for: {Map}", playedMap.MapName);
+        }
+        else
+        {
+            entry.CurrentCooldown = eventParams.Cooldown;
 
-            _eventManager.Fire<IMapCycleEventListener>(e => e.OnMapCooldownApply(eventParams));
+            if (HasAnyCooldownConfigured(settings))
+                entry.CooldownAuditRecorded = false;
 
-            if (eventParams.IsCancelled)
-            {
-                _logger.LogInformation("[Cooldown] Cooldown apply cancelled by listener for: {Map}", playedMap.MapName);
-            }
-            else
-            {
-                mapCc.CurrentCooldown = eventParams.Cooldown;
-
-                if (mapCc.HasAnyCooldownConfigured)
-                    mapCc.CooldownAuditRecorded = false;
-
-                if (eventParams.TimedCooldownDuration > TimeSpan.Zero)
-                    mapCc.TimedCooldownEndUtc = now + eventParams.TimedCooldownDuration;
-            }
-
-            mapCc.LastPlayedAt = now;
-            mapCc.UnplayedCount = 0;
-
-            if (!IsProvisionalMap(playedMap))
-                _persistence.SaveMapCooldownFireAndForget(playedMap.MapName, BuildMapRecord(mapCc));
+            if (eventParams.TimedCooldownDuration > TimeSpan.Zero)
+                entry.TimedCooldownEndUtc = now + eventParams.TimedCooldownDuration;
         }
 
-        var savedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        entry.LastPlayedAt = now;
+        entry.UnplayedCount = 0;
+
+        if (!IsProvisionalMap(playedMap))
+            _persistence.SaveMapCooldownFireAndForget(playedMap.MapName, BuildRecord(entry));
+
+        var appliedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var group in playedMap.GroupSettings)
         {
-            if (group.CooldownConfig is not CooldownConfig groupCc)
+            if (!appliedGroups.Add(group.GroupName))
                 continue;
 
-            groupCc.CurrentCooldown = groupCc.ConfigCooldown;
-            groupCc.LastPlayedAt = now;
-            groupCc.UnplayedCount = 0;
+            var groupSettings = group.CooldownSettings;
+            var groupEntry = _store.GetOrCreateRawGroupEntry(group.GroupName);
 
-            if (groupCc.HasAnyCooldownConfigured)
-                groupCc.CooldownAuditRecorded = false;
+            groupEntry.CurrentCooldown = groupSettings.ConfigCooldown;
+            groupEntry.LastPlayedAt = now;
+            groupEntry.UnplayedCount = 0;
 
-            if (groupCc.TimedCooldown > TimeSpan.Zero)
-                groupCc.TimedCooldownEndUtc = now + groupCc.TimedCooldown;
+            if (HasAnyCooldownConfigured(groupSettings))
+                groupEntry.CooldownAuditRecorded = false;
 
-            if (savedGroups.Add(group.GroupName))
-                _persistence.SaveGroupCooldownFireAndForget(group.GroupName, BuildGroupRecord(groupCc));
+            if (groupSettings.TimedCooldown > TimeSpan.Zero)
+                groupEntry.TimedCooldownEndUtc = now + groupSettings.TimedCooldown;
+
+            _persistence.SaveGroupCooldownFireAndForget(group.GroupName, BuildRecord(groupEntry));
         }
 
         _logger.LogInformation("[Cooldown] Applied cooldown to played map: {Map}", playedMap.MapName);
@@ -115,97 +120,125 @@ internal sealed class McsMapCooldownLifecycleService
 
     internal void DecrementAllCooldowns()
     {
-        var decremented = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var mapRecords = new List<(string name, CooldownRecord record)>();
         var groupRecords = new List<(string name, CooldownRecord record)>();
-        var savedMaps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var savedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var processedMaps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var processedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var entry in _mapConfigProvider.GetMapConfigs())
+        foreach (var mapName in _mapConfigProvider.GetMapConfigs().Keys)
         {
-            foreach (var mapEntry in entry.Value)
+            if (!processedMaps.Add(mapName))
+                continue;
+
+            if (!_mapConfigProvider.TryGetMapConfig(mapName, out var mapConfig))
+                continue;
+
+            bool hasAnyConfigured = HasAnyCooldownConfigured(mapConfig.CooldownSettings);
+
+            if (!_store.TryGetRawMapEntry(mapName, out var entry))
             {
-                if (decremented.Add(DedupKey(mapEntry.MapConfig.CooldownConfig)))
+                if (!hasAnyConfigured)
+                    continue;
+                entry = _store.GetOrCreateRawMapEntry(mapName);
+            }
+
+            DecrementEntry(entry);
+            TrackCooldownExpiry(entry, hasAnyConfigured, mapConfig.MapName, CooldownTypeMap);
+
+            if (!IsProvisionalMap(mapConfig))
+                mapRecords.Add((mapConfig.MapName, BuildRecord(entry)));
+        }
+
+        foreach (var (groupName, variants) in _mapConfigProvider.GetGroupSettings())
+        {
+            if (!processedGroups.Add(groupName))
+                continue;
+
+            bool hasAnyConfigured = false;
+            foreach (var variant in variants)
+            {
+                if (HasAnyCooldownConfigured(variant.GroupConfig.CooldownSettings))
                 {
-                    DecrementCooldownConfig(mapEntry.MapConfig.CooldownConfig);
-
-                    if (mapEntry.MapConfig.CooldownConfig is CooldownConfig mapCc)
-                    {
-                        TrackCooldownExpiry(mapCc, mapEntry.MapConfig.MapName, CooldownTypeMap);
-
-                        if (!IsProvisionalMap(mapEntry.MapConfig) && savedMaps.Add(mapEntry.MapConfig.MapName))
-                            mapRecords.Add((mapEntry.MapConfig.MapName, BuildMapRecord(mapCc)));
-                    }
-                }
-
-                foreach (var group in mapEntry.MapConfig.GroupSettings)
-                {
-                    if (decremented.Add(DedupKey(group.CooldownConfig)))
-                    {
-                        DecrementCooldownConfig(group.CooldownConfig);
-
-                        if (group.CooldownConfig is CooldownConfig groupCc)
-                        {
-                            TrackCooldownExpiry(groupCc, group.GroupName, CooldownTypeGroup);
-
-                            if (savedGroups.Add(group.GroupName))
-                                groupRecords.Add((group.GroupName, BuildGroupRecord(groupCc)));
-                        }
-                    }
+                    hasAnyConfigured = true;
+                    break;
                 }
             }
+
+            if (!_store.TryGetRawGroupEntry(groupName, out var entry))
+            {
+                if (!hasAnyConfigured)
+                    continue;
+                entry = _store.GetOrCreateRawGroupEntry(groupName);
+            }
+
+            DecrementEntry(entry);
+            TrackCooldownExpiry(entry, hasAnyConfigured, groupName, CooldownTypeGroup);
+
+            groupRecords.Add((groupName, BuildRecord(entry)));
+        }
+
+        // Entries for maps/groups no longer present in config keep ticking so a
+        // config re-add doesn't resurrect a stale cooldown, but are not persisted.
+        foreach (var (name, entry) in _store.RawMapEntries)
+        {
+            if (!processedMaps.Contains(name))
+                DecrementEntry(entry);
+        }
+
+        foreach (var (name, entry) in _store.RawGroupEntries)
+        {
+            if (!processedGroups.Contains(name))
+                DecrementEntry(entry);
         }
 
         if (_persistenceEnabled && (mapRecords.Count > 0 || groupRecords.Count > 0))
             _persistence.SaveAllCooldownsFireAndForget(mapRecords, groupRecords);
     }
 
-    private static object DedupKey(ICooldownConfig config)
-        => config is CooldownConfig cc ? cc.RuntimeState : config;
-
-    private void TrackCooldownExpiry(CooldownConfig cc, string name, string cooldownType)
+    private void TrackCooldownExpiry(McsCooldownStateEntry entry, bool hasAnyConfigured, string name, string cooldownType)
     {
-        if (!cc.HasAnyCooldownConfigured || !cc.IsFullyAvailable || cc.LastPlayedAt == DateTime.MinValue)
+        if (!hasAnyConfigured || entry.IsCooldownActive || entry.LastPlayedAt == DateTime.MinValue)
             return;
 
-        cc.UnplayedCount++;
+        entry.UnplayedCount++;
 
-        if (cc.CooldownAuditRecorded)
+        if (entry.CooldownAuditRecorded)
             return;
 
-        cc.CooldownAuditRecorded = true;
+        entry.CooldownAuditRecorded = true;
         _auditPersistence.InsertCooldownExpiredFireAndForget(
             new AuditCooldownExpired(name, cooldownType, DateTime.UtcNow, _serverId));
     }
 
     internal void ApplyNominationCooldown(IMapConfig map)
     {
-        if (map.CooldownConfig is not CooldownConfig cc)
-            return;
+        var settings = map.CooldownSettings;
 
         _logger.LogDebug("[NomCD] Applying to {Map}: ConfigNomCD={ConfigNomCD}, NomTimedCD={NomTimedCD}",
-            map.MapName, cc.ConfigNominationCooldown, cc.NominationTimedCooldown);
+            map.MapName, settings.ConfigNominationCooldown, settings.NominationTimedCooldown);
 
-        if (cc.ConfigNominationCooldown > 0)
-            cc.CurrentNominationCooldown = cc.ConfigNominationCooldown;
+        var entry = _store.GetOrCreateRawMapEntry(map.MapName);
 
-        if (cc.NominationTimedCooldown > TimeSpan.Zero)
-            cc.NominationTimedCooldownEndUtc = DateTime.UtcNow + cc.NominationTimedCooldown;
+        if (settings.ConfigNominationCooldown > 0)
+            entry.CurrentNominationCooldown = settings.ConfigNominationCooldown;
+
+        if (settings.NominationTimedCooldown > TimeSpan.Zero)
+            entry.NominationTimedCooldownEndUtc = DateTime.UtcNow + settings.NominationTimedCooldown;
 
         if (!IsProvisionalMap(map))
-            _persistence.SaveMapCooldownFireAndForget(map.MapName, BuildMapRecord(cc));
+            _persistence.SaveMapCooldownFireAndForget(map.MapName, BuildRecord(entry));
     }
 
-    internal async Task<(IReadOnlyList<NamedCooldownRecord> Maps, IReadOnlyList<NamedCooldownRecord> Groups)?> FetchCooldownsFromDatabaseAsync()
+    internal async Task<(IReadOnlyList<ScopedCooldownRecord> Maps, IReadOnlyList<ScopedCooldownRecord> Groups)?> FetchCooldownsFromDatabaseAsync(CooldownScopeQuery scope)
     {
         try
         {
-            var mapRecords = await _persistence.LoadAllMapCooldownsAsync();
-            var groupRecords = await _persistence.LoadAllGroupCooldownsAsync();
+            var mapRecords = await _persistence.LoadMapCooldownsAsync(scope);
+            var groupRecords = await _persistence.LoadGroupCooldownsAsync(scope);
 
             _logger.LogInformation(
-                "[Cooldown] Fetched {MapCount} map and {GroupCount} group cooldowns from database",
-                mapRecords.Count, groupRecords.Count);
+                "[Cooldown] Fetched {MapCount} map and {GroupCount} group cooldowns from database (scope: {Mode} '{Pattern}')",
+                mapRecords.Count, groupRecords.Count, scope.Mode, scope.Pattern);
 
             return (mapRecords, groupRecords);
         }
@@ -216,99 +249,27 @@ internal sealed class McsMapCooldownLifecycleService
         }
     }
 
-    internal void ApplyLoadedCooldowns(IReadOnlyList<NamedCooldownRecord> mapRecords, IReadOnlyList<NamedCooldownRecord> groupRecords)
+    private static void DecrementEntry(McsCooldownStateEntry entry)
     {
-        ApplyLoadedMapCooldowns(mapRecords);
-        ApplyLoadedGroupCooldowns(groupRecords);
+        if (entry.CurrentCooldown > 0 && entry.CurrentCooldown < int.MaxValue)
+            entry.CurrentCooldown--;
+
+        if (entry.CurrentNominationCooldown > 0 && entry.CurrentNominationCooldown < int.MaxValue)
+            entry.CurrentNominationCooldown--;
     }
 
-    private void ApplyLoadedMapCooldowns(IReadOnlyList<NamedCooldownRecord> records)
-    {
-        foreach (var named in records)
-        {
-            if (!_mapConfigProvider.TryGetMapConfig(named.Name, out var mapConfig))
-                continue;
+    private static bool HasAnyCooldownConfigured(IMcsCooldownSettings settings)
+        => settings.ConfigCooldown > 0 || settings.TimedCooldown > TimeSpan.Zero;
 
-            if (mapConfig.CooldownConfig is not CooldownConfig cc)
-                continue;
-
-            cc.CurrentCooldown = named.Record.Cooldown;
-            cc.TimedCooldownEndUtc = named.Record.TimedCooldownEnd;
-            cc.LastPlayedAt = named.Record.LastPlayedAt;
-            cc.UnplayedCount = named.Record.UnplayedCount;
-            cc.CurrentNominationCooldown = named.Record.NomCooldown;
-            cc.NominationTimedCooldownEndUtc = named.Record.NomTimedCooldownEnd;
-
-            if (cc.IsFullyAvailable)
-                cc.CooldownAuditRecorded = true;
-        }
-    }
-
-    private void ApplyLoadedGroupCooldowns(IReadOnlyList<NamedCooldownRecord> records)
-    {
-        var groupSettings = _mapConfigProvider.GetGroupSettings();
-        var applied = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var named in records)
-        {
-            if (!groupSettings.TryGetValue(named.Name, out var variants))
-                continue;
-
-            if (!applied.Add(named.Name))
-                continue;
-
-            foreach (var variant in variants)
-            {
-                if (variant.GroupConfig.CooldownConfig is not CooldownConfig cc)
-                    continue;
-
-                cc.CurrentCooldown = named.Record.Cooldown;
-                cc.TimedCooldownEndUtc = named.Record.TimedCooldownEnd;
-                cc.LastPlayedAt = named.Record.LastPlayedAt;
-                cc.UnplayedCount = named.Record.UnplayedCount;
-                cc.CurrentNominationCooldown = named.Record.NomCooldown;
-                cc.NominationTimedCooldownEndUtc = named.Record.NomTimedCooldownEnd;
-
-                if (cc.IsFullyAvailable)
-                    cc.CooldownAuditRecorded = true;
-            }
-        }
-    }
-
-    private static void DecrementCooldownConfig(ICooldownConfig config)
-    {
-        if (config is not CooldownConfig cc)
-            return;
-
-        if (cc.CurrentCooldown > 0 && cc.CurrentCooldown < int.MaxValue)
-            cc.CurrentCooldown--;
-
-        if (cc.CurrentNominationCooldown > 0 && cc.CurrentNominationCooldown < int.MaxValue)
-            cc.CurrentNominationCooldown--;
-    }
-
-    private static CooldownRecord BuildMapRecord(CooldownConfig cc)
+    private static CooldownRecord BuildRecord(McsCooldownStateEntry entry)
     {
         return new CooldownRecord(
-            Cooldown: cc.CurrentCooldown,
-            TimedCooldownEnd: cc.TimedCooldownEndUtc,
-            LastPlayedAt: cc.LastPlayedAt,
-            UnplayedCount: cc.UnplayedCount,
-            NomCooldown: cc.CurrentNominationCooldown,
-            NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
-            LastNominatedAt: DateTime.MinValue);
-    }
-
-    private static CooldownRecord BuildGroupRecord(CooldownConfig cc)
-    {
-        return new CooldownRecord(
-            Cooldown: cc.CurrentCooldown,
-            TimedCooldownEnd: cc.TimedCooldownEndUtc,
-            LastPlayedAt: cc.LastPlayedAt,
-            UnplayedCount: cc.UnplayedCount,
-            NomCooldown: cc.CurrentNominationCooldown,
-            NomTimedCooldownEnd: cc.NominationTimedCooldownEndUtc,
-            LastNominatedAt: DateTime.MinValue);
+            Cooldown: entry.CurrentCooldown,
+            TimedCooldownEnd: entry.TimedCooldownEndUtc,
+            LastPlayedAt: entry.LastPlayedAt,
+            UnplayedCount: entry.UnplayedCount,
+            NomCooldown: entry.CurrentNominationCooldown,
+            NomTimedCooldownEnd: entry.NominationTimedCooldownEndUtc);
     }
 
     private static bool IsProvisionalMap(IMapConfig map)

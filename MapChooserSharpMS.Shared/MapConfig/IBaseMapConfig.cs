@@ -48,9 +48,10 @@ public interface IBaseMapConfig
     public INominationConfig NominationConfig { get; }
     
     /// <summary>
-    /// Cooldown things
+    /// Cooldown settings declared in config. Runtime cooldown state lives in
+    /// <see cref="MapChooserSharpMS.Shared.MapCycle.Cooldown.IMcsCooldownStore"/>.
     /// </summary>
-    public ICooldownConfig CooldownConfig { get; }
+    public IMcsCooldownSettings CooldownSettings { get; }
     
     /// <summary>
     /// Type-safe accessor for extra configuration defined by API developers. <br/>

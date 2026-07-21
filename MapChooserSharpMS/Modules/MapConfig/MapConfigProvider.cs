@@ -8,6 +8,7 @@ using MapChooserSharpMS.Modules.MapConfig.Services;
 using MapChooserSharpMS.Modules.PluginConfig.Interfaces;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapCycle.Cooldown;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TnmsPluginFoundation.Models.Plugin;
@@ -52,7 +53,7 @@ internal sealed class MapConfigProvider(IServiceProvider serviceProvider, bool h
             var cp = ServiceProvider.GetService<IMcsPluginConfigProvider>();
             try { return cp?.PluginConfig.GeneralConfig.ShouldUseAliasMapNameIfAvailable ?? true; }
             catch { return true; }
-        });
+        }, () => ServiceProvider.GetService<IMcsCooldownStore>());
 
         ReloadConfigs();
         SharedSystem.GetModSharp().InstallGameListener(this);

@@ -224,8 +224,8 @@ public class GroupConfigPropertyTests
         var easyGroup = result!.MapGroupSettings["Easy"]
             .First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
 
-        Assert.Equal(0, easyGroup.CooldownConfig.ConfigCooldown);
-        Assert.Equal(0, easyGroup.CooldownConfig.ConfigNominationCooldown);
+        Assert.Equal(0, easyGroup.CooldownSettings.ConfigCooldown);
+        Assert.Equal(0, easyGroup.CooldownSettings.ConfigNominationCooldown);
     }
 
     [Fact]
@@ -238,8 +238,8 @@ public class GroupConfigPropertyTests
         var hardGroup = result!.MapGroupSettings["Hard"]
             .First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
 
-        Assert.Equal(10, hardGroup.CooldownConfig.ConfigCooldown);
-        Assert.Equal(2, hardGroup.CooldownConfig.ConfigNominationCooldown);
+        Assert.Equal(10, hardGroup.CooldownSettings.ConfigCooldown);
+        Assert.Equal(2, hardGroup.CooldownSettings.ConfigNominationCooldown);
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public class GroupConfigPropertyTests
         Assert.NotNull(result);
 
         var easyMap = result!.MapConfigsNameMapping["ze_easy_map"].First().MapConfig;
-        Assert.Equal(40, easyMap.CooldownConfig.ConfigCooldown);
+        Assert.Equal(40, easyMap.CooldownSettings.ConfigCooldown);
     }
 
     [Fact]
@@ -263,7 +263,7 @@ public class GroupConfigPropertyTests
         var easyMap = result!.MapConfigsNameMapping["ze_easy_map"].First().MapConfig;
         var easyGroupOnMap = easyMap.GroupSettings.First(g => g.GroupName == "Easy");
 
-        Assert.Equal(0, easyGroupOnMap.CooldownConfig.ConfigCooldown);
+        Assert.Equal(0, easyGroupOnMap.CooldownSettings.ConfigCooldown);
     }
 
     // ========================================================================

@@ -122,52 +122,10 @@ internal sealed class MapConfigParsingService : IMapConfigParsingService
             groupOverridesResult[key] = value;
         }
 
-        // Phase 7: same-name DaySettings variants get their own CooldownConfig
-        // instance from BuildMapConfig/BuildGroupConfig; share one runtime state
-        // per map/group name so cooldown reads/writes don't fragment across variants.
-        UnifyCooldownRuntimeState(mapOverridesName.Values);
-        UnifyCooldownRuntimeState(groupOverridesResult.Values);
-
         return new MapConfigParsingResult(
             groupOverridesResult,
             mapOverridesName,
             mapOverridesWorkshopId);
-    }
-
-    private static void UnifyCooldownRuntimeState(
-        IEnumerable<IReadOnlyCollection<IMapConfigOverrides>> variantGroups)
-    {
-        foreach (var variants in variantGroups)
-        {
-            UnifyCooldownRuntimeState(variants.Select(v => v.MapConfig.CooldownConfig));
-        }
-    }
-
-    private static void UnifyCooldownRuntimeState(
-        IEnumerable<IReadOnlyCollection<IMapGroupConfigOverrides>> variantGroups)
-    {
-        foreach (var variants in variantGroups)
-        {
-            UnifyCooldownRuntimeState(variants.Select(v => v.GroupConfig.CooldownConfig));
-        }
-    }
-
-    private static void UnifyCooldownRuntimeState(IEnumerable<ICooldownConfig> cooldownConfigs)
-    {
-        CooldownConfig? canonical = null;
-        foreach (var cc in cooldownConfigs)
-        {
-            if (cc is not CooldownConfig concrete)
-                continue;
-
-            if (canonical is null)
-            {
-                canonical = concrete;
-                continue;
-            }
-
-            concrete.ShareRuntimeState(canonical.RuntimeState);
-        }
     }
 
     private Dictionary<string, MapGroupConfig> ParseGroups(

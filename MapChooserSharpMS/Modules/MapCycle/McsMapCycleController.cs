@@ -19,7 +19,9 @@ using MapChooserSharpMS.Shared.Events.MapVote.Params;
 using MapChooserSharpMS.Modules.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Modules.MapCycle.Cooldown;
 using MapChooserSharpMS.Shared.MapCycle;
+using MapChooserSharpMS.Shared.MapCycle.Cooldown;
 using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapCycle.Managers.TimeLimit;
 using MapChooserSharpMS.Shared.MapCycle.Services;
@@ -70,6 +72,8 @@ internal sealed class McsMapCycleController
     private IMcsBootPhaseTracker _bootPhaseTracker = null!;
     private WorkshopProvisioningService? _workshopProvisioningService;
     private SurrealCooldownRepository? _cooldownRepository;
+    private readonly McsCooldownStore _cooldownStore = new();
+    private string _serverKey = "";
     private readonly TaskCompletionSource _persistenceReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private MapCycleMode _mode = MapCycleMode.None;
@@ -88,6 +92,7 @@ internal sealed class McsMapCycleController
 
     public IMapCooldownQueryService MapCooldownQueryService => _cooldownQueryService;
     public IMapCooldownCommandService MapCooldownCommandService => _cooldownCommandService;
+    public IMcsCooldownStore CooldownStore => _cooldownStore;
 
     #region IMapCycleExtendController
 
@@ -143,6 +148,8 @@ internal sealed class McsMapCycleController
         services.AddSingleton<McsMapCooldownLifecycleService>(_ => _cooldownLifecycleService);
         services.AddSingleton<McsMapCooldownCommandService>(_ => _cooldownCommandService);
         services.AddSingleton<IMapCooldownQueryService>(_ => _cooldownQueryService);
+        services.AddSingleton<IMcsCooldownStore>(_cooldownStore);
+        services.AddSingleton<IMcsInternalCooldownStore>(_cooldownStore);
         services.AddSingleton<McsMapSelectMenuService>(_ => _mapSelectMenuService);
     }
 
@@ -188,10 +195,10 @@ internal sealed class McsMapCycleController
             () => configProvider.PluginConfig.MapCycleConfig.MapConfigExecutionType);
 
         var mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
-        _cooldownQueryService = new McsMapCooldownQueryService();
-        _cooldownCommandService = new McsMapCooldownCommandService(Logger, mapConfigProvider);
+        _cooldownQueryService = new McsMapCooldownQueryService(_cooldownStore);
+        _cooldownCommandService = new McsMapCooldownCommandService(Logger, mapConfigProvider, _cooldownStore);
         _cooldownLifecycleService = new McsMapCooldownLifecycleService(
-            Logger, Plugin, this, mapConfigProvider, _eventManager);
+            Logger, Plugin, this, mapConfigProvider, _eventManager, _cooldownStore);
 
         SharedSystem.GetModSharp().InstallGameListener(this);
         SharedSystem.GetClientManager().InstallClientListener(this);
@@ -221,30 +228,18 @@ internal sealed class McsMapCycleController
             wuling.Menu, wuling.Registry,
             ServiceProvider.GetRequiredService<IMapConfigToolingService>());
 
-        InitializeCooldownPersistence();
-
-        if (ServiceProvider.GetRequiredService<IMcsMapConfigProvider>() is MapConfigProvider provider)
-            provider.ConfigsReloaded += OnConfigsReloaded;
+        InitializeCooldownPersistence(wuling);
 
         _eventManager.RegisterListener<IMapVoteEventListener>(this);
 
         AddCommandsUnderNamespace("MapChooserSharpMS.Modules.MapCycle.Commands");
     }
 
-    private void InitializeCooldownPersistence()
+    private void InitializeCooldownPersistence(IWuling wuling)
     {
-        var wulingModule = SharedSystem.GetSharpModuleManager()
-            .GetOptionalSharpModuleInterface<IWuling>(IWuling.Identity);
-
-        if (wulingModule?.Instance is not { } wuling)
-        {
-            Logger.LogInformation("[MapCycle] Wuling not available — cooldown persistence disabled");
-            _persistenceReady.TrySetResult();
-            return;
-        }
-
         var surreal = wuling.Surreal;
-        _cooldownRepository = new SurrealCooldownRepository(surreal, Logger, Plugin.ModuleDirectory);
+        _serverKey = surreal.ServerId;
+        _cooldownRepository = new SurrealCooldownRepository(surreal, Logger, Plugin.ModuleDirectory, _serverKey);
         var persistence = _cooldownRepository;
 
         _ = Task.Run(async () =>
@@ -254,7 +249,7 @@ internal sealed class McsMapCycleController
                 await persistence.EnsureSchemasAsync();
                 _cooldownLifecycleService.SetPersistence(persistence);
                 _cooldownCommandService.SetPersistence(persistence);
-                Logger.LogInformation("[MapCycle] Cooldown persistence initialized via Wuling SurrealDB");
+                Logger.LogInformation("[MapCycle] Cooldown persistence initialized via Wuling SurrealDB (server_key={ServerKey})", _serverKey);
             }
             catch (Exception ex)
             {
@@ -267,26 +262,20 @@ internal sealed class McsMapCycleController
         });
     }
 
-    private void OnConfigsReloaded()
+    /// <summary>
+    /// Resolves the configured cooldown scope. An empty pattern means
+    /// "this server only" and is replaced with the Wuling server key.
+    /// </summary>
+    private CooldownScopeQuery ResolveCooldownScope()
     {
-        _ = Task.Run(async () =>
-        {
-            await _persistenceReady.Task;
-            var loaded = await _cooldownLifecycleService.FetchCooldownsFromDatabaseAsync();
-            if (loaded is var (maps, groups))
-            {
-                SharedSystem.GetModSharp().InvokeFrameAction(() =>
-                    _cooldownLifecycleService.ApplyLoadedCooldowns(maps, groups));
-            }
-        });
+        var config = _pluginConfigProvider.PluginConfig.CooldownScopeConfig;
+        string pattern = string.IsNullOrEmpty(config.ScopePattern) ? _serverKey : config.ScopePattern;
+        return new CooldownScopeQuery(config.ScopeMatchMode, pattern);
     }
 
     protected override void OnUnloadModule()
     {
         TearDownCurrentMap();
-
-        if (ServiceProvider.GetRequiredService<IMcsMapConfigProvider>() is MapConfigProvider provider)
-            provider.ConfigsReloaded -= OnConfigsReloaded;
 
         if (_mapTransitionManager is McsMapTransitionManager concreteManager)
             concreteManager.UninstallHook();
@@ -404,11 +393,12 @@ internal sealed class McsMapCycleController
         _ = Task.Run(async () =>
         {
             await _persistenceReady.Task;
-            var loaded = await _cooldownLifecycleService.FetchCooldownsFromDatabaseAsync();
+            var scope = ResolveCooldownScope();
+            var loaded = await _cooldownLifecycleService.FetchCooldownsFromDatabaseAsync(scope);
             SharedSystem.GetModSharp().InvokeFrameAction(() =>
             {
                 if (loaded is var (maps, groups))
-                    _cooldownLifecycleService.ApplyLoadedCooldowns(maps, groups);
+                    _cooldownStore.ApplyLoadedRecords(maps, groups, _serverKey);
                 _cooldownLifecycleService.DecrementAllCooldowns();
             });
         });

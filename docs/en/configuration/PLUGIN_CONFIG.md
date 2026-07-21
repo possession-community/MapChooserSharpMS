@@ -72,6 +72,33 @@ Both directories are scanned **recursively** — subdirectories are free for org
 
 **Nested exec:** The cfg files are executed via the engine's `exec` command, so `exec <path>` lines inside a cfg work as usual — the referenced path is resolved by the engine relative to `csgo/cfg/` (e.g. `exec mcsms/maps/shared_settings.cfg`).
 
+## Cooldown
+
+```toml
+[Cooldown]
+ScopeMatchMode = "Exact"
+ScopePattern = ""
+```
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| ScopeMatchMode | enum | Exact | How cooldown records from other servers are matched. `Exact` / `StartsWith` |
+| ScopePattern | string | "" | Server key pattern to match. Empty = this server's own Wuling `server_id` |
+
+Cooldown state is stored **per server** in SurrealDB, keyed by `(server_key, map name)`. The server key is always the Wuling `server_id` (from `wuling.core.surreal.toml`) — MCS has no separate override.
+
+On every map start, this server loads all cooldown records whose server key matches the scope:
+
+- `Exact` + empty pattern (default): this server's cooldowns only. Each server tracks cooldowns independently even when sharing a database.
+- `StartsWith` + a common prefix (e.g. `"TokyoAWP"`): cooldowns from `TokyoAWP1`, `TokyoAWP2`, `TokyoAWP_test` all apply here.
+
+When multiple servers match, the **most restrictive value wins** per map/group: highest cooldown count, latest timed-cooldown end, most recent LastPlayedAt, lowest UnplayedCount. The same rule applies to nomination cooldowns.
+
+Writes always target this server's own record — foreign cooldowns affect what this server picks and nominates, but are never written back. Note that if another in-scope server excludes a map from nomination (`!setmapcooldown <map> max`), the exclusion applies to every server in that scope until cleared on the server that set it.
+
+> [!IMPORTANT]
+> Cooldown persistence requires Wuling. As of this version MCS treats Wuling as a hard dependency — the plugin does not start without it. If the SurrealDB connection fails at startup, cooldowns fall back to in-memory only for that session.
+
 ## MapVote
 
 ```toml

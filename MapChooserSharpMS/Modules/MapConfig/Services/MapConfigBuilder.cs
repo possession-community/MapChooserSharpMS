@@ -89,11 +89,11 @@ internal static class MapConfigBuilder
                 AllowedTimeRanges: props.AllowedTimeRanges ?? [],
                 RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false,
                 MinNominationCountForVote: Math.Max(props.MinNominationCountForVote ?? 1, 1)),
-            CooldownConfig: new CooldownConfig(
-                configCooldown: props.Cooldown ?? 0,
-                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
-                configNominationCooldown: props.NominationCooldown ?? 0,
-                nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
+            CooldownSettings: new CooldownSettings(
+                ConfigCooldown: props.Cooldown ?? 0,
+                TimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
+                ConfigNominationCooldown: props.NominationCooldown ?? 0,
+                NominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
             ExtraConfiguration: extraConfig,
             SearchTags: BuildSearchTags(props, groupConfigs));
     }
@@ -134,11 +134,11 @@ internal static class MapConfigBuilder
                 AllowedTimeRanges: props.AllowedTimeRanges ?? [],
                 RestrictToAllowedUsersOnly: props.RestrictToAllowedUsersOnly ?? false,
                 MinNominationCountForVote: Math.Max(props.MinNominationCountForVote ?? 1, 1)),
-            CooldownConfig: new CooldownConfig(
-                configCooldown: props.Cooldown ?? 0,
-                timedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
-                configNominationCooldown: props.NominationCooldown ?? 0,
-                nominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
+            CooldownSettings: new CooldownSettings(
+                ConfigCooldown: props.Cooldown ?? 0,
+                TimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.CooldownDateTime),
+                ConfigNominationCooldown: props.NominationCooldown ?? 0,
+                NominationTimedCooldown: TomlPropertyMapper.ParseCooldownDateTime(props.NominationCooldownDateTime)),
             ExtraConfiguration: extraConfig,
             SearchTags: props.SearchTags ?? []);
     }

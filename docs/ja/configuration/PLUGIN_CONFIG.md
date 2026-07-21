@@ -72,6 +72,33 @@ csgo/cfg/mcsms/
 
 **ネストした exec:** cfg ファイルの実行にはエンジンの `exec` コマンドを使用しているため、cfg 内の `exec <パス>` 行は通常どおり動作します — 参照先パスはエンジンによって `csgo/cfg/` 基準で解決されます (例: `exec mcsms/maps/shared_settings.cfg`)。
 
+## Cooldown
+
+```toml
+[Cooldown]
+ScopeMatchMode = "Exact"
+ScopePattern = ""
+```
+
+| キー | 型 | デフォルト | 説明 |
+|---|---|---|---|
+| ScopeMatchMode | enum | Exact | 他サーバーのクールダウンレコードのマッチング方法。`Exact` / `StartsWith` |
+| ScopePattern | string | "" | マッチさせるサーバーキーのパターン。空 = 自サーバーの Wuling `server_id` |
+
+クールダウン状態は SurrealDB に **サーバーごと** に保存され、`(server_key, マップ名)` がキーになります。server_key は常に Wuling の `server_id` (`wuling.core.surreal.toml` で設定) で、MCS 側に上書き設定はありません。
+
+マップ開始時に、サーバーキーがスコープにマッチする全クールダウンレコードをロードします:
+
+- `Exact` + 空パターン (デフォルト): 自サーバーのクールダウンのみ。DB を共有していても各サーバーは独立してクールダウンを管理します。
+- `StartsWith` + 共通プレフィックス (例: `"TokyoAWP"`): `TokyoAWP1` / `TokyoAWP2` / `TokyoAWP_test` のクールダウンが全て適用されます。
+
+複数サーバーがマッチした場合、マップ/グループごとに **最も厳しい値が勝ちます**: クールダウンカウントは最大値、時限クールダウン終了は最遅、LastPlayedAt は最新、UnplayedCount は最小。nomination クールダウンも同様です。
+
+書き込みは常に自サーバーのレコードのみが対象です — 他サーバーのクールダウンは自サーバーの選出・ノミネーション判定には影響しますが、書き戻されることはありません。なお、スコープ内の別サーバーがマップをノミネーション除外 (`!setmapcooldown <map> max`) すると、除外は設定したサーバーで解除されるまでスコープ内の全サーバーに波及します。
+
+> [!IMPORTANT]
+> クールダウン永続化には Wuling が必要です。このバージョンから MCS は Wuling を必須依存として扱い、Wuling なしではプラグインが起動しません。起動時に SurrealDB への接続に失敗した場合は、そのセッション中は in-memory のみで動作します。
+
 ## MapVote
 
 ```toml

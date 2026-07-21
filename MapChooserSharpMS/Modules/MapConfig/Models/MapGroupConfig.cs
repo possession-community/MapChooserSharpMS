@@ -17,6 +17,6 @@ internal sealed record MapGroupConfig(
     int ExtendRoundsPerExtends,
     IRandomPickConfig RandomPickConfig,
     INominationConfig NominationConfig,
-    ICooldownConfig CooldownConfig,
+    IMcsCooldownSettings CooldownSettings,
     IExtraConfigAccessor ExtraConfiguration,
     IReadOnlyList<string> SearchTags) : IMapGroupConfig;

@@ -52,7 +52,7 @@ public class ResourceConfigTests
         Assert.Equal(5, a.ExtendRoundsPerExtends);
         Assert.Equal(0, a.NominationConfig.MinPlayers);
         Assert.Equal(0, a.NominationConfig.MaxPlayers);
-        Assert.Equal(0, a.CooldownConfig.ConfigCooldown);
+        Assert.Equal(0, a.CooldownSettings.ConfigCooldown);
         Assert.False(a.IsDisabled);
         Assert.True(a.RandomPickConfig.IsPickable);
         Assert.Equal("", a.MapNameAlias);
@@ -121,7 +121,7 @@ public class ResourceConfigTests
         Assert.Equal(10, config.NominationConfig.MinPlayers);
         // Default only
         Assert.Equal(100, config.NominationConfig.MaxPlayers);
-        Assert.Equal(10, config.CooldownConfig.ConfigCooldown);
+        Assert.Equal(10, config.CooldownSettings.ConfigCooldown);
     }
 
     // ================================================================
@@ -156,19 +156,19 @@ public class ResourceConfigTests
         var result = LoadAndParse("06_cooldown_override.toml");
 
         // map_a: Group_A CooldownOverride=60 overrides map's Cooldown=30
-        Assert.Equal(60, result.MapConfigsNameMapping["map_a"].First().MapConfig.CooldownConfig.ConfigCooldown);
+        Assert.Equal(60, result.MapConfigsNameMapping["map_a"].First().MapConfig.CooldownSettings.ConfigCooldown);
 
         // map_b: Group_None has no CooldownOverride, map's Cooldown=30 used
-        Assert.Equal(30, result.MapConfigsNameMapping["map_b"].First().MapConfig.CooldownConfig.ConfigCooldown);
+        Assert.Equal(30, result.MapConfigsNameMapping["map_b"].First().MapConfig.CooldownSettings.ConfigCooldown);
 
         // map_c: Group_Zero CooldownOverride=0 (not >0, so not applied), map's Cooldown=30
-        Assert.Equal(30, result.MapConfigsNameMapping["map_c"].First().MapConfig.CooldownConfig.ConfigCooldown);
+        Assert.Equal(30, result.MapConfigsNameMapping["map_c"].First().MapConfig.CooldownSettings.ConfigCooldown);
 
         // map_d: Group_A first (CooldownOverride=60), Group_B second (90) — first wins
-        Assert.Equal(60, result.MapConfigsNameMapping["map_d"].First().MapConfig.CooldownConfig.ConfigCooldown);
+        Assert.Equal(60, result.MapConfigsNameMapping["map_d"].First().MapConfig.CooldownSettings.ConfigCooldown);
 
         // map_e: Group_None skipped (no override), Group_B applies (CooldownOverride=90)
-        Assert.Equal(90, result.MapConfigsNameMapping["map_e"].First().MapConfig.CooldownConfig.ConfigCooldown);
+        Assert.Equal(90, result.MapConfigsNameMapping["map_e"].First().MapConfig.CooldownSettings.ConfigCooldown);
     }
 
     // ================================================================
@@ -294,7 +294,7 @@ public class ResourceConfigTests
         var baseOverride = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName);
         Assert.Equal(5, baseOverride.GroupConfig.MaxExtends);
         Assert.False(baseOverride.GroupConfig.RandomPickConfig.IsPickable); // OnlyNomination=true
-        Assert.Equal(30, baseOverride.GroupConfig.CooldownConfig.ConfigCooldown);
+        Assert.Equal(30, baseOverride.GroupConfig.CooldownSettings.ConfigCooldown);
 
         // WeekendOverride
         var weekend = overrides.First(o => o.OverrideConfigName == "WeekendOverride");
@@ -418,22 +418,22 @@ public class ResourceConfigTests
         var result = LoadAndParse("14_cooldown_datetime.toml");
 
         Assert.Equal(TimeSpan.FromDays(2),
-            result.MapConfigsNameMapping["ze_cd_2d"].First().MapConfig.CooldownConfig.TimedCooldown);
+            result.MapConfigsNameMapping["ze_cd_2d"].First().MapConfig.CooldownSettings.TimedCooldown);
 
         Assert.Equal(TimeSpan.FromDays(30),
-            result.MapConfigsNameMapping["ze_cd_1m"].First().MapConfig.CooldownConfig.TimedCooldown);
+            result.MapConfigsNameMapping["ze_cd_1m"].First().MapConfig.CooldownSettings.TimedCooldown);
 
         Assert.Equal(TimeSpan.FromDays(7),
-            result.MapConfigsNameMapping["ze_cd_7d"].First().MapConfig.CooldownConfig.TimedCooldown);
+            result.MapConfigsNameMapping["ze_cd_7d"].First().MapConfig.CooldownSettings.TimedCooldown);
 
         Assert.Equal(TimeSpan.Zero,
-            result.MapConfigsNameMapping["ze_cd_empty"].First().MapConfig.CooldownConfig.TimedCooldown);
+            result.MapConfigsNameMapping["ze_cd_empty"].First().MapConfig.CooldownSettings.TimedCooldown);
 
         Assert.Equal(TimeSpan.Zero,
-            result.MapConfigsNameMapping["ze_cd_none"].First().MapConfig.CooldownConfig.TimedCooldown);
+            result.MapConfigsNameMapping["ze_cd_none"].First().MapConfig.CooldownSettings.TimedCooldown);
 
         Assert.Equal(TimeSpan.Zero,
-            result.MapConfigsNameMapping["ze_cd_invalid"].First().MapConfig.CooldownConfig.TimedCooldown);
+            result.MapConfigsNameMapping["ze_cd_invalid"].First().MapConfig.CooldownSettings.TimedCooldown);
     }
 
     // ================================================================
@@ -458,7 +458,7 @@ public class ResourceConfigTests
         Assert.False(baseConfig.RandomPickConfig.IsPickable);     // CG1 OnlyNomination=true
 
         // CooldownOverride from CG1 (60) overrides default cooldown
-        Assert.Equal(60, baseConfig.CooldownConfig.ConfigCooldown);
+        Assert.Equal(60, baseConfig.CooldownSettings.ConfigCooldown);
 
         // Extra merge: Default→CG1→CG2→Map
         // Note: Each group accessor already includes default extra merged in.
@@ -482,7 +482,7 @@ public class ResourceConfigTests
         // Override properties
         Assert.Equal(25, weekend.MapConfig.NominationConfig.MinPlayers); // Override
         Assert.Equal(7, weekend.MapConfig.MaxExtends);                   // Inherited from map
-        Assert.Equal(60, weekend.MapConfig.CooldownConfig.ConfigCooldown); // CooldownOverride still applies
+        Assert.Equal(60, weekend.MapConfig.CooldownSettings.ConfigCooldown); // CooldownOverride still applies
 
         // Override extra: base map extra + override shop.cost=30
         Assert.Equal(30L, weekend.MapConfig.ExtraConfiguration.GetValue<long>("shop", "cost", 0));
@@ -661,9 +661,9 @@ public class ResourceConfigTests
 
         // --- CooldownOverride ---
         // HardZE CooldownOverride=48 overrides map's Cooldown=96
-        Assert.Equal(48, map.CooldownConfig.ConfigCooldown);
+        Assert.Equal(48, map.CooldownSettings.ConfigCooldown);
         // Map CooldownDateTime="7d" overrides LongMaps' "3d"
-        Assert.Equal(TimeSpan.FromDays(7), map.CooldownConfig.TimedCooldown);
+        Assert.Equal(TimeSpan.FromDays(7), map.CooldownSettings.TimedCooldown);
 
         // --- Nomination: merge from Premium(2nd) and HardZE(1st) ---
         // HardZE OnlyNomination=true (map doesn't override) → IsPickable=false
@@ -741,7 +741,7 @@ public class ResourceConfigTests
         Assert.Equal(40, map.NominationConfig.MinPlayers);  // EventMode override
         Assert.True(map.RandomPickConfig.IsPickable);  // EventMode OnlyNomination=false
         Assert.Equal(45, map.MapTime);  // Inherited from HardZE via base chain
-        Assert.Equal(48, map.CooldownConfig.ConfigCooldown);  // CooldownOverride still applies
+        Assert.Equal(48, map.CooldownSettings.ConfigCooldown);  // CooldownOverride still applies
 
         // --- EventMode Extra: base map extra + override ---
         var extra = map.ExtraConfiguration;
@@ -784,7 +784,7 @@ public class ResourceConfigTests
         Assert.Equal(32, map.NominationConfig.MaxPlayers);  // WeekendRelax override (over Premium's 48)
         Assert.Equal(30, map.MapTime);  // WeekendRelax override (over HardZE's 45)
         Assert.Equal(3, map.MaxExtends);  // Inherited from map base
-        Assert.Equal(48, map.CooldownConfig.ConfigCooldown);  // CooldownOverride still applies
+        Assert.Equal(48, map.CooldownSettings.ConfigCooldown);  // CooldownOverride still applies
 
         // --- Extra: base map extra + WeekendRelax shop override ---
         Assert.Equal(300L, map.ExtraConfiguration.GetValue<long>("shop", "cost", 0));
@@ -804,7 +804,7 @@ public class ResourceConfigTests
         var baseGroup = overrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
         Assert.Equal(2, baseGroup.MaxExtends);
         Assert.Equal(45, baseGroup.MapTime);
-        Assert.Equal(72, baseGroup.CooldownConfig.ConfigCooldown);
+        Assert.Equal(72, baseGroup.CooldownSettings.ConfigCooldown);
         Assert.Equal(48, baseGroup.MapCooldownOverride);
         Assert.False(baseGroup.RandomPickConfig.IsPickable);  // OnlyNomination=true
         Assert.Equal(20, baseGroup.NominationConfig.MinPlayers);
@@ -894,8 +894,8 @@ public class ResourceConfigTests
         Assert.Equal(20, baseGroup.ExtendTimePerExtends);
         Assert.Equal(4, baseGroup.MaxExtends);
         Assert.Equal(2, baseGroup.MaxExtCommandUses);
-        Assert.Equal(48, baseGroup.CooldownConfig.ConfigCooldown);
-        Assert.Equal(TimeSpan.FromDays(3), baseGroup.CooldownConfig.TimedCooldown);  // "3d" = 3 days
+        Assert.Equal(48, baseGroup.CooldownSettings.ConfigCooldown);
+        Assert.Equal(TimeSpan.FromDays(3), baseGroup.CooldownSettings.TimedCooldown);  // "3d" = 3 days
         Assert.Single(baseGroup.NominationConfig.AllowedTimeRanges);
         // Base extra
         Assert.Equal(1.0, baseGroup.ExtraConfiguration.GetValue<double>("gameplay", "speed", 0.0));

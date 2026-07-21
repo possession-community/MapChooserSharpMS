@@ -129,6 +129,25 @@ internal sealed class PluginConfigProvider(IServiceProvider serviceProvider, boo
         PauseMapCycleWhenServerEmpty = false
 
 
+        [Cooldown]
+        # Which servers' cooldown records apply to this server.
+        # Cooldowns are stored per server (keyed by the Wuling server_id), and on
+        # every map start this server loads all records whose server key matches
+        # the scope below. When multiple servers match, the most restrictive value
+        # wins per map (highest count, latest timed end).
+        #
+        # Match modes:
+        # - Exact      | Only records whose server key equals ScopePattern
+        # - StartsWith | Records whose server key starts with ScopePattern
+        ScopeMatchMode = "Exact"
+
+        # Server key pattern to match. Leave empty to use this server's own
+        # Wuling server_id (with Exact this means "this server only").
+        # Example: ScopePattern = "TokyoAWP" with StartsWith shares cooldowns
+        # across TokyoAWP1 / TokyoAWP2 / TokyoAWP_test.
+        ScopePattern = ""
+
+
         [MapVote]
         # How many maps should be appeared in map vote?
         MaxVoteElements = 5

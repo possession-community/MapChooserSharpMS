@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapCycle.Cooldown;
 
 namespace MapChooserSharpMS.Modules.MapConfig.Services;
 
 internal sealed class MapConfigToolingService : IMapConfigToolingService
 {
     private readonly Func<bool> _shouldUseAlias;
+    private readonly Func<IMcsCooldownStore?> _cooldownStore;
 
-    public MapConfigToolingService(Func<bool> shouldUseAlias)
+    public MapConfigToolingService(Func<bool> shouldUseAlias, Func<IMcsCooldownStore?> cooldownStore)
     {
         _shouldUseAlias = shouldUseAlias;
+        _cooldownStore = cooldownStore;
     }
 
     public string ResolveMapDisplayName(IMapConfig mapConfig)
@@ -37,11 +40,15 @@ internal sealed class MapConfigToolingService : IMapConfigToolingService
 
     public int GetHighestCooldown(IMapConfig mapConfig)
     {
-        int highest = mapConfig.CooldownConfig.CurrentCooldown;
+        var store = _cooldownStore();
+        if (store is null)
+            return 0;
+
+        int highest = store.GetEffectiveMapState(mapConfig.MapName).CurrentCooldown;
 
         foreach (IMapGroupConfig group in mapConfig.GroupSettings)
         {
-            int groupCd = group.CooldownConfig.CurrentCooldown;
+            int groupCd = store.GetEffectiveGroupState(group.GroupName).CurrentCooldown;
             if (groupCd > highest)
                 highest = groupCd;
         }

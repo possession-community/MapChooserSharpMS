@@ -67,7 +67,7 @@ Properties inherited from `IBaseMapConfig`:
 | `ExtendRoundsPerExtends` | `int` | Rounds added per extend |
 | `RandomPickConfig` | `IRandomPickConfig` | Random selection weighting and exclusion settings |
 | `NominationConfig` | `INominationConfig` | Nomination restriction settings |
-| `CooldownConfig` | `ICooldownConfig` | Cooldown configuration and current state |
+| `CooldownSettings` | `IMcsCooldownSettings` | Cooldown configuration values (runtime state lives in `IMcsCooldownStore`) |
 | `ExtraConfiguration` | `IExtraConfigAccessor` | Custom configuration sections for external plugins |
 
 ---
@@ -111,9 +111,12 @@ Represents a time-of-day range. Supports overnight ranges (e.g. `22:00-03:00`).
 
 ---
 
-## ICooldownConfig
+## IMcsCooldownSettings
 
-Cooldown configuration and current state for maps and groups.
+> [!WARNING]
+> **BREAKING (cooldown redesign):** `ICooldownConfig` and `IBaseMapConfig.CooldownConfig` were removed. Configuration values now live in `IMcsCooldownSettings` (`IBaseMapConfig.CooldownSettings`), and runtime state (`CurrentCooldown`, `LastPlayedAt`, `UnplayedCount`, nomination cooldown state) moved to `IMcsCooldownStore` — see [map-cycle.md](map-cycle.md). There is no compatibility shim.
+
+Cooldown **configuration values** declared in map/group TOML. Immutable; contains no runtime state.
 
 MCS cooldowns have two independent axes:
 
@@ -124,8 +127,6 @@ MCS cooldowns have two independent axes:
 |---|---|---|
 | `ConfigCooldown` | `int` | Count-based cooldown value specified in TOML |
 | `TimedCooldown` | `TimeSpan` | Timed cooldown duration specified in TOML |
-| `CurrentCooldown` | `int` | Current count-based cooldown in memory. Set to `ConfigCooldown` when the map is played; decremented as other maps are played |
-| `LastPlayedAt` | `DateTime` | UTC timestamp of last play. Used for timed cooldown expiration checks |
 | `ConfigNominationCooldown` | `int` | Nomination-specific count-based cooldown specified in TOML. Applied when a map is consumed as a vote candidate. `0` = disabled (opt-in) |
 | `NominationTimedCooldown` | `TimeSpan` | Nomination-specific timed cooldown duration |
 

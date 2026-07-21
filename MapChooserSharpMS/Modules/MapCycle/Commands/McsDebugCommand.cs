@@ -95,31 +95,27 @@ internal sealed class McsDebugCommand(IServiceProvider provider) : McsCommandBas
         sb.AppendLine($"  DaysAllowed: [{string.Join(", ", nom.DaysAllowed)}]");
         sb.AppendLine($"  AllowedTimeRanges: [{string.Join(", ", nom.AllowedTimeRanges)}]");
 
-        sb.AppendLine($"--- CooldownConfig ---");
-        var cd = mapConfig.CooldownConfig;
+        sb.AppendLine($"--- CooldownSettings ---");
+        var cd = mapConfig.CooldownSettings;
         sb.AppendLine($"  ConfigCooldown: {cd.ConfigCooldown}");
-        sb.AppendLine($"  CurrentCooldown: {cd.CurrentCooldown}");
         sb.AppendLine($"  TimedCooldown: {cd.TimedCooldown}");
-        if (cd is CooldownConfig cc)
-        {
-            sb.AppendLine($"  TimedCooldownEndUtc: {cc.TimedCooldownEndUtc:O}");
-            sb.AppendLine($"  ConfigNominationCooldown: {cc.ConfigNominationCooldown}");
-            sb.AppendLine($"  CurrentNominationCooldown: {cc.CurrentNominationCooldown}");
-            sb.AppendLine($"  NominationTimedCooldown: {cc.NominationTimedCooldown}");
-            sb.AppendLine($"  NominationTimedCooldownEndUtc: {cc.NominationTimedCooldownEndUtc:O}");
-        }
+        sb.AppendLine($"  ConfigNominationCooldown: {cd.ConfigNominationCooldown}");
+        sb.AppendLine($"  NominationTimedCooldown: {cd.NominationTimedCooldown}");
+
+        var store = _controller.CooldownStore;
+        AppendCooldownState(sb, "CooldownState (own)", store.GetOwnMapState(mapConfig.MapName));
+        AppendCooldownState(sb, "CooldownState (effective)", store.GetEffectiveMapState(mapConfig.MapName));
 
         sb.AppendLine($"--- Groups ({mapConfig.GroupSettings.Count}) ---");
         foreach (var group in mapConfig.GroupSettings)
         {
             sb.AppendLine($"  [{group.GroupName}] ShortName={group.ShortGroupName} NomLimit={group.NominationLimit}");
-            var gcd = group.CooldownConfig;
-            sb.AppendLine($"    CD: Config={gcd.ConfigCooldown} Current={gcd.CurrentCooldown} Timed={gcd.TimedCooldown}");
-            if (gcd is CooldownConfig gcc)
-            {
-                sb.AppendLine($"    TimedEnd={gcc.TimedCooldownEndUtc:O}");
-                sb.AppendLine($"    NomCD: Config={gcc.ConfigNominationCooldown} Current={gcc.CurrentNominationCooldown} TimedEnd={gcc.NominationTimedCooldownEndUtc:O}");
-            }
+            var gcd = group.CooldownSettings;
+            sb.AppendLine($"    CD Settings: Config={gcd.ConfigCooldown} Timed={gcd.TimedCooldown} NomConfig={gcd.ConfigNominationCooldown} NomTimed={gcd.NominationTimedCooldown}");
+            var own = store.GetOwnGroupState(group.GroupName);
+            var effective = store.GetEffectiveGroupState(group.GroupName);
+            sb.AppendLine($"    CD State (own): Current={own.CurrentCooldown} TimedEnd={own.TimedCooldownEndUtc:O} NomCurrent={own.CurrentNominationCooldown}");
+            sb.AppendLine($"    CD State (effective): Current={effective.CurrentCooldown} TimedEnd={effective.TimedCooldownEndUtc:O} NomCurrent={effective.CurrentNominationCooldown}");
         }
 
         foreach (string line in sb.ToString().Split('\n'))
@@ -127,6 +123,17 @@ internal sealed class McsDebugCommand(IServiceProvider provider) : McsCommandBas
             if (!string.IsNullOrWhiteSpace(line))
                 PrintConsole(client, line.TrimEnd());
         }
+    }
+
+    private static void AppendCooldownState(StringBuilder sb, string title, Shared.MapCycle.Cooldown.IMcsCooldownState state)
+    {
+        sb.AppendLine($"--- {title} ---");
+        sb.AppendLine($"  CurrentCooldown: {state.CurrentCooldown}");
+        sb.AppendLine($"  TimedCooldownEndUtc: {state.TimedCooldownEndUtc:O}");
+        sb.AppendLine($"  LastPlayedAt: {state.LastPlayedAt:O}");
+        sb.AppendLine($"  UnplayedCount: {state.UnplayedCount}");
+        sb.AppendLine($"  CurrentNominationCooldown: {state.CurrentNominationCooldown}");
+        sb.AppendLine($"  NominationTimedCooldownEndUtc: {state.NominationTimedCooldownEndUtc:O}");
     }
 
     private void DumpState(IGameClient? client)

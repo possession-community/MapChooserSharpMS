@@ -18,7 +18,7 @@ internal static class CooldownTestHelper
         TimeSpan? nomTimedCooldown = null,
         List<IMapGroupConfig>? groups = null)
     {
-        var cc = new CooldownConfig(
+        var settings = new CooldownSettings(
             configCooldown,
             timedCooldown ?? TimeSpan.Zero,
             configNomCooldown,
@@ -39,13 +39,10 @@ internal static class CooldownTestHelper
             ExtendRoundsPerExtends: 5,
             RandomPickConfig: new RandomPickConfig(1, true, false),
             NominationConfig: new NominationConfig(0, 0, false, Array.Empty<DayOfWeek>(), Array.Empty<ITimeRange>()),
-            CooldownConfig: cc,
+            CooldownSettings: settings,
             ExtraConfiguration: ExtraConfigAccessor.Empty,
             SearchTags: []);
     }
-
-    internal static CooldownConfig GetCooldownConfig(IMapConfig map)
-        => (CooldownConfig)map.CooldownConfig;
 
     internal static MapConfigModel CreateProvisionalWorkshopMap(string mapName, long workshopId)
         => CreateMapConfig(mapName, workshopId: workshopId, groups: new List<IMapGroupConfig>());

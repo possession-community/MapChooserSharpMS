@@ -7,4 +7,6 @@ internal interface IMcsPluginConfig
     internal IMcsMapCycleConfig MapCycleConfig { get; }
 
     internal IMcsGeneralConfig GeneralConfig { get; }
+
+    internal IMcsCooldownScopeConfig CooldownScopeConfig { get; }
 }

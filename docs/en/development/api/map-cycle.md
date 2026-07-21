@@ -15,6 +15,7 @@ Public facade for the map cycle module. Provides access points to subsystems and
 | `MapTransitionManager` | `IMapTransitionManager` | Manager for map transitions |
 | `MapCooldownQueryService` | `IMapCooldownQueryService` | Service for querying cooldown state |
 | `MapCooldownCommandService` | `IMapCooldownCommandService` | Service for modifying cooldowns |
+| `CooldownStore` | `IMcsCooldownStore` | Runtime cooldown state store (map/group name keyed) |
 | `InstallEventListener(IMapCycleEventListener)` | `void` | Register a map cycle event listener |
 | `RemoveEventListener(IMapCycleEventListener)` | `void` | Unregister a listener |
 
@@ -197,9 +198,44 @@ Extends `ITimeLimitManager` with round-based limit operations.
 
 ---
 
+## IMcsCooldownStore
+
+Runtime cooldown state store, keyed by map/group **name**. State lives independently of map config objects: it is shared across DaySettings variants of the same map and survives config reloads.
+
+Two layers are exposed:
+
+- **Effective** — this server's own state combined with cooldown records loaded from other servers matched by the configured cooldown scope (see `[Cooldown]` in the plugin config). Per field, the most restrictive value wins. This is what pickup/nomination checks and `!mapinfo` use.
+- **Own** — this server's raw state only; the values persisted under this server's key. Useful for debugging (`!mcsdebug config`).
+
+With the default scope (`Exact` + empty pattern) both layers are identical.
+
+All members must be called from the game thread. Returned states are read-only snapshots — use `IMapCooldownCommandService` to modify cooldowns.
+
+| Method | Return Type | Description |
+|---|---|---|
+| `GetEffectiveMapState(string)` | `IMcsCooldownState` | Scope-aggregated effective state for a map. Zero-value state if unknown |
+| `GetEffectiveGroupState(string)` | `IMcsCooldownState` | Scope-aggregated effective state for a group |
+| `GetOwnMapState(string)` | `IMcsCooldownState` | This server's own raw state for a map |
+| `GetOwnGroupState(string)` | `IMcsCooldownState` | This server's own raw state for a group |
+
+### IMcsCooldownState
+
+| Property | Type | Description |
+|---|---|---|
+| `CurrentCooldown` | `int` | Current count-based cooldown. `int.MaxValue` = excluded from nomination |
+| `TimedCooldownEndUtc` | `DateTime` | UTC end of the timed cooldown. `DateTime.MinValue` when none |
+| `LastPlayedAt` | `DateTime` | UTC timestamp of last play. `DateTime.MinValue` if never |
+| `UnplayedCount` | `int` | Maps played since this map's cooldown fully expired. Reset to 0 on play |
+| `CurrentNominationCooldown` | `int` | Current nomination cooldown count |
+| `NominationTimedCooldownEndUtc` | `DateTime` | UTC end of the timed nomination cooldown |
+| `IsCooldownActive` | `bool` | True while either cooldown axis (count or timed) is active |
+| `IsNominationCooldownActive` | `bool` | True while either nomination cooldown axis is active |
+
+---
+
 ## IMapCooldownQueryService
 
-Service for **querying** map cooldown state. To modify cooldowns, use `IMapCooldownCommandService`.
+Service for **querying** map cooldown state. To modify cooldowns, use `IMapCooldownCommandService`. Values come from the store's effective layer.
 
 | Method | Return Type | Description |
 |---|---|---|

@@ -1,19 +1,20 @@
 DEFINE FUNCTION OVERWRITE fn::mcs::upsert_map_cooldown(
+    $server_key: string,
     $map_name: string,
     $cooldown: int,
     $timed_cooldown_end: datetime,
     $last_played_at: datetime,
     $unplayed_count: int,
     $nom_cooldown: int,
-    $nom_timed_cooldown_end: datetime,
-    $last_nominated_at: datetime
+    $nom_timed_cooldown_end: datetime
 ) {
-    UPSERT type::record('mcs_map_cooldown', $map_name) SET
+    UPSERT type::thing('mcs_map_cooldown', [$server_key, $map_name]) SET
+        server_key = $server_key,
+        name = $map_name,
         cooldown = $cooldown,
         timed_cooldown_end = $timed_cooldown_end,
         last_played_at = $last_played_at,
         unplayed_count = $unplayed_count,
         nom_cooldown = $nom_cooldown,
-        nom_timed_cooldown_end = $nom_timed_cooldown_end,
-        last_nominated_at = $last_nominated_at;
+        nom_timed_cooldown_end = $nom_timed_cooldown_end;
 };

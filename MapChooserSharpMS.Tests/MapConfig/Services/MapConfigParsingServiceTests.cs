@@ -81,7 +81,7 @@ public class MapConfigParsingServiceTests
         var baseConfig = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
 
         // CooldownOverride from group overrides map's own cooldown
-        Assert.Equal(60, baseConfig.CooldownConfig.ConfigCooldown);
+        Assert.Equal(60, baseConfig.CooldownSettings.ConfigCooldown);
     }
 
     [Fact]
@@ -212,8 +212,8 @@ public class MapConfigParsingServiceTests
         Assert.NotNull(result);
         var config = result!.MapConfigsNameMapping["ze_test"].First().MapConfig;
 
-        Assert.Equal(60, config.CooldownConfig.ConfigCooldown);
-        Assert.Equal(TimeSpan.FromDays(2), config.CooldownConfig.TimedCooldown);
+        Assert.Equal(60, config.CooldownSettings.ConfigCooldown);
+        Assert.Equal(TimeSpan.FromDays(2), config.CooldownSettings.TimedCooldown);
     }
 
     [Fact]

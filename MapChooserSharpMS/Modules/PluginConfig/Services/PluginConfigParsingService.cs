@@ -26,8 +26,9 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         var generalConfig = ParseGeneralConfig(root);
         var mapCycleConfig = ParseMapCycleConfig(root);
         var voteConfig = ParseVoteConfig(root);
+        var cooldownScopeConfig = ParseCooldownScopeConfig(root);
 
-        return new Models.PluginConfig(voteConfig, mapCycleConfig, generalConfig);
+        return new Models.PluginConfig(voteConfig, mapCycleConfig, generalConfig, cooldownScopeConfig);
     }
 
     private GeneralConfig ParseGeneralConfig(TomlDocumentNode root)
@@ -81,6 +82,16 @@ internal sealed class PluginConfigParsingService : IPluginConfigParsingService
         return new VoteConfig(
             maxVoteElements, shouldPrintVote, shouldPrintRemaining,
             voteSoundConfig, countdownUiType);
+    }
+
+    private CooldownScopeConfig ParseCooldownScopeConfig(TomlDocumentNode root)
+    {
+        var cooldownNode = TryGetSection(root, "Cooldown"u8);
+
+        var scopeMatchMode = GetEnum(cooldownNode, "ScopeMatchMode"u8, McsCooldownScopeMatchMode.Exact);
+        string scopePattern = GetString(cooldownNode, "ScopePattern"u8, "");
+
+        return new CooldownScopeConfig(scopeMatchMode, scopePattern);
     }
 
     private VoteSoundConfig ParseVoteSoundConfig(TomlDocumentNode voteNode)

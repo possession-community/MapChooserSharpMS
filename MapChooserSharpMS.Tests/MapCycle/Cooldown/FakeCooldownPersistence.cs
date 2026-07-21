@@ -14,8 +14,11 @@ internal sealed class FakeCooldownPersistence : ICooldownPersistence
     internal List<(string Name, CooldownRecord Record)> FireAndForgetGroups { get; } = new();
     internal List<(IReadOnlyList<(string, CooldownRecord)> Maps, IReadOnlyList<(string, CooldownRecord)> Groups)> BulkSaves { get; } = new();
 
-    internal IReadOnlyList<NamedCooldownRecord> MapCooldownsToLoad { get; set; } = Array.Empty<NamedCooldownRecord>();
-    internal IReadOnlyList<NamedCooldownRecord> GroupCooldownsToLoad { get; set; } = Array.Empty<NamedCooldownRecord>();
+    internal IReadOnlyList<ScopedCooldownRecord> MapCooldownsToLoad { get; set; } = Array.Empty<ScopedCooldownRecord>();
+    internal IReadOnlyList<ScopedCooldownRecord> GroupCooldownsToLoad { get; set; } = Array.Empty<ScopedCooldownRecord>();
+
+    internal List<CooldownScopeQuery> MapLoadScopes { get; } = new();
+    internal List<CooldownScopeQuery> GroupLoadScopes { get; } = new();
 
     internal bool SchemaEnsured { get; private set; }
 
@@ -25,11 +28,17 @@ internal sealed class FakeCooldownPersistence : ICooldownPersistence
         return Task.CompletedTask;
     }
 
-    public Task<IReadOnlyList<NamedCooldownRecord>> LoadAllMapCooldownsAsync(CancellationToken ct = default)
-        => Task.FromResult(MapCooldownsToLoad);
+    public Task<IReadOnlyList<ScopedCooldownRecord>> LoadMapCooldownsAsync(CooldownScopeQuery scope, CancellationToken ct = default)
+    {
+        MapLoadScopes.Add(scope);
+        return Task.FromResult(MapCooldownsToLoad);
+    }
 
-    public Task<IReadOnlyList<NamedCooldownRecord>> LoadAllGroupCooldownsAsync(CancellationToken ct = default)
-        => Task.FromResult(GroupCooldownsToLoad);
+    public Task<IReadOnlyList<ScopedCooldownRecord>> LoadGroupCooldownsAsync(CooldownScopeQuery scope, CancellationToken ct = default)
+    {
+        GroupLoadScopes.Add(scope);
+        return Task.FromResult(GroupCooldownsToLoad);
+    }
 
     public Task SaveMapCooldownAsync(string mapName, CooldownRecord record, CancellationToken ct = default)
     {

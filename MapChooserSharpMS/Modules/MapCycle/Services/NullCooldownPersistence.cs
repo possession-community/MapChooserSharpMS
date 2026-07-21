@@ -10,14 +10,14 @@ internal sealed class NullCooldownPersistence : ICooldownPersistence
 {
     internal static readonly NullCooldownPersistence Instance = new();
 
-    private static readonly IReadOnlyList<NamedCooldownRecord> EmptyRecords = Array.Empty<NamedCooldownRecord>();
+    private static readonly IReadOnlyList<ScopedCooldownRecord> EmptyRecords = Array.Empty<ScopedCooldownRecord>();
 
     public Task EnsureSchemasAsync(CancellationToken ct = default) => Task.CompletedTask;
 
-    public Task<IReadOnlyList<NamedCooldownRecord>> LoadAllMapCooldownsAsync(CancellationToken ct = default)
+    public Task<IReadOnlyList<ScopedCooldownRecord>> LoadMapCooldownsAsync(CooldownScopeQuery scope, CancellationToken ct = default)
         => Task.FromResult(EmptyRecords);
 
-    public Task<IReadOnlyList<NamedCooldownRecord>> LoadAllGroupCooldownsAsync(CancellationToken ct = default)
+    public Task<IReadOnlyList<ScopedCooldownRecord>> LoadGroupCooldownsAsync(CooldownScopeQuery scope, CancellationToken ct = default)
         => Task.FromResult(EmptyRecords);
 
     public Task SaveMapCooldownAsync(string mapName, CooldownRecord record, CancellationToken ct = default)

@@ -17,13 +17,13 @@ public interface IMapCooldownApplyEventParams : IEventBaseParams, IMcsEditableEv
 
     /// <summary>
     /// Play-count cooldown to apply. Listeners may modify this value.
-    /// Initialized to <see cref="IBaseMapConfig.CooldownConfig"/>.<c>ConfigCooldown</c>.
+    /// Initialized to <see cref="IBaseMapConfig.CooldownSettings"/>.<c>ConfigCooldown</c>.
     /// </summary>
     int Cooldown { get; set; }
 
     /// <summary>
     /// Timed cooldown duration to apply. Listeners may modify this value.
-    /// Initialized to <see cref="IBaseMapConfig.CooldownConfig"/>.<c>TimedCooldown</c>.
+    /// Initialized to <see cref="IBaseMapConfig.CooldownSettings"/>.<c>TimedCooldown</c>.
     /// </summary>
     TimeSpan TimedCooldownDuration { get; set; }
 }

@@ -32,8 +32,8 @@ public class FullParsingIntegrationTests
         Assert.Equal("ze example a b c", abcBase.MapNameAlias);
         Assert.Equal("Let's play ze_example_abc!", abcBase.MapDescription);
         Assert.Equal(1234567891234L, abcBase.WorkshopId);
-        Assert.Equal(60, abcBase.CooldownConfig.ConfigCooldown);
-        Assert.Equal(TimeSpan.FromDays(2), abcBase.CooldownConfig.TimedCooldown);
+        Assert.Equal(60, abcBase.CooldownSettings.ConfigCooldown);
+        Assert.Equal(TimeSpan.FromDays(2), abcBase.CooldownSettings.TimedCooldown);
         Assert.Equal(64, abcBase.NominationConfig.MaxPlayers);
         Assert.Equal(10, abcBase.NominationConfig.MinPlayers);
         Assert.Contains(DayOfWeek.Wednesday, abcBase.NominationConfig.DaysAllowed);
@@ -89,7 +89,7 @@ public class FullParsingIntegrationTests
         Assert.Equal(2, hardZeOverrides.Count); // base + WeekendAfternoon
 
         var hardZeBase = hardZeOverrides.First(o => o.OverrideConfigName == IBaseOverrideConfig.BaseConfigName).GroupConfig;
-        Assert.Equal(30, hardZeBase.CooldownConfig.ConfigCooldown);
+        Assert.Equal(30, hardZeBase.CooldownSettings.ConfigCooldown);
         Assert.False(hardZeBase.RandomPickConfig.IsPickable); // OnlyNomination=true
 
         var weekendAfternoon = hardZeOverrides.First(o => o.OverrideConfigName == "WeekendAfternoon");

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using MapChooserSharpMS.Modules.MapCycle.Services.Interfaces;
+using MapChooserSharpMS.Modules.PluginConfig.Enums;
 using Microsoft.Extensions.Logging;
 using Wuling.Abstract.Tianshi.Surreal;
 
@@ -18,15 +19,17 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
     private readonly IWulingSurreal _surreal;
     private readonly ILogger _logger;
     private readonly string _surqlDirectory;
+    private readonly string _serverKey;
     private readonly Channel<Func<Task>> _queue;
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _drainTask;
 
-    internal SurrealCooldownRepository(IWulingSurreal surreal, ILogger logger, string moduleDirectory)
+    internal SurrealCooldownRepository(IWulingSurreal surreal, ILogger logger, string moduleDirectory, string serverKey)
     {
         _surreal = surreal;
         _logger = logger;
         _surqlDirectory = Path.Combine(moduleDirectory, "surql");
+        _serverKey = serverKey;
 
         _queue = Channel.CreateUnbounded<Func<Task>>(new UnboundedChannelOptions
         {
@@ -110,14 +113,14 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
         });
     }
 
-    public Task<IReadOnlyList<NamedCooldownRecord>> LoadAllMapCooldownsAsync(CancellationToken ct = default)
+    public Task<IReadOnlyList<ScopedCooldownRecord>> LoadMapCooldownsAsync(CooldownScopeQuery scope, CancellationToken ct = default)
     {
-        return Enqueue(() => LoadAllAsync(TableMapCooldown, ct));
+        return Enqueue(() => LoadScopedAsync(TableMapCooldown, scope, ct));
     }
 
-    public Task<IReadOnlyList<NamedCooldownRecord>> LoadAllGroupCooldownsAsync(CancellationToken ct = default)
+    public Task<IReadOnlyList<ScopedCooldownRecord>> LoadGroupCooldownsAsync(CooldownScopeQuery scope, CancellationToken ct = default)
     {
-        return Enqueue(() => LoadAllAsync(TableGroupCooldown, ct));
+        return Enqueue(() => LoadScopedAsync(TableGroupCooldown, scope, ct));
     }
 
     public Task SaveMapCooldownAsync(string mapName, CooldownRecord record, CancellationToken ct = default)
@@ -181,11 +184,28 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
         });
     }
 
+    /// <summary>
+    /// Builds the scoped load query. Records are keyed by [server_key, name] but
+    /// selected via the indexed server_key field for scope matching.
+    /// </summary>
+    internal static string BuildLoadSurql(string table, McsCooldownScopeMatchMode mode)
+    {
+        return mode switch
+        {
+            McsCooldownScopeMatchMode.Exact
+                => $"SELECT * FROM {table} WHERE server_key = $pattern;",
+            McsCooldownScopeMatchMode.StartsWith
+                => $"SELECT * FROM {table} WHERE string::starts_with(server_key, $pattern);",
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown cooldown scope match mode"),
+        };
+    }
+
     private async Task UpsertAsync(string table, string name, CooldownRecord record, CancellationToken ct = default)
     {
-        var surql = $"UPSERT type::record('{table}', $name) SET name = $name, cooldown = $cooldown, timed_cooldown_end = $timed_cooldown_end, last_played_at = $last_played_at, unplayed_count = $unplayed_count, nom_cooldown = $nom_cooldown, nom_timed_cooldown_end = $nom_timed_cooldown_end, last_nominated_at = $last_nominated_at;";
+        var surql = $"UPSERT type::thing('{table}', [$server_key, $name]) SET server_key = $server_key, name = $name, cooldown = $cooldown, timed_cooldown_end = $timed_cooldown_end, last_played_at = $last_played_at, unplayed_count = $unplayed_count, nom_cooldown = $nom_cooldown, nom_timed_cooldown_end = $nom_timed_cooldown_end;";
         var vars = new Dictionary<string, object?>
         {
+            ["server_key"] = _serverKey,
             ["name"] = name,
             ["cooldown"] = record.Cooldown,
             ["timed_cooldown_end"] = record.TimedCooldownEnd,
@@ -193,23 +213,26 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
             ["unplayed_count"] = record.UnplayedCount,
             ["nom_cooldown"] = record.NomCooldown,
             ["nom_timed_cooldown_end"] = record.NomTimedCooldownEnd,
-            ["last_nominated_at"] = record.LastNominatedAt,
         };
 
         await _surreal.WriteAsync(surql, vars, ct);
     }
 
-    private async Task<IReadOnlyList<NamedCooldownRecord>> LoadAllAsync(string table, CancellationToken ct)
+    private async Task<IReadOnlyList<ScopedCooldownRecord>> LoadScopedAsync(string table, CooldownScopeQuery scope, CancellationToken ct)
     {
-        var surql = $"SELECT * FROM {table};";
-        var dtos = await _surreal.QueryAsync<SurrealCooldownDto>(surql, ct: ct);
+        var surql = BuildLoadSurql(table, scope.Mode);
+        var vars = new Dictionary<string, object?>
+        {
+            ["pattern"] = scope.Pattern,
+        };
+        var dtos = await _surreal.QueryAsync<SurrealCooldownDto>(surql, vars, ct: ct);
 
-        var results = new List<NamedCooldownRecord>(dtos.Count);
+        var results = new List<ScopedCooldownRecord>(dtos.Count);
         foreach (var dto in dtos)
         {
             try
             {
-                if (string.IsNullOrEmpty(dto.name))
+                if (string.IsNullOrEmpty(dto.name) || string.IsNullOrEmpty(dto.server_key))
                     continue;
 
                 var record = new CooldownRecord(
@@ -218,10 +241,9 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
                     LastPlayedAt: dto.last_played_at,
                     UnplayedCount: dto.unplayed_count,
                     NomCooldown: dto.nom_cooldown,
-                    NomTimedCooldownEnd: dto.nom_timed_cooldown_end,
-                    LastNominatedAt: dto.last_nominated_at);
+                    NomTimedCooldownEnd: dto.nom_timed_cooldown_end);
 
-                results.Add(new NamedCooldownRecord(dto.name, record));
+                results.Add(new ScopedCooldownRecord(dto.server_key, dto.name, record));
             }
             catch (Exception ex)
             {
@@ -236,6 +258,7 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
     // — Dahomey.Cbor uses C# property names by default, not [JsonPropertyName]
     internal sealed class SurrealCooldownDto
     {
+        public string? server_key { get; set; }
         public string? name { get; set; }
         public int cooldown { get; set; }
         public DateTime timed_cooldown_end { get; set; }
@@ -243,6 +266,5 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
         public int unplayed_count { get; set; }
         public int nom_cooldown { get; set; }
         public DateTime nom_timed_cooldown_end { get; set; }
-        public DateTime last_nominated_at { get; set; }
     }
 }
