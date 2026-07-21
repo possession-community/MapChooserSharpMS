@@ -9,6 +9,7 @@ using MapChooserSharpMS.Modules.Nomination.Interfaces;
 using MapChooserSharpMS.Modules.Nomination.Models;
 using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Cooldown;
 using MapChooserSharpMS.Shared.MapCycle.Managers.MapTransition;
 using MapChooserSharpMS.Shared.MapVote;
 using MapChooserSharpMS.Shared.Nomination;
@@ -30,8 +31,9 @@ internal sealed class NominationValidateService
     private readonly IMapTransitionManager _mapTransitionManager;
     private readonly IServiceProvider _serviceProvider;
     private readonly PlayerNominationCooldownService _playerCooldownService;
+    private readonly IMcsCooldownStore _cooldownStore;
 
-    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager, PlayerNominationCooldownService playerCooldownService):base(serviceProvider)
+    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager, PlayerNominationCooldownService playerCooldownService, IMcsCooldownStore cooldownStore):base(serviceProvider)
     {
         _nominationManager  = nominationManager;
         _eventManager = internalEventManager;
@@ -39,6 +41,7 @@ internal sealed class NominationValidateService
         _mapTransitionManager = mapTransitionManager;
         _serviceProvider = serviceProvider;
         _playerCooldownService = playerCooldownService;
+        _cooldownStore = cooldownStore;
     }
 
     public IReadOnlyList<NominationCheckResult> PlayerCanNominateMap(IGameClient client, IMapConfig mapConfig)
@@ -106,7 +109,7 @@ internal sealed class NominationValidateService
 
         if (result.Count == 0)
         {
-            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
+            var nominationEvent = CreateCheckPassedEvent(mapConfig, client);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Continue)
             {
@@ -141,7 +144,7 @@ internal sealed class NominationValidateService
 
         if (result.Count == 0)
         {
-            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
+            var nominationEvent = CreateCheckPassedEvent(mapConfig, nominator);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Continue)
             {
@@ -185,7 +188,7 @@ internal sealed class NominationValidateService
         // Only fire event if all other checks passed
         if (result.Count == 0)
         {
-            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, mapConfig);
+            var nominationEvent = CreateCheckPassedEvent(mapConfig, client: null);
             if (_eventManager.FireCancellable<INominationEventListener>(evt =>
                     evt.OnNominationCheckPassed(nominationEvent)) != McsCancellableEvent.Continue)
             {
@@ -220,13 +223,10 @@ internal sealed class NominationValidateService
 
         var mapsInCooldown = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var mapConfigProvider = _serviceProvider.GetRequiredService<IMcsMapConfigProvider>();
-        foreach (var mapConfigs in mapConfigProvider.GetMapConfigs().Values)
+        foreach (var mapName in mapConfigProvider.GetMapConfigs().Keys)
         {
-            foreach (var overrides in mapConfigs)
-            {
-                if (IsMapInCooldown(overrides.MapConfig))
-                    mapsInCooldown.Add(overrides.MapConfig.MapName);
-            }
+            if (mapConfigProvider.TryGetMapConfig(mapName, out var resolved) && IsMapInCooldown(resolved))
+                mapsInCooldown.Add(resolved.MapName);
         }
 
         return new PickupSnapshot(
@@ -254,9 +254,14 @@ internal sealed class NominationValidateService
     {
         return maps.Where(m =>
         {
-            var nominationEvent = ActivatorUtilities.CreateInstance<NominationCheckPassedEventParams>(ServiceProvider, _nominationController, m);
+            var nominationEvent = CreateCheckPassedEvent(m, client: null);
             return _eventManager.FireCancellable<INominationEventListener>(evt => evt.OnNominationCheckPassed(nominationEvent)) == McsCancellableEvent.Continue;
         }).ToList();
+    }
+
+    private NominationCheckPassedEventParams CreateCheckPassedEvent(IMapConfig mapConfig, IGameClient? client)
+    {
+        return new NominationCheckPassedEventParams(Plugin, (PluginModuleBase)_nominationController, mapConfig, client);
     }
 
     private bool CanPickupPure(IMapConfig mapConfig, PickupSnapshot snapshot)
@@ -383,16 +388,7 @@ internal sealed class NominationValidateService
 
     public bool IsMapInNominationCooldown(IMapConfig mapConfig)
     {
-        if (mapConfig.CooldownConfig is not MapConfig.Models.CooldownConfig cc)
-            return false;
-
-        if (cc.CurrentNominationCooldown > 0)
-            return true;
-
-        if (cc.NominationTimedCooldownEndUtc > DateTime.UtcNow)
-            return true;
-
-        return false;
+        return _cooldownStore.GetEffectiveMapState(mapConfig.MapName).IsNominationCooldownActive;
     }
 
     public IReadOnlyList<NominationCheckResult> GetNominationState(IMapConfig mapConfig, IGameClient? client = null)
@@ -417,26 +413,18 @@ internal sealed class NominationValidateService
 
     public IDetailedCooldownResult GetCooldownInformations(IMapConfig mapConfig)
     {
-        int curMapCooldown = mapConfig.CooldownConfig.CurrentCooldown;
-        var curMapTimedCooldown = GetTimedCooldownEnd(mapConfig.CooldownConfig);
+        var mapState = _cooldownStore.GetEffectiveMapState(mapConfig.MapName);
         Dictionary<string, int> groupCooldown = new Dictionary<string, int>();
         Dictionary<string, DateTime> groupTimedCooldown = new ();
 
         foreach (IMapGroupConfig groupSetting in mapConfig.GroupSettings)
         {
-            groupCooldown[groupSetting.GroupName] = groupSetting.CooldownConfig.CurrentCooldown;
-            groupTimedCooldown[groupSetting.GroupName] = GetTimedCooldownEnd(groupSetting.CooldownConfig);
+            var groupState = _cooldownStore.GetEffectiveGroupState(groupSetting.GroupName);
+            groupCooldown[groupSetting.GroupName] = groupState.CurrentCooldown;
+            groupTimedCooldown[groupSetting.GroupName] = groupState.TimedCooldownEndUtc;
         }
 
-        return new DetailedCooldownResult(mapConfig, curMapCooldown, groupCooldown, curMapTimedCooldown, groupTimedCooldown);
-    }
-
-    private static DateTime GetTimedCooldownEnd(ICooldownConfig config)
-    {
-        if (config is MapConfig.Models.CooldownConfig cc)
-            return cc.TimedCooldownEndUtc;
-
-        return DateTime.MinValue;
+        return new DetailedCooldownResult(mapConfig, mapState.CurrentCooldown, groupCooldown, mapState.TimedCooldownEndUtc, groupTimedCooldown);
     }
 
     public bool HasBypassPermission(IMapConfig mapConfig, IGameClient client)
