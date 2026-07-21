@@ -8,7 +8,7 @@ DEFINE FUNCTION OVERWRITE fn::mcs::upsert_group_cooldown(
     $nom_cooldown: int,
     $nom_timed_cooldown_end: datetime
 ) {
-    UPSERT type::thing('mcs_group_cooldown', [$server_key, $group_name]) SET
+    UPSERT type::record('mcs_group_cooldown', [$server_key, $group_name]) SET
         server_key = $server_key,
         name = $group_name,
         cooldown = $cooldown,

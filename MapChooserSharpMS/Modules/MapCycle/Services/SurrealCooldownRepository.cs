@@ -202,7 +202,7 @@ internal sealed class SurrealCooldownRepository : ICooldownPersistence, IDisposa
 
     private async Task UpsertAsync(string table, string name, CooldownRecord record, CancellationToken ct = default)
     {
-        var surql = $"UPSERT type::thing('{table}', [$server_key, $name]) SET server_key = $server_key, name = $name, cooldown = $cooldown, timed_cooldown_end = $timed_cooldown_end, last_played_at = $last_played_at, unplayed_count = $unplayed_count, nom_cooldown = $nom_cooldown, nom_timed_cooldown_end = $nom_timed_cooldown_end;";
+        var surql = $"UPSERT type::record('{table}', [$server_key, $name]) SET server_key = $server_key, name = $name, cooldown = $cooldown, timed_cooldown_end = $timed_cooldown_end, last_played_at = $last_played_at, unplayed_count = $unplayed_count, nom_cooldown = $nom_cooldown, nom_timed_cooldown_end = $nom_timed_cooldown_end;";
         var vars = new Dictionary<string, object?>
         {
             ["server_key"] = _serverKey,

@@ -8,7 +8,7 @@ DEFINE FUNCTION OVERWRITE fn::mcs::upsert_map_cooldown(
     $nom_cooldown: int,
     $nom_timed_cooldown_end: datetime
 ) {
-    UPSERT type::thing('mcs_map_cooldown', [$server_key, $map_name]) SET
+    UPSERT type::record('mcs_map_cooldown', [$server_key, $map_name]) SET
         server_key = $server_key,
         name = $map_name,
         cooldown = $cooldown,
