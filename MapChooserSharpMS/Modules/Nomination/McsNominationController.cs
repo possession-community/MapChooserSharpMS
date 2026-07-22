@@ -85,11 +85,14 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
     {
         _internalNominationManager = ActivatorUtilities.CreateInstance<InternalNominationManager>(ServiceProvider);
         _conVars = new NominationConVars(SharedSystem.GetConVarManager());
+        // Must be ready before OnAllModulesLoaded: the shared API is registered
+        // at PostInit, so external modules may call InstallEventListener before
+        // our own OnAllModulesLoaded has run.
+        _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
     }
 
     protected override void OnAllModulesLoaded()
     {
-        _eventManager = ServiceProvider.GetRequiredService<IInternalEventManager>();
         _mapConfigProvider = ServiceProvider.GetRequiredService<IMcsMapConfigProvider>();
         _mapConfigToolingService = ServiceProvider.GetRequiredService<IMapConfigToolingService>();
 
