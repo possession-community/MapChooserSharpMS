@@ -71,6 +71,36 @@ Planned/decided usage in MapChooserSharpMS:
 - **Menus** → `IMenu`/`IMenuInstance` (world-HUD paged menus) is a candidate
   backend for `IMcsMenuCompat` alongside the FPM compat plugin.
 
+## TnmsPluginFoundation lifecycle rules
+
+Lifecycle order: `Init()` → `TnmsOnPluginLoad` → `PostInit()` →
+`TnmsLateOnPluginLoad(provider)` → `OnAllModulesLoaded()` →
+`LateRegisterPluginServices` → provider rebuild → `TnmsAllPluginsLoaded`.
+
+- **Register interfaces exposed to other modules
+  (`RegisterSharpModuleInterface`) in `TnmsLateOnPluginLoad` (PostInit),
+  NOT in `LateRegisterPluginServices`.** ModSharp calls each module's
+  `OnAllModulesLoaded` sequentially in load order, and
+  `LateRegisterPluginServices` runs inside ours — consumer modules whose
+  turn comes earlier fail with `EntryPointNotFoundException: Couldn't
+  find interface` (happened live on 2026-07-21 with McsWulingCompat and
+  McsEventDebugger).
+- At `TnmsLateOnPluginLoad` time all `RegisterModule` DI services are
+  resolvable, but `Localizer` and the Wuling interface are NOT yet
+  initialized — do not touch them there.
+
+## Versioning
+
+- `config.props` holds the single source of version truth
+  (`<Version>` + `<InformationalVersion>`), shared by all projects.
+- The scheme is date-based: `YY.M.D` (e.g. `26.7.22`) and
+  `YY.MM.DDa` for InformationalVersion. Bump it when the user asks for
+  a version update / release.
+- The Shared assembly FullName (version included) is used as the
+  ModSharp interface identity at runtime, so exactly ONE
+  `MapChooserSharpMS.Shared.dll` must be deployed (in `shared/`) —
+  a second stale copy in a module folder breaks interface lookup.
+
 ## Deploy layout (`%MOD_SHARP_DIR%`)
 
 When copying build outputs to the game server:

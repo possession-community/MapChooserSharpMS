@@ -93,11 +93,10 @@ public sealed class MapChooserSharpMs(
         Logger.LogInformation("All modules registered");
     }
 
-    protected override void LateRegisterPluginServices(IServiceCollection collection, IServiceProvider provider)
+    protected override void TnmsLateOnPluginLoad(ServiceProvider provider)
     {
-        _pluginConfigProvider = provider.GetRequiredService<IMcsPluginConfigProvider>();
-
-        collection.AddSingleton(sp => new Modules.Services.McsStateResettingService(sp, Logger));
+        // Register the shared interface at PostInit — other modules resolve it
+        // from their OnAllModulesLoaded, which ModSharp may call before ours.
         var nominationController = provider.GetRequiredService<Modules.Nomination.Interfaces.IMcsInternalNominationController>();
         var mapVoteController = provider.GetRequiredService<IMcsInternalVoteController>();
         var rtvController = provider.GetRequiredService<Modules.RockTheVote.Interfaces.IMcsInternalRtvController>();
@@ -117,6 +116,13 @@ public sealed class MapChooserSharpMs(
         SharedSystem.GetSharpModuleManager()
             .RegisterSharpModuleInterface<IMapChooserSharpShared>(
                 this, IMapChooserSharpShared.ModSharpModuleIdentity, sharedApi);
+    }
+
+    protected override void LateRegisterPluginServices(IServiceCollection collection, IServiceProvider provider)
+    {
+        _pluginConfigProvider = provider.GetRequiredService<IMcsPluginConfigProvider>();
+
+        collection.AddSingleton(sp => new Modules.Services.McsStateResettingService(sp, Logger));
     }
 
     protected override void TnmsOnPluginUnload(bool hotReload)
