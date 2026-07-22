@@ -32,8 +32,9 @@ internal sealed class NominationValidateService
     private readonly IServiceProvider _serviceProvider;
     private readonly PlayerNominationCooldownService _playerCooldownService;
     private readonly IMcsCooldownStore _cooldownStore;
+    private readonly NominationConVars _conVars;
 
-    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager, PlayerNominationCooldownService playerCooldownService, IMcsCooldownStore cooldownStore):base(serviceProvider)
+    public NominationValidateService(IServiceProvider serviceProvider, IMcsInternalNominationManager nominationManager, IInternalEventManager internalEventManager, IMcsInternalNominationController nominationController, IMapTransitionManager mapTransitionManager, PlayerNominationCooldownService playerCooldownService, IMcsCooldownStore cooldownStore, NominationConVars conVars):base(serviceProvider)
     {
         _nominationManager  = nominationManager;
         _eventManager = internalEventManager;
@@ -42,6 +43,7 @@ internal sealed class NominationValidateService
         _serviceProvider = serviceProvider;
         _playerCooldownService = playerCooldownService;
         _cooldownStore = cooldownStore;
+        _conVars = conVars;
     }
 
     public IReadOnlyList<NominationCheckResult> PlayerCanNominateMap(IGameClient client, IMapConfig mapConfig)
@@ -324,7 +326,17 @@ internal sealed class NominationValidateService
         // reports true when *any* vote (main or extend) is in progress, so
         // nomination is blocked in either case. No code change needed here
         // when MapCycle later wires its extend-vote state.
-        return _serviceProvider.GetRequiredService<IMcsReadOnlyVoteState>().IsVotingPeriod();
+        var voteState = _serviceProvider.GetRequiredService<IMcsReadOnlyVoteState>();
+        if (voteState.IsVotingPeriod())
+            return true;
+
+        // Pre-vote countdown (candidates are built when it finishes, so late
+        // nominations still make the ballot). Open by default; servers can
+        // close nominations at countdown start via the ConVar.
+        return _conVars.AllowDuringVoteCountdown.GetInt32() == 0
+               && voteState.CurrentVoteState
+                   is McsMapVoteState.Initializing
+                   or McsMapVoteState.InitializeAccepted;
     }
 
     public bool IsMapDisabled(IMapConfig mapConfig)

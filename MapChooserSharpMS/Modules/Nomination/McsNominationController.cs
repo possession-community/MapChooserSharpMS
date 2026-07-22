@@ -98,7 +98,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
 
         InitializePlayerCooldownService();
 
-        NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this, _playerCooldownService);
+        NominationValidateService = ActivatorUtilities.CreateInstance<NominationValidateService>(ServiceProvider, this, _playerCooldownService, _conVars);
         NominationService = ActivatorUtilities.CreateInstance<MapNominationService>(ServiceProvider, this, NominationValidateService, _conVars, _playerCooldownService);
 
         var cooldownQueryService = ServiceProvider.GetRequiredService<IMapCooldownQueryService>();
