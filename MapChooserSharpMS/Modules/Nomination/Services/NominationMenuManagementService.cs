@@ -26,7 +26,6 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     private readonly IMapConfigToolingService _toolingService;
     private readonly IMapCooldownQueryService _cooldownQueryService;
     private readonly Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> _failureNotifier;
-    private readonly NominationConVars _conVars;
     private readonly TnmsPlugin _plugin;
     private readonly PluginModuleBase _moduleBase;
     private readonly IInternalEventManager _eventManager;
@@ -39,7 +38,6 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         IMapConfigToolingService toolingService,
         IMapCooldownQueryService cooldownQueryService,
         Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> failureNotifier,
-        NominationConVars conVars,
         TnmsPlugin plugin,
         PluginModuleBase moduleBase,
         IInternalEventManager eventManager)
@@ -51,7 +49,6 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         _toolingService = toolingService;
         _cooldownQueryService = cooldownQueryService;
         _failureNotifier = failureNotifier;
-        _conVars = conVars;
         _plugin = plugin;
         _moduleBase = moduleBase;
         _eventManager = eventManager;
@@ -128,7 +125,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
 
     public void NominateOrConfirm(IGameClient client, IMapConfig config, bool isAdmin)
     {
-        if (!isAdmin && _conVars.ConfirmMenu.GetInt32() != 0)
+        if (!isAdmin)
         {
             ShowConfirmMenu(client, config);
             return;

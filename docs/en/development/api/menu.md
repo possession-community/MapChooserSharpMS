@@ -92,7 +92,7 @@ Service for showing and managing nomination menus. Available via `IMcsNomination
 | `ShowAdminNominationMenu(IGameClient)` | `void` | Show admin nomination menu with all maps |
 | `ShowRemoveNominationMenu(IGameClient, List<IMcsNominationData>)` | `void` | Show nomination removal menu with the specified nominations |
 | `ShowRemoveNominationMenu(IGameClient)` | `void` | Show nomination removal menu with all nominations |
-| `NominateOrConfirm(IGameClient, IMapConfig, bool)` | `void` | Nominate a map or show a confirm menu. `isAdmin` controls whether admin nomination logic is used |
+| `NominateOrConfirm(IGameClient, IMapConfig, bool)` | `void` | Nominate a map. Non-admin nominations always show a confirm menu first; admin nominations execute immediately |
 | `CollectExtraMenuItems(IMapConfig, IGameClient)` | `List<McsMenuItem>` | Fire `OnNominationMenuDetailsOpening` and return the collected extra items |
 
 ---

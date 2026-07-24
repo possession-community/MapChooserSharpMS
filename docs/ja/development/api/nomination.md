@@ -99,7 +99,7 @@
 | `ShowAdminNominationMenu(IGameClient)` | `void` | 全マップを対象に管理者用ノミネーションメニューを表示する |
 | `ShowRemoveNominationMenu(IGameClient, List<IMcsNominationData>)` | `void` | 指定したノミネーションの削除メニューを表示する |
 | `ShowRemoveNominationMenu(IGameClient)` | `void` | 全ノミネーションの削除メニューを表示する |
-| `NominateOrConfirm(IGameClient, IMapConfig, bool)` | `void` | メニュー内でマップを選択した際のノミネーション実行・確認処理。`isAdmin` が `true` の場合は管理者ノミネーションとして処理する |
+| `NominateOrConfirm(IGameClient, IMapConfig, bool)` | `void` | マップをノミネートする。非管理者のノミネーションは常に確認メニューを先に表示する。`isAdmin` が `true` の場合は管理者ノミネーションとして即時実行する |
 
 ---
 

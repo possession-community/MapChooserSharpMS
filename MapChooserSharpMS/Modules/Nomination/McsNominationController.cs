@@ -110,7 +110,6 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
             _mapConfigToolingService,
             cooldownQueryService,
             NotifyNominationFailure,
-            _conVars,
             Plugin,
             this,
             _eventManager);

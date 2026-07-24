@@ -46,6 +46,10 @@ public interface INominationMenuManagementService
     /// <param name="client"></param>
     void ShowRemoveNominationMenu(IGameClient client);
 
+    /// <summary>
+    /// Nominates a map. Non-admin nominations always show a confirmation menu first;
+    /// admin nominations are executed immediately.
+    /// </summary>
     void NominateOrConfirm(IGameClient client, IMapConfig config, bool isAdmin);
 
     /// <summary>
