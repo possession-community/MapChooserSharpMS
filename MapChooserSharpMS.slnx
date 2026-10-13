@@ -1,0 +1,13 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="../Wuling/Wuling.Abstract/Wuling.Abstract.csproj" />
+  <Project Path="MapChooserSharpMS.Shared/MapChooserSharpMS.Shared.csproj" />
+  <Project Path="MapChooserSharpMS.Tests/MapChooserSharpMS.Tests.csproj" />
+  <Project Path="MapChooserSharpMS/MapChooserSharpMS.csproj" />
+  <Project Path="McsFPMCompat/McsFPMCompat.csproj" />
+  <Project Path="McsWulingCompat/McsWulingCompat.csproj" />
+</Solution>
