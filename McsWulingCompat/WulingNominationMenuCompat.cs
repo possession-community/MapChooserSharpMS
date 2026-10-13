@@ -20,6 +20,10 @@ public sealed class WulingNominationMenuCompat(IMenu menu, IRegistry registry) :
         ("Cooldown (High → Low)", NominationSortOrder.CooldownDescending),
         ("Tag (A → Z)", NominationSortOrder.TagAscending),
         ("Tag (Z → A)", NominationSortOrder.TagDescending),
+        ("Unplayed (Low → High)", NominationSortOrder.UnplayedCountAscending),
+        ("Unplayed (High → Low)", NominationSortOrder.UnplayedCountDescending),
+        ("Last Played (Newest)", NominationSortOrder.LastPlayedDescending),
+        ("Last Played (Oldest)", NominationSortOrder.LastPlayedAscending),
     ];
 
     private readonly Dictionary<int, IMenuInstance> _activeMenus = new();
@@ -38,7 +42,7 @@ public sealed class WulingNominationMenuCompat(IMenu menu, IRegistry registry) :
             return;
         }
 
-        ShowMapListMenu(target, player, context, context.Items);
+        ShowMapListMenu(target, player, context, context.Items, NominationSortOrder.AlphabeticalAscending);
     }
 
     private void ShowSortSelectionMenu(IGameClient target, IPlayerEntry player, McsNominationMenuContext context)
@@ -53,8 +57,8 @@ public sealed class WulingNominationMenuCompat(IMenu menu, IRegistry registry) :
                 (_, p, _, _) =>
                 {
                     var sorted = McsMapListSorter.Sort(
-                        context.Items, i => i.MapConfig, capturedOrder, context.CooldownQueryService);
-                    ShowMapListMenu(target, p, context, sorted);
+                        context.Items, i => i.MapConfig, capturedOrder, context.CooldownQueryService, context.CooldownStore);
+                    ShowMapListMenu(target, p, context, sorted, capturedOrder);
                 });
         }
 
@@ -62,7 +66,9 @@ public sealed class WulingNominationMenuCompat(IMenu menu, IRegistry registry) :
         instance.DisplayToPlayer(player);
     }
 
-    private void ShowMapListMenu(IGameClient target, IPlayerEntry player, McsNominationMenuContext context, IReadOnlyList<McsNominationMenuItem> items)
+    private void ShowMapListMenu(
+        IGameClient target, IPlayerEntry player, McsNominationMenuContext context,
+        IReadOnlyList<McsNominationMenuItem> items, NominationSortOrder order)
     {
         var instance = menu.CreateMenu();
         instance.Title = context.Title;
@@ -70,7 +76,9 @@ public sealed class WulingNominationMenuCompat(IMenu menu, IRegistry registry) :
         foreach (var item in items)
         {
             var capturedItem = item;
-            instance.AddItem(MenuItemStyleFlags.Active | MenuItemStyleFlags.HasNumber, item.DisplayText,
+            string row = McsMapListRowFormatter.FormatRow(
+                item.DisplayText, item.MapConfig, order, context.CooldownQueryService, context.CooldownStore);
+            instance.AddItem(MenuItemStyleFlags.Active | MenuItemStyleFlags.HasNumber, row,
                 (menuInstance, p, _, _) =>
                 {
                     ShowDetailMenu(target, p, capturedItem, context);
@@ -99,6 +107,13 @@ public sealed class WulingNominationMenuCompat(IMenu menu, IRegistry registry) :
 
         if (cooldownResult.LongestTimedCooldown > DateTime.UtcNow)
             instance.AddItem(MenuItemStyleFlags.Disabled, $"Restricted until: {cooldownResult.LongestTimedCooldown.ToLocalTime():yyyy/MM/dd HH:mm}");
+
+        var mapState = context.CooldownStore.GetEffectiveMapState(item.MapConfig.MapName);
+        if (mapState.LastPlayedAt > DateTime.MinValue)
+        {
+            instance.AddItem(MenuItemStyleFlags.Disabled, $"Last played: {mapState.LastPlayedAt.ToLocalTime():yyyy/MM/dd HH:mm}");
+            instance.AddItem(MenuItemStyleFlags.Disabled, $"Unplayed: {mapState.UnplayedCount} maps");
+        }
 
         var tags = item.MapConfig.SearchTags;
         if (tags.Count > 0)

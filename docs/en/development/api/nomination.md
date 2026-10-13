@@ -96,6 +96,8 @@ Service for managing in-game nomination menu display.
 |---|---|---|
 | `ShowNominationMenu(IGameClient, List<IMapConfig>)` | `void` | Show a nomination menu with the specified map list |
 | `ShowNominationMenu(IGameClient)` | `void` | Show a nomination menu with all maps |
+| `ShowMapListMenu(IGameClient)` | `void` | Show the browsable list of all maps (`!maplist`). Same flow as the nomination menu under its own title |
+| `ShowMapListMenu(IGameClient, List<IMapConfig>)` | `void` | Show the browsable map list restricted to the specified maps (`!maplist <query>`) |
 | `ShowAdminNominationMenu(IGameClient, List<IMapConfig>)` | `void` | Show an admin nomination menu with the specified map list |
 | `ShowAdminNominationMenu(IGameClient)` | `void` | Show an admin nomination menu with all maps |
 | `ShowRemoveNominationMenu(IGameClient, List<IMcsNominationData>)` | `void` | Show a nomination removal menu with the specified nomination data |
@@ -162,7 +164,7 @@ Enum representing reasons why a nomination was rejected. Methods like `TryNomina
 | `NotEnoughPermissions` | The player is denied by permission nodes |
 | `TooMuchPlayers` | The server player count exceeds `MaxPlayers` |
 | `NotEnoughPlayers` | The server player count is below `MinPlayers` |
-| `VotingPeriod` | A vote is in progress; nominations are blocked |
+| `VotingPeriod` | A vote is in progress, or the next map is already confirmed; nominations are blocked |
 | `OnlySpecificDay` | Today is not an allowed nomination day for this map |
 | `OnlySpecificTime` | The current time is outside the allowed nomination time range |
 | `MapIsInCooldown` | The map or one of its groups is on cooldown. Not reported for the current map or for maps covered by `SameMapGroup`; those return `SameMap` / `SameMapGroup` instead |
@@ -203,6 +205,10 @@ Enum specifying the sort order for map lists in nomination menus and similar con
 | `TimedCooldownDescending` | Timed cooldown descending (latest expiration first) |
 | `TagAscending` | Smallest search tag ascending (A to Z). Maps without tags are placed last |
 | `TagDescending` | Smallest search tag descending (Z to A). Maps without tags are placed last |
+| `UnplayedCountAscending` | Unplayed count ascending (most recently available first). Never-played maps are placed last |
+| `UnplayedCountDescending` | Unplayed count descending (longest unplayed first). Never-played maps are placed first |
+| `LastPlayedAscending` | Last played time ascending (oldest first). Never-played maps are placed first |
+| `LastPlayedDescending` | Last played time descending (newest first). Never-played maps are placed last |
 
 ---
 
@@ -222,11 +228,43 @@ public static List<T> Sort<T>(
     IMapCooldownQueryService cooldownQueryService)
 ```
 
+```csharp
+public static List<T> Sort<T>(
+    IEnumerable<T> source,
+    Func<T, IMapConfig> configSelector,
+    NominationSortOrder order,
+    IMapCooldownQueryService cooldownQueryService,
+    IMcsCooldownStore cooldownStore)
+```
+
 - Returns a new sorted list; the source is never mutated.
 - Non-alphabetical orders tie-break by map name ascending.
 - Cooldown-based orders use `IMapCooldownQueryService.GetCurrentCooldowns()` (in-memory only).
+- Unplayed-count and last-played orders read `IMcsCooldownStore.GetEffectiveMapState()` and need the overload that takes the store; the overload without it throws `ArgumentException` for those orders.
 - Tag orders use the alphabetically smallest tag of each map as the key; maps without tags always sort last.
 - String comparison is ordinal, case-insensitive.
+
+---
+
+## McsMapListRowFormatter
+
+Static helper that builds map list rows showing the value the list is sorted by. The value is
+placed in front of the map name so long names cannot push it out of view.
+
+**Namespace**: `MapChooserSharpMS.Shared.Nomination`
+
+| Method | Return Type | Description |
+|---|---|---|
+| `GetSortPrefix(IMapConfig, NominationSortOrder, IMapCooldownQueryService, IMcsCooldownStore)` | `string` | Prefix for the given order. Empty for the alphabetical orders and for untagged maps under the tag orders |
+| `FormatRow(string, IMapConfig, NominationSortOrder, IMapCooldownQueryService, IMcsCooldownStore)` | `string` | The display text with the prefix in front, or unchanged when there is no prefix |
+
+| Order | Prefix |
+|---|---|
+| Cooldown | `[CD: 3]` (`[CD: Inf]` for a map excluded by an admin) |
+| Timed cooldown | `[Until: 2026-01-31 18:05:00]` while active, otherwise none |
+| Tag | Every search tag in brackets: `[Hard] [Insane]` |
+| Unplayed count | `[Unplayed: 10]` (`[Unplayed: -]` for a never-played map) |
+| Last played | `[Last: 2026-01-31 18:05:00]` in server local time (`[Last: Never]` for a never-played map) |
 
 ---
 

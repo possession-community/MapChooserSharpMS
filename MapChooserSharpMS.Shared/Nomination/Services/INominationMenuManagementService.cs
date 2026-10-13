@@ -21,6 +21,21 @@ public interface INominationMenuManagementService
     void ShowNominationMenu(IGameClient client);
     
     /// <summary>
+    /// Shows the browsable list of all maps (<c>!maplist</c>). Same flow as the
+    /// nomination menu — sort selection, list, per-map details — under its own title.
+    /// </summary>
+    /// <param name="client"></param>
+    void ShowMapListMenu(IGameClient client);
+
+    /// <summary>
+    /// Shows the browsable map list restricted to the specified configs
+    /// (<c>!maplist &lt;query&gt;</c>). Sort selection stays available.
+    /// </summary>
+    /// <param name="client"></param>
+    /// <param name="configs"></param>
+    void ShowMapListMenu(IGameClient client, List<IMapConfig> configs);
+
+    /// <summary>
     /// Shows admin nomination menu with specified configs list
     /// </summary>
     /// <param name="client"></param>

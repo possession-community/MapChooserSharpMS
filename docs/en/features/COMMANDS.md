@@ -5,7 +5,7 @@ In chat, `!nominate` / `css_nominate` can also be used.
 
 ## Map Name Search
 
-Every command that takes a `<map>` argument (`!nominate`, `!nominate_addmap`, `!nominate_removemap`, `!map`, `!setnextmap`, `!mapinfo`) shares the same search behavior:
+Every command that takes a `<map>` argument (`!nominate`, `!nominate_addmap`, `!nominate_removemap`, `!map`, `!setnextmap`, `!mapinfo`, `!maplist`) shares the same search behavior:
 
 1. Case-insensitive **substring match** on the map name
 2. When several maps match, an **exact map name** match takes priority
@@ -17,7 +17,7 @@ Exactly one match executes the command immediately. Multiple matches open a sele
 
 | Command | Alias | Description |
 |---|---|---|
-| !nominate \<map\> | !nom | Nominate a map. Without arguments, shows the full map list (with the Wuling menu, a sort-order selection — Name / Cooldown / Tag, each ascending or descending — is shown first). Partial match with multiple hits shows a menu sorted by map name |
+| !nominate \<map\> | !nom | Nominate a map. Without arguments, shows the full map list (with the Wuling menu, a sort-order selection — Name / Cooldown / Tag / Unplayed / Last Played, each ascending or descending — is shown first, and rows are prefixed with the sorted value). Partial match with multiple hits shows a menu sorted by map name |
 | !nomlist | - | Show the current nomination list in vote pick order (admin nominations first, then by nomination count). Entries that would not fit into the vote appear below a separator line. `!nomlist full` shows nominator names for admins |
 | !rtv | chat "rtv" | Vote for Rock The Vote |
 | !unnominate | !unnom | Remove your nomination |
@@ -27,6 +27,7 @@ Exactly one match executes the command immediately. Multiple matches open a sele
 | !nextmap | chat "nextmap" | Show the next map |
 | !currentmap | chat "currentmap" | Show the current map |
 | !mapinfo \<map\> | - | Show map information. Without arguments, shows the current map. Supports partial-match search |
+| !maplist \<map\> | - | Browse maps in a menu. Without arguments, lists all maps; with a query, lists only the maps the shared search matches (a single hit still opens the list). With the Wuling menu a sort order is chosen first (Name / Cooldown / Tag / Unplayed / Last Played) and each row is prefixed with the sorted value, e.g. `[Unplayed: 10] ze_example`, `[CD: 3] ze_example`, `[Hard] [Insane] ze_example`, `[Last: 2026-01-31 18:05:00] ze_example`. Selecting a map opens its details (cooldown, last played, unplayed count, tags, groups) with a Nominate entry |
 | !extends | - | Show remaining extend count |
 | !thetime | chat "thetime" | Show the current server time |
 | !mcs_settings \<subcommand\> [value] | !mcss | Change personal settings. `volume` (`vol`) \<0-100\> for vote sound volume, `countdown` (`cd`) \<type\> for countdown UI. No arguments shows current settings |

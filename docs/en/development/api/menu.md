@@ -48,6 +48,7 @@ Context passed to `ShowNominationMenu`. Contains all data and services the compa
 | `AllowSortSelection` | `bool` | True when the compat may offer a sort-order selection (e.g. via `McsMapListSorter`) before showing the list. True for full map list menus; false for search results, confirmation and removal menus |
 | `ToolingService` | `IMapConfigToolingService` | Utilities for resolving display names, checking Workshop IDs, etc. |
 | `CooldownQueryService` | `IMapCooldownQueryService` | Query cooldown state for maps |
+| `CooldownStore` | `IMcsCooldownStore` | Runtime cooldown state (unplayed count, last played time) for list rows, detail menus and the unplayed-count / last-played sort orders |
 | `NominationMenuService` | `INominationMenuManagementService` | Same service as the property on the compat interface |
 
 All properties except `AllowSortSelection` (optional, defaults to `false`) are `required init`.
@@ -90,6 +91,8 @@ Service for showing and managing nomination menus. Available via `IMcsNomination
 |---|---|---|
 | `ShowNominationMenu(IGameClient, List<IMapConfig>)` | `void` | Show nomination menu with the specified map list |
 | `ShowNominationMenu(IGameClient)` | `void` | Show nomination menu with all maps |
+| `ShowMapListMenu(IGameClient)` | `void` | Show the browsable list of all maps (`!maplist`) |
+| `ShowMapListMenu(IGameClient, List<IMapConfig>)` | `void` | Show the browsable map list restricted to the specified maps |
 | `ShowAdminNominationMenu(IGameClient, List<IMapConfig>)` | `void` | Show admin nomination menu with the specified map list |
 | `ShowAdminNominationMenu(IGameClient)` | `void` | Show admin nomination menu with all maps |
 | `ShowRemoveNominationMenu(IGameClient, List<IMcsNominationData>)` | `void` | Show nomination removal menu with the specified nominations |

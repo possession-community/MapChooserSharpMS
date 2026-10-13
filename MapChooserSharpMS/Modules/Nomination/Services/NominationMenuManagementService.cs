@@ -6,6 +6,7 @@ using MapChooserSharpMS.Modules.EventManager.Events.Nomination;
 using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapCycle.Cooldown;
 using MapChooserSharpMS.Shared.MapCycle.Services;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
@@ -25,6 +26,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
     private readonly IMapNominationService _nominationService;
     private readonly IMapConfigToolingService _toolingService;
     private readonly IMapCooldownQueryService _cooldownQueryService;
+    private readonly IMcsCooldownStore _cooldownStore;
     private readonly Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> _failureNotifier;
     private readonly TnmsPlugin _plugin;
     private readonly PluginModuleBase _moduleBase;
@@ -37,6 +39,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         IMapNominationService nominationService,
         IMapConfigToolingService toolingService,
         IMapCooldownQueryService cooldownQueryService,
+        IMcsCooldownStore cooldownStore,
         Action<IGameClient, IMapConfig, IReadOnlyList<NominationCheckResult>> failureNotifier,
         TnmsPlugin plugin,
         PluginModuleBase moduleBase,
@@ -48,6 +51,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         _nominationService = nominationService;
         _toolingService = toolingService;
         _cooldownQueryService = cooldownQueryService;
+        _cooldownStore = cooldownStore;
         _failureNotifier = failureNotifier;
         _plugin = plugin;
         _moduleBase = moduleBase;
@@ -64,6 +68,16 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         ShowNominationMenuInternal(client, GetAllMaps(), isAdmin: false, allowSortSelection: true);
     }
 
+    public void ShowMapListMenu(IGameClient client)
+    {
+        ShowMapListMenu(client, GetAllMaps());
+    }
+
+    public void ShowMapListMenu(IGameClient client, List<IMapConfig> configs)
+    {
+        ShowNominationMenuInternal(client, configs, isAdmin: false, allowSortSelection: true, title: "Map List");
+    }
+
     public void ShowAdminNominationMenu(IGameClient client, List<IMapConfig> configs)
     {
         ShowNominationMenuInternal(client, configs, isAdmin: true, allowSortSelection: false);
@@ -74,7 +88,8 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
         ShowNominationMenuInternal(client, GetAllMaps(), isAdmin: true, allowSortSelection: true);
     }
 
-    private void ShowNominationMenuInternal(IGameClient client, List<IMapConfig> configs, bool isAdmin, bool allowSortSelection)
+    private void ShowNominationMenuInternal(
+        IGameClient client, List<IMapConfig> configs, bool isAdmin, bool allowSortSelection, string? title = null)
     {
         var compat = GetMenuCompatOrThrow();
         var items = McsMapListSorter
@@ -82,7 +97,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
             .Select(c => CreateNominationMenuItem(c, isAdmin))
             .ToList();
 
-        var title = isAdmin ? "Admin Nominate Map" : "Nominate Map";
+        title ??= isAdmin ? "Admin Nominate Map" : "Nominate Map";
         compat.ShowNominationMenu(client, BuildContext(title, items, allowSortSelection));
     }
 
@@ -167,6 +182,7 @@ internal sealed class NominationMenuManagementService : INominationMenuManagemen
             AllowSortSelection = allowSortSelection,
             ToolingService = _toolingService,
             CooldownQueryService = _cooldownQueryService,
+            CooldownStore = _cooldownStore,
             NominationMenuService = this,
         };
     }

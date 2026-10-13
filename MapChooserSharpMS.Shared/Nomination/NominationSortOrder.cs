@@ -10,4 +10,8 @@ public enum NominationSortOrder
     TimedCooldownDescending,
     TagAscending,
     TagDescending,
+    UnplayedCountAscending,
+    UnplayedCountDescending,
+    LastPlayedAscending,
+    LastPlayedDescending,
 }

@@ -50,6 +50,15 @@ internal sealed class NominationValidateService
     {
         var result = new List<NominationCheckResult>();
 
+        // Phase 0: The next map is already decided. !nominate refuses this at the
+        // command level for everyone; menus that stay open across the vote and
+        // !maplist reach nomination without that gate, so it is enforced here too.
+        if (IsNextMapConfirmed())
+        {
+            result.Add(NominationCheckResult.VotingPeriod);
+            return result;
+        }
+
         // Phase 1: Bypass — allow permission skips everything.
         if (HasBypassPermission(mapConfig, client))
             return result;
@@ -365,6 +374,12 @@ internal sealed class NominationValidateService
                && voteState.CurrentVoteState
                    is McsMapVoteState.Initializing
                    or McsMapVoteState.InitializeAccepted;
+    }
+
+    private bool IsNextMapConfirmed()
+    {
+        return _serviceProvider.GetRequiredService<IMcsReadOnlyVoteState>().CurrentVoteState
+               == McsMapVoteState.NextMapConfirmed;
     }
 
     public bool IsMapDisabled(IMapConfig mapConfig)

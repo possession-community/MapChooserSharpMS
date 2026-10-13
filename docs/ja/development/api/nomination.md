@@ -96,6 +96,8 @@
 |---|---|---|
 | `ShowNominationMenu(IGameClient, List<IMapConfig>)` | `void` | 指定したマップリストでノミネーションメニューを表示する |
 | `ShowNominationMenu(IGameClient)` | `void` | 全マップを対象にノミネーションメニューを表示する |
+| `ShowMapListMenu(IGameClient)` | `void` | 全マップの一覧メニュー (`!maplist`) を表示する。流れはノミネーションメニューと同じで、タイトルだけが異なる |
+| `ShowMapListMenu(IGameClient, List<IMapConfig>)` | `void` | 指定したマップだけの一覧メニュー (`!maplist <query>`) を表示する |
 | `ShowAdminNominationMenu(IGameClient, List<IMapConfig>)` | `void` | 指定したマップリストで管理者用ノミネーションメニューを表示する |
 | `ShowAdminNominationMenu(IGameClient)` | `void` | 全マップを対象に管理者用ノミネーションメニューを表示する |
 | `ShowRemoveNominationMenu(IGameClient, List<IMcsNominationData>)` | `void` | 指定したノミネーションの削除メニューを表示する |
@@ -162,7 +164,7 @@ MCS のクールダウンには 2 つの軸があります:
 | `NotEnoughPermissions` | 権限ノードにより拒否されている |
 | `TooMuchPlayers` | サーバーのプレイヤー数が `MaxPlayers` を超えている |
 | `NotEnoughPlayers` | サーバーのプレイヤー数が `MinPlayers` 未満 |
-| `VotingPeriod` | 投票が進行中のためノミネーション不可 |
+| `VotingPeriod` | 投票が進行中、または次マップが確定済みのためノミネーション不可 |
 | `OnlySpecificDay` | 今日はこのマップのノミネーション許可曜日ではない |
 | `OnlySpecificTime` | 現在時刻はこのマップのノミネーション許可時間帯外 |
 | `MapIsInCooldown` | マップまたは所属グループがクールダウン中。現在のマップ、および `SameMapGroup` に該当するマップでは返されず、代わりに `SameMap` / `SameMapGroup` が返る |
@@ -203,6 +205,10 @@ MCS のクールダウンには 2 つの軸があります:
 | `TimedCooldownDescending` | 時限クールダウン降順 (終了が遠い順) |
 | `TagAscending` | 最小サーチタグ昇順 (A → Z)。タグなしマップは末尾 |
 | `TagDescending` | 最小サーチタグ降順 (Z → A)。タグなしマップは末尾 |
+| `UnplayedCountAscending` | Unplayed 回数昇順 (最近プレイ可能になった順)。未プレイのマップは末尾 |
+| `UnplayedCountDescending` | Unplayed 回数降順 (長くプレイされていない順)。未プレイのマップは先頭 |
+| `LastPlayedAscending` | 最終プレイ日時昇順 (古い順)。未プレイのマップは先頭 |
+| `LastPlayedDescending` | 最終プレイ日時降順 (新しい順)。未プレイのマップは末尾 |
 
 ---
 
@@ -222,11 +228,43 @@ public static List<T> Sort<T>(
     IMapCooldownQueryService cooldownQueryService)
 ```
 
+```csharp
+public static List<T> Sort<T>(
+    IEnumerable<T> source,
+    Func<T, IMapConfig> configSelector,
+    NominationSortOrder order,
+    IMapCooldownQueryService cooldownQueryService,
+    IMcsCooldownStore cooldownStore)
+```
+
 - ソート済みの新しいリストを返します。元のリストは変更しません。
 - マップ名以外のソートでは、同値時にマップ名昇順でタイブレークします。
 - クールダウン系ソートは `IMapCooldownQueryService.GetCurrentCooldowns()` (インメモリのみ) を使用します。
+- Unplayed 回数・最終プレイ日時のソートは `IMcsCooldownStore.GetEffectiveMapState()` を参照するため、ストアを受け取るオーバーロードが必要です。ストアなしのオーバーロードでこれらを指定すると `ArgumentException` を投げます。
 - タグ系ソートは各マップの alphabetical 最小タグをキーにします。タグなしマップは常に末尾です。
 - 文字列比較は ordinal の大文字小文字無視です。
+
+---
+
+## McsMapListRowFormatter
+
+一覧のソートに使った値を行に表示するための静的ヘルパーです。マップ名が長くても値が画面外に
+押し出されないよう、値はマップ名の前に置きます。
+
+**名前空間**: `MapChooserSharpMS.Shared.Nomination`
+
+| メソッド | 戻り値 | 説明 |
+|---|---|---|
+| `GetSortPrefix(IMapConfig, NominationSortOrder, IMapCooldownQueryService, IMcsCooldownStore)` | `string` | 指定したソート順の接頭辞。マップ名ソート、およびタグソートでタグなしのマップでは空文字 |
+| `FormatRow(string, IMapConfig, NominationSortOrder, IMapCooldownQueryService, IMcsCooldownStore)` | `string` | 表示テキストの前に接頭辞を付けた文字列。接頭辞がなければそのまま返す |
+
+| ソート順 | 接頭辞 |
+|---|---|
+| クールダウン | `[CD: 3]` (管理者が除外したマップは `[CD: Inf]`) |
+| 時限クールダウン | 有効な間は `[Until: 2026-01-31 18:05:00]`、それ以外はなし |
+| タグ | すべてのサーチタグを括弧付きで並べる: `[Hard] [Insane]` |
+| Unplayed 回数 | `[Unplayed: 10]` (未プレイのマップは `[Unplayed: -]`) |
+| 最終プレイ日時 | サーバーのローカル時刻で `[Last: 2026-01-31 18:05:00]` (未プレイのマップは `[Last: Never]`) |
 
 ---
 

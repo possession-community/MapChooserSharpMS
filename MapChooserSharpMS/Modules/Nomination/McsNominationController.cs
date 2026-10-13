@@ -11,6 +11,7 @@ using MapChooserSharpMS.Shared.Events.RockTheVote;
 using MapChooserSharpMS.Shared.Events.Nomination;
 using MapChooserSharpMS.Shared.MapConfig;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapCycle.Cooldown;
 using MapChooserSharpMS.Shared.MapCycle.Services;
 using MapChooserSharpMS.Shared.Nomination;
 using MapChooserSharpMS.Shared.Nomination.Managers;
@@ -110,6 +111,7 @@ internal sealed class McsNominationController(IServiceProvider serviceProvider, 
             NominationService,
             _mapConfigToolingService,
             cooldownQueryService,
+            ServiceProvider.GetRequiredService<IMcsCooldownStore>(),
             NotifyNominationFailure,
             Plugin,
             this,

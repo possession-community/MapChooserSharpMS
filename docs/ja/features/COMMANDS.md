@@ -5,7 +5,7 @@
 
 ## マップ名検索
 
-`<map>` 引数を取るコマンド (`!nominate`, `!nominate_addmap`, `!nominate_removemap`, `!map`, `!setnextmap`, `!mapinfo`) は共通の検索動作を持ちます:
+`<map>` 引数を取るコマンド (`!nominate`, `!nominate_addmap`, `!nominate_removemap`, `!map`, `!setnextmap`, `!mapinfo`, `!maplist`) は共通の検索動作を持ちます:
 
 1. マップ名の**部分一致** (大文字小文字区別なし)
 2. 複数ヒット時は**マップ名の完全一致**を優先
@@ -17,7 +17,7 @@
 
 | コマンド | エイリアス | 説明 |
 |---|---|---|
-| !nominate \<map\> | !nom | マップをノミネートする。引数なしで全マップ一覧 (Wuling メニューでは先にソート順選択 — Name / Cooldown / Tag の各昇順・降順 — を表示)、部分一致で複数ヒット時はマップ名昇順のメニュー表示 |
+| !nominate \<map\> | !nom | マップをノミネートする。引数なしで全マップ一覧 (Wuling メニューでは先にソート順選択 — Name / Cooldown / Tag / Unplayed / Last Played の各昇順・降順 — を表示し、各行の先頭にソートした値を付ける)、部分一致で複数ヒット時はマップ名昇順のメニュー表示 |
 | !nomlist | - | 現在のノミネーション一覧を投票の選出順 (管理者ノミネート → ノミネート数降順) で表示。投票枠に入らないエントリはセパレータ行の下に表示される。`!nomlist full` で管理者はノミネーター名表示 |
 | !rtv | チャット "rtv" | Rock The Vote に投票する |
 | !unnominate | !unnom | 自分のノミネートを取り消す |
@@ -27,6 +27,7 @@
 | !nextmap | チャット "nextmap" | 次のマップを表示 |
 | !currentmap | チャット "currentmap" | 現在のマップを表示 |
 | !mapinfo \<map\> | - | マップ情報を表示。引数なしで現在のマップ。部分一致検索対応 |
+| !maplist \<map\> | - | マップをメニューで一覧表示。引数なしで全マップ、クエリを付けると共通の検索にヒットしたマップだけを表示 (1 件だけヒットした場合も一覧を開く)。Wuling メニューでは先にソート順 (Name / Cooldown / Tag / Unplayed / Last Played) を選び、各行の先頭にソートした値が付く (例: `[Unplayed: 10] ze_example`, `[CD: 3] ze_example`, `[Hard] [Insane] ze_example`, `[Last: 2026-01-31 18:05:00] ze_example`)。マップを選ぶと詳細 (クールダウン、最終プレイ日時、Unplayed 回数、タグ、グループ) とノミネート項目を表示 |
 | !extends | - | 残りの延長回数を表示 |
 | !thetime | チャット "thetime" | 現在のサーバー時刻を表示 |
 | !mcs_settings \<subcommand\> [value] | !mcss | 個人設定を変更。`volume` (`vol`) \<0-100\> で投票サウンド音量、`countdown` (`cd`) \<type\> でカウントダウン UI 変更。引数なしで現在設定表示 |

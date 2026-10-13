@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MapChooserSharpMS.Shared.MapConfig;
+using MapChooserSharpMS.Shared.MapCycle.Cooldown;
 using MapChooserSharpMS.Shared.MapCycle.Services;
 using MapChooserSharpMS.Shared.Nomination;
 using Xunit;
@@ -13,7 +14,7 @@ public class McsMapListSorterTests
 {
     #region Fakes
 
-    private sealed class FakeMapConfig : IMapConfig
+    internal sealed class FakeMapConfig : IMapConfig
     {
         public required string MapName { get; init; }
         public string MapNameAlias => MapName;
@@ -46,7 +47,7 @@ public class McsMapListSorterTests
         public IReadOnlyDictionary<string, DateTime> GroupTimedCooldowns { get; } = new Dictionary<string, DateTime>();
     }
 
-    private sealed class FakeCooldownQueryService : IMapCooldownQueryService
+    internal sealed class FakeCooldownQueryService : IMapCooldownQueryService
     {
         public Dictionary<string, int> Cooldowns { get; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, DateTime> TimedCooldowns { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -65,7 +66,46 @@ public class McsMapListSorterTests
         }
     }
 
+    internal sealed class FakeCooldownState : IMcsCooldownState
+    {
+        public int CurrentCooldown => 0;
+        public DateTime TimedCooldownEndUtc => DateTime.MinValue;
+        public DateTime LastPlayedAt { get; init; } = DateTime.MinValue;
+        public int UnplayedCount { get; init; }
+        public int CurrentNominationCooldown => 0;
+        public DateTime NominationTimedCooldownEndUtc => DateTime.MinValue;
+        public bool IsCooldownActive => false;
+        public bool IsNominationCooldownActive => false;
+    }
+
+    internal sealed class FakeCooldownStore : IMcsCooldownStore
+    {
+        private static readonly FakeCooldownState Empty = new();
+
+        public Dictionary<string, FakeCooldownState> Maps { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Registers a map that has been played, with the given unplayed count.</summary>
+        public void Played(string mapName, DateTime lastPlayedAt, int unplayedCount = 0)
+            => Maps[mapName] = new FakeCooldownState { LastPlayedAt = lastPlayedAt, UnplayedCount = unplayedCount };
+
+        public IMcsCooldownState GetEffectiveMapState(string mapName) => Maps.GetValueOrDefault(mapName, Empty);
+        public IMcsCooldownState GetEffectiveGroupState(string groupName) => Empty;
+        public IMcsCooldownState GetOwnMapState(string mapName) => Maps.GetValueOrDefault(mapName, Empty);
+        public IMcsCooldownState GetOwnGroupState(string groupName) => Empty;
+    }
+
     #endregion
+
+    private static readonly DateTime Jan = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime Jun = new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    private static List<string> SortNames(IEnumerable<IMapConfig> maps, NominationSortOrder order, IMcsCooldownStore store)
+    {
+        return McsMapListSorter
+            .Sort(maps, c => c, order, new FakeCooldownQueryService(), store)
+            .Select(c => c.MapName)
+            .ToList();
+    }
 
     private static FakeMapConfig Map(string name, params string[] tags)
         => new() { MapName = name, SearchTags = tags };
@@ -197,6 +237,70 @@ public class McsMapListSorterTests
         var result = SortNames(maps, NominationSortOrder.TagAscending);
 
         Assert.Equal(["ze_a", "ze_b"], result);
+    }
+
+    [Fact]
+    public void UnplayedCountAscending_SortsByCount_NeverPlayedLast()
+    {
+        var maps = new IMapConfig[] { Map("ze_never"), Map("ze_b"), Map("ze_a"), Map("ze_c") };
+        var store = new FakeCooldownStore();
+        store.Played("ze_a", Jan, unplayedCount: 5);
+        store.Played("ze_b", Jan, unplayedCount: 0);
+        store.Played("ze_c", Jan, unplayedCount: 5);
+
+        var result = SortNames(maps, NominationSortOrder.UnplayedCountAscending, store);
+
+        Assert.Equal(["ze_b", "ze_a", "ze_c", "ze_never"], result);
+    }
+
+    [Fact]
+    public void UnplayedCountDescending_NeverPlayedFirst()
+    {
+        var maps = new IMapConfig[] { Map("ze_a"), Map("ze_never"), Map("ze_b") };
+        var store = new FakeCooldownStore();
+        store.Played("ze_a", Jan, unplayedCount: 2);
+        store.Played("ze_b", Jan, unplayedCount: 9);
+
+        var result = SortNames(maps, NominationSortOrder.UnplayedCountDescending, store);
+
+        Assert.Equal(["ze_never", "ze_b", "ze_a"], result);
+    }
+
+    [Fact]
+    public void LastPlayedAscending_OldestFirst_NeverPlayedBeforeEverything()
+    {
+        var maps = new IMapConfig[] { Map("ze_recent"), Map("ze_never"), Map("ze_old") };
+        var store = new FakeCooldownStore();
+        store.Played("ze_recent", Jun);
+        store.Played("ze_old", Jan);
+
+        var result = SortNames(maps, NominationSortOrder.LastPlayedAscending, store);
+
+        Assert.Equal(["ze_never", "ze_old", "ze_recent"], result);
+    }
+
+    [Fact]
+    public void LastPlayedDescending_NewestFirst_TieBrokenByName()
+    {
+        var maps = new IMapConfig[] { Map("ze_b"), Map("ze_old"), Map("ze_a") };
+        var store = new FakeCooldownStore();
+        store.Played("ze_a", Jun);
+        store.Played("ze_b", Jun);
+        store.Played("ze_old", Jan);
+
+        var result = SortNames(maps, NominationSortOrder.LastPlayedDescending, store);
+
+        Assert.Equal(["ze_a", "ze_b", "ze_old"], result);
+    }
+
+    [Theory]
+    [InlineData(NominationSortOrder.UnplayedCountAscending)]
+    [InlineData(NominationSortOrder.LastPlayedDescending)]
+    public void StoreOrders_WithoutStoreOverload_Throw(NominationSortOrder order)
+    {
+        var maps = new IMapConfig[] { Map("ze_a") };
+
+        Assert.Throws<ArgumentException>(() => SortNames(maps, order));
     }
 
     [Fact]

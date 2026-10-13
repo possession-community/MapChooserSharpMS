@@ -52,6 +52,13 @@ public sealed class FpmNominationMenuCompat(IMenuManager menuManager) : IMcsNomi
         if (cooldownResult.LongestTimedCooldown > System.DateTime.UtcNow)
             builder.Item($"Restricted until: {cooldownResult.LongestTimedCooldown.ToLocalTime():yyyy/MM/dd HH:mm}", _ => { });
 
+        var mapState = context.CooldownStore.GetEffectiveMapState(item.MapConfig.MapName);
+        if (mapState.LastPlayedAt > System.DateTime.MinValue)
+        {
+            builder.Item($"Last played: {mapState.LastPlayedAt.ToLocalTime():yyyy/MM/dd HH:mm}", _ => { });
+            builder.Item($"Unplayed: {mapState.UnplayedCount} maps", _ => { });
+        }
+
         var tags = item.MapConfig.SearchTags;
         if (tags.Count > 0)
             builder.Item($"Tags: {string.Join(", ", tags)}", _ => { });

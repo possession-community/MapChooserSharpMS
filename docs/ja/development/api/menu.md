@@ -48,6 +48,7 @@ MCS はメニュー描画をプラグイン本体から切り離した抽象レ�
 | `AllowSortSelection` | `bool` | 一覧表示前にソート順選択 (例: `McsMapListSorter` 使用) を提供してよい場合 true。全マップ一覧メニューで true、検索結果・確認・削除メニューでは false |
 | `ToolingService` | `IMapConfigToolingService` | 表示名の解決や Workshop ID の確認などのユーティリティ |
 | `CooldownQueryService` | `IMapCooldownQueryService` | マップのクールダウン状態を問い合わせるサービス |
+| `CooldownStore` | `IMcsCooldownStore` | 実行時のクールダウン状態 (Unplayed 回数、最終プレイ日時)。一覧の行、詳細メニュー、Unplayed 回数・最終プレイ日時のソートで使用 |
 | `NominationMenuService` | `INominationMenuManagementService` | 互換インターフェースのプロパティと同じサービス |
 
 `AllowSortSelection` (省略可、デフォルト `false`) 以外の全プロパティは `required init` です。
@@ -90,6 +91,8 @@ MCS はメニュー描画をプラグイン本体から切り離した抽象レ�
 |---|---|---|
 | `ShowNominationMenu(IGameClient, List<IMapConfig>)` | `void` | 指定マップリストでノミネーションメニューを表示 |
 | `ShowNominationMenu(IGameClient)` | `void` | 全マップでノミネーションメニューを表示 |
+| `ShowMapListMenu(IGameClient)` | `void` | 全マップの一覧メニュー (`!maplist`) を表示 |
+| `ShowMapListMenu(IGameClient, List<IMapConfig>)` | `void` | 指定マップだけの一覧メニューを表示 |
 | `ShowAdminNominationMenu(IGameClient, List<IMapConfig>)` | `void` | 指定マップリストで管理者ノミネーションメニューを表示 |
 | `ShowAdminNominationMenu(IGameClient)` | `void` | 全マップで管理者ノミネーションメニューを表示 |
 | `ShowRemoveNominationMenu(IGameClient, List<IMcsNominationData>)` | `void` | 指定ノミネーションで削除メニューを表示 |

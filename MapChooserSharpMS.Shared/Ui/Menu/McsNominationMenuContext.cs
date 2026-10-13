@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MapChooserSharpMS.Shared.MapConfig.Services;
+using MapChooserSharpMS.Shared.MapCycle.Cooldown;
 using MapChooserSharpMS.Shared.MapCycle.Services;
 using MapChooserSharpMS.Shared.Nomination.Services;
 
@@ -25,6 +26,12 @@ public sealed class McsNominationMenuContext
     public required IMapConfigToolingService ToolingService { get; init; }
 
     public required IMapCooldownQueryService CooldownQueryService { get; init; }
+
+    /// <summary>
+    /// Runtime cooldown state (unplayed count, last played time) for list rows,
+    /// detail menus and the unplayed-count / last-played sort orders.
+    /// </summary>
+    public required IMcsCooldownStore CooldownStore { get; init; }
 
     public required INominationMenuManagementService NominationMenuService { get; init; }
 }
