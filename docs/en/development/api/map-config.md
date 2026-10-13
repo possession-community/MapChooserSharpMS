@@ -120,8 +120,8 @@ Cooldown **configuration values** declared in map/group TOML. Immutable; contain
 
 MCS cooldowns have two independent axes:
 
-- **Count-based**: A counter set to the configured value when the map is played, decremented by 1 each time another map is played
-- **Timed**: The map remains on cooldown until the configured duration has elapsed since it was last played
+- **Count-based**: A counter set to the configured value when the map starts, decremented by 1 each time another map starts
+- **Timed**: The map remains on cooldown until the configured duration has elapsed since it last started
 
 | Property | Type | Description |
 |---|---|---|

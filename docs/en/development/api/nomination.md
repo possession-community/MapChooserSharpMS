@@ -134,8 +134,8 @@ Provides a detailed breakdown of cooldowns applied to a map. Includes both the m
 
 MCS cooldowns have two axes:
 
-- **Count-based**: A counter set to the configured value when the map is played, decremented by 1 each time another map is played
-- **Timed**: A cooldown that remains active until the configured duration elapses from when the map was last played
+- **Count-based**: A counter set to the configured value when the map starts, decremented by 1 each time another map starts
+- **Timed**: A cooldown that remains active until the configured duration elapses from when the map last started
 
 When a map belongs to multiple groups, each group applies its cooldown independently. `HighestCooldownCount` / `LongestTimedCooldown` return the most restrictive values across the map and all its groups.
 
@@ -165,7 +165,7 @@ Enum representing reasons why a nomination was rejected. Methods like `TryNomina
 | `VotingPeriod` | A vote is in progress; nominations are blocked |
 | `OnlySpecificDay` | Today is not an allowed nomination day for this map |
 | `OnlySpecificTime` | The current time is outside the allowed nomination time range |
-| `MapIsInCooldown` | The map or one of its groups is on cooldown |
+| `MapIsInCooldown` | The map or one of its groups is on cooldown. Not reported for the current map or for maps covered by `SameMapGroup`; those return `SameMap` / `SameMapGroup` instead |
 | `NominationCooldownActive` | Nomination-specific cooldown is active (applied after a map is consumed as a vote candidate) |
 | `AlreadyNominated` | The map is already nominated |
 | `NominatedByAdmin` | The map has been force-nominated by an admin (cannot be overwritten by normal players) |

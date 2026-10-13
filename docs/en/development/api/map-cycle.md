@@ -287,6 +287,6 @@ Listener interface registered via `IMapCycleController.InstallEventListener`. Al
 | `OnNextMapConfirmed(INextMapConfirmedEventParams)` | `void` | Fires when the next map is confirmed |
 | `OnNextMapRemoved(INextMapRemovedEventParams)` | `void` | Fires when the next map confirmation is removed |
 | `OnMcsIntermission(IMcsIntermissionParams)` | `void` | Fires when entering the intermission state |
-| `OnMapCooldownApply(IMapCooldownApplyEventParams)` | `void` | Fires just before cooldown is applied. Parameters are editable -- listeners can modify cooldown values or cancel application |
+| `OnMapCooldownApply(IMapCooldownApplyEventParams)` | `void` | Fires at map start, just before cooldown is applied to the started map. Parameters are editable -- listeners can modify cooldown values or cancel application |
 | `OnTimeLimitReached(ITimeLimitReachedEventParams)` | `void` | Fires when the time or round limit is reached |
 | `OnVoteStartThresholdReached(IVoteStartThresholdReachedEventParams)` | `void` | Fires when remaining time/rounds cross the vote-start threshold |

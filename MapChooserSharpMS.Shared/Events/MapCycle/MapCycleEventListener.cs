@@ -55,7 +55,8 @@ public interface IMapCycleEventListener : IEventListenerBase
     void OnMcsIntermission(IMcsIntermissionParams @params) {}
     
     /// <summary>
-    /// Fired when MCS is about to apply map cooldown. The params are editable —
+    /// Fired at map start, when MCS is about to apply map cooldown to the map
+    /// that just started. The params are editable —
     /// listeners can modify <see cref="IMapCooldownApplyEventParams.Cooldown"/>,
     /// <see cref="IMapCooldownApplyEventParams.TimedCooldownDuration"/>,
     /// or set <see cref="IMapCooldownApplyEventParams.IsCancelled"/> to suppress.

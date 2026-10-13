@@ -16,6 +16,9 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="CsToml" Version="1.5.1" />
+        <!-- The plugin excludes this from its runtime assets (the server provides it);
+             tests that construct services typed against TnmsPlugin need it on disk. -->
+        <PackageReference Include="ModSharp.Sharp.Shared" Version="2.1.123" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.*" />
     </ItemGroup>
 

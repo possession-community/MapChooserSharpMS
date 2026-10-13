@@ -61,13 +61,15 @@ internal sealed class NominationValidateService
         if (IsMapDisabled(mapConfig))
             result.Add(NominationCheckResult.Disabled);
 
-        if (IsMapInCooldown(mapConfig))
+        bool sharesGroupWithCurrentMap = SharesCooldownGroupWithCurrentMap(mapConfig);
+
+        if (IsMapInCooldownUnrelatedToCurrentMap(mapConfig, sharesGroupWithCurrentMap))
             result.Add(NominationCheckResult.MapIsInCooldown);
 
         if (IsMapInNominationCooldown(mapConfig))
             result.Add(NominationCheckResult.NominationCooldownActive);
 
-        if (SharesCooldownGroupWithCurrentMap(mapConfig))
+        if (sharesGroupWithCurrentMap)
             result.Add(NominationCheckResult.SameMapGroup);
 
         if (result.Count > 0)
@@ -175,10 +177,12 @@ internal sealed class NominationValidateService
         if (HasReachedGroupNominationLimit(mapConfig))
             result.Add(NominationCheckResult.GroupNominationLimitReached);
 
-        if (IsMapInCooldown(mapConfig))
+        bool sharesGroupWithCurrentMap = SharesCooldownGroupWithCurrentMap(mapConfig);
+
+        if (IsMapInCooldownUnrelatedToCurrentMap(mapConfig, sharesGroupWithCurrentMap))
             result.Add(NominationCheckResult.MapIsInCooldown);
 
-        if (SharesCooldownGroupWithCurrentMap(mapConfig))
+        if (sharesGroupWithCurrentMap)
             result.Add(NominationCheckResult.SameMapGroup);
 
         if (!IsLowerThanMaxPlayers(mapConfig))
@@ -412,6 +416,14 @@ internal sealed class NominationValidateService
         return GetCooldownInformations(mapConfig).HasCooldown;
     }
 
+    // The running map and its groups carry the cooldown applied at map start.
+    // Those cases already have a more precise result (SameMap / SameMapGroup),
+    // so they are not reported as a plain cooldown as well.
+    private bool IsMapInCooldownUnrelatedToCurrentMap(IMapConfig mapConfig, bool sharesGroupWithCurrentMap)
+    {
+        return !sharesGroupWithCurrentMap && !IsCurrentMap(mapConfig) && IsMapInCooldown(mapConfig);
+    }
+
     public bool SharesCooldownGroupWithCurrentMap(IMapConfig mapConfig)
     {
         var currentConfig = ResolveCurrentMapConfig();
@@ -438,9 +450,9 @@ internal sealed class NominationValidateService
         return false;
     }
 
-    // Group cooldowns are written to the store only at map end, so while a map
-    // is being played its groups look cooldown-free. Conflict detection must
-    // therefore look at the configured values, not the runtime store.
+    // Group cooldowns reach the store at map start, but only once the cooldown
+    // load has finished, and not at all during boot phase. Conflict detection
+    // therefore looks at the configured values, not the runtime store.
     private static bool HasCooldownConfigured(IMapGroupConfig group)
     {
         return group.CooldownSettings.ConfigCooldown > 0

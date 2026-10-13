@@ -430,7 +430,7 @@ Weight for random map selection. Higher values make the map more likely to be se
 
 ### Cooldown
 
-Specifies the cooldown applied after the map is played.
+Specifies the cooldown applied when the map starts. The count and the timed cooldown both begin at map start, not at map end.
 Note that this is separate from group cooldown.
 
 ### CooldownOverride (Group Only)

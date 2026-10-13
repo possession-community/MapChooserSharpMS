@@ -75,6 +75,7 @@ internal sealed class McsMapCycleController
     private readonly McsCooldownStore _cooldownStore = new();
     private string _serverKey = "";
     private readonly TaskCompletionSource _persistenceReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private int _mapGeneration;
 
     private MapCycleMode _mode = MapCycleMode.None;
     private Guid _tickTimerId = Guid.Empty;
@@ -211,7 +212,7 @@ internal sealed class McsMapCycleController
 
         if (HotReload)
         {
-            InitializeForCurrentMap();
+            InitializeForCurrentMap(isMapStart: false);
         }
     }
 
@@ -275,6 +276,8 @@ internal sealed class McsMapCycleController
 
     protected override void OnUnloadModule()
     {
+        // Drops a cooldown tick still waiting on its database load.
+        _mapGeneration++;
         TearDownCurrentMap();
 
         if (_mapTransitionManager is McsMapTransitionManager concreteManager)
@@ -386,9 +389,18 @@ internal sealed class McsMapCycleController
 
     #region Lifecycle
 
-    private void InitializeForCurrentMap()
+    private void InitializeForCurrentMap(bool isMapStart = true)
     {
         TearDownCurrentMap();
+
+        int generation = ++_mapGeneration;
+
+        var currentMapName = SharedSystem.GetModSharp().GetMapName() ?? string.Empty;
+        _mapTransitionManager.SetCurrentMap(currentMapName);
+
+        // Captured now: the map may already be torn down by the time the load
+        // below completes, and it still has to receive its cooldown.
+        var startedMap = _mapTransitionManager.CurrentMap?.MapConfig;
 
         _ = Task.Run(async () =>
         {
@@ -397,14 +409,27 @@ internal sealed class McsMapCycleController
             var loaded = await _cooldownLifecycleService.FetchCooldownsFromDatabaseAsync(scope);
             SharedSystem.GetModSharp().InvokeFrameAction(() =>
             {
+                // The map changed again while the load was in flight; the newer
+                // map's own tick covers the transition.
+                if (generation != _mapGeneration)
+                    return;
+
                 if (loaded is var (maps, groups))
                     _cooldownStore.ApplyLoadedRecords(maps, groups, _serverKey);
-                _cooldownLifecycleService.DecrementAllCooldowns();
+
+                // Hot reload only restores state: the running map was ticked
+                // and given its cooldown when it actually started.
+                if (!isMapStart)
+                    return;
+
+                // Applied here rather than synchronously so the loaded records
+                // cannot overwrite it. IsBootPhase is read this late on purpose:
+                // the tracker has handled this map's OnGameActivate by now.
+                _cooldownLifecycleService.AdvanceCooldownsForMapStart(
+                    _bootPhaseTracker.IsBootPhase ? null : startedMap);
             });
         });
 
-        var currentMapName = SharedSystem.GetModSharp().GetMapName() ?? string.Empty;
-        _mapTransitionManager.SetCurrentMap(currentMapName);
         _extendService.InitializeForCurrentMap(_mapTransitionManager.CurrentMap?.MapConfig);
         _extCommandService.ClearParticipants();
 
@@ -527,10 +552,6 @@ internal sealed class McsMapCycleController
             SharedSystem.GetModSharp().StopTimer(_tickTimerId);
             _tickTimerId = Guid.Empty;
         }
-
-        if (_cooldownLifecycleService is not null && _mapTransitionManager?.CurrentMap?.MapConfig is { } playedMap
-            && !_bootPhaseTracker.IsBootPhase)
-            _cooldownLifecycleService.ApplyPlayedMapCooldown(playedMap);
 
         _internalTimeLimitManager = null;
         _transitionTracker = null;

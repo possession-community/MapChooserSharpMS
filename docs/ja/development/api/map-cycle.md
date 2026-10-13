@@ -310,6 +310,6 @@ switch (manager.TimeLimitType)
 | `OnNextMapConfirmed(INextMapConfirmedEventParams)` | `void` | 次マップが確定したとき |
 | `OnNextMapRemoved(INextMapRemovedEventParams)` | `void` | 次マップの確定が解除されたとき |
 | `OnMcsIntermission(IMcsIntermissionParams)` | `void` | インターミッション状態に入ったとき |
-| `OnMapCooldownApply(IMapCooldownApplyEventParams)` | `void` | クールダウン適用直前。パラメータを編集してクールダウン値の変更やキャンセルが可能 |
+| `OnMapCooldownApply(IMapCooldownApplyEventParams)` | `void` | マップ開始時、開始したマップへのクールダウン適用直前。パラメータを編集してクールダウン値の変更やキャンセルが可能 |
 | `OnTimeLimitReached(ITimeLimitReachedEventParams)` | `void` | タイムリミットまたはラウンドリミットに到達したとき |
 | `OnVoteStartThresholdReached(IVoteStartThresholdReachedEventParams)` | `void` | 残り時間/ラウンドが投票開始閾値に達したとき |

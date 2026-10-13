@@ -58,23 +58,37 @@ internal sealed class McsMapCooldownLifecycleService
         _auditPersistence = auditPersistence;
     }
 
-    internal void ApplyPlayedMapCooldown(IMapConfig playedMap)
+    /// <summary>
+    /// Map-start tick. Every cooldown ticks down first and only then does the
+    /// started map receive its fresh cooldown — the other order would burn one
+    /// count of the new cooldown immediately. Pass null to tick without applying
+    /// (boot phase, hot reload, map without config).
+    /// </summary>
+    internal void AdvanceCooldownsForMapStart(IMapConfig? startedMap)
+    {
+        DecrementAllCooldowns();
+
+        if (startedMap is not null)
+            ApplyStartedMapCooldown(startedMap);
+    }
+
+    internal void ApplyStartedMapCooldown(IMapConfig startedMap)
     {
         var now = DateTime.UtcNow;
-        var settings = playedMap.CooldownSettings;
+        var settings = startedMap.CooldownSettings;
 
         var eventParams = new MapCooldownApplyEventParams(
-            _plugin, _moduleBase, playedMap,
+            _plugin, _moduleBase, startedMap,
             settings.ConfigCooldown,
             settings.TimedCooldown);
 
         _eventManager.Fire<IMapCycleEventListener>(e => e.OnMapCooldownApply(eventParams));
 
-        var entry = _store.GetOrCreateRawMapEntry(playedMap.MapName);
+        var entry = _store.GetOrCreateRawMapEntry(startedMap.MapName);
 
         if (eventParams.IsCancelled)
         {
-            _logger.LogInformation("[Cooldown] Cooldown apply cancelled by listener for: {Map}", playedMap.MapName);
+            _logger.LogInformation("[Cooldown] Cooldown apply cancelled by listener for: {Map}", startedMap.MapName);
         }
         else
         {
@@ -90,11 +104,11 @@ internal sealed class McsMapCooldownLifecycleService
         entry.LastPlayedAt = now;
         entry.UnplayedCount = 0;
 
-        if (!IsProvisionalMap(playedMap))
-            _persistence.SaveMapCooldownFireAndForget(playedMap.MapName, BuildRecord(entry));
+        if (!IsProvisionalMap(startedMap))
+            _persistence.SaveMapCooldownFireAndForget(startedMap.MapName, BuildRecord(entry));
 
         var appliedGroups = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var group in playedMap.GroupSettings)
+        foreach (var group in startedMap.GroupSettings)
         {
             if (!appliedGroups.Add(group.GroupName))
                 continue;
@@ -115,7 +129,7 @@ internal sealed class McsMapCooldownLifecycleService
             _persistence.SaveGroupCooldownFireAndForget(group.GroupName, BuildRecord(groupEntry));
         }
 
-        _logger.LogInformation("[Cooldown] Applied cooldown to played map: {Map}", playedMap.MapName);
+        _logger.LogInformation("[Cooldown] Applied cooldown to started map: {Map}", startedMap.MapName);
     }
 
     internal void DecrementAllCooldowns()

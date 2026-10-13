@@ -163,7 +163,7 @@ Install via `IMapCycleController.InstallEventListener`.
 | `OnNextMapConfirmed` | `void` | Notification | Fires when the next map is confirmed |
 | `OnNextMapRemoved` | `void` | Notification | Fires when the next map confirmation is removed |
 | `OnMcsIntermission` | `void` | Notification | Fires when entering intermission |
-| `OnMapCooldownApply` | `void` | Editable | Fires before **map-level** cooldown application. Group cooldowns and nomination cooldowns are not affected. `IsCancelled` suppresses the map cooldown but LastPlayedAt/UnplayedCount still update |
+| `OnMapCooldownApply` | `void` | Editable | Fires at map start, before **map-level** cooldown application to the map that just started. Group cooldowns and nomination cooldowns are not affected. `IsCancelled` suppresses the map cooldown but LastPlayedAt/UnplayedCount still update |
 | `OnTimeLimitReached` | `void` | Notification | Fires when time or round limit is reached |
 | `OnVoteStartThresholdReached` | `void` | Notification | Fires when remaining time/rounds cross the vote-start threshold |
 
